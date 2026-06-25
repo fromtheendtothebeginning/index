@@ -1,18 +1,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
 
 :root {
-  --bg-primary: #0a0a0f;
-  --bg-secondary: #12121a;
-  --bg-card: #1a1a2e;
-  --text-primary: #f0f0f5;
-  --text-secondary: #9090a8;
-  --text-muted: #5c5c78;
+  --bg-primary: #f8f9fa;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --text-primary: #1a1a2e;
+  --text-secondary: #5a5a72;
+  --text-muted: #9090a8;
   --accent-1: #6c5ce7;
   --accent-2: #00cec9;
   --accent-3: #fd79a8;
-  --border-color: #2a2a3e;
-  --glow-accent: rgba(108, 92, 231, 0.15);
-  --glow-cyan: rgba(0, 206, 201, 0.1);
+  --border-color: #e2e2ef;
+  --glow-accent: rgba(108, 92, 231, 0.08);
+  --glow-cyan: rgba(0, 206, 201, 0.06);
   --max-width: 1200px;
 }
 

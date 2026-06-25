@@ -57,12 +57,10 @@ function AuthPage() {
         return
       }
 
-      // 保存 token 到 localStorage
       localStorage.setItem('token', data.access_token)
       localStorage.setItem('user', JSON.stringify(data.user))
       setSubmitted(true)
 
-      // 注册成功后 1.5 秒跳转到首页
       if (mode === 'login') {
         setTimeout(() => navigate('/'), 1500)
       }
@@ -87,11 +85,10 @@ function AuthPage() {
       <div className="auth-glow ag-2" />
 
       <div className="auth-container">
-        {/* 左侧品牌展示 */}
         <div className="auth-brand">
           <div className="auth-brand-content">
             <Link to="/" className="auth-brand-logo">
-              <span className="brand-logo-icon">A</span>
+              <img src="/favicon.svg" alt="anticraft" className="brand-logo-img" />
             </Link>
             <h1 className="auth-brand-title">
               <span className="brand-title-en">anticraft</span>
@@ -109,7 +106,6 @@ function AuthPage() {
           </div>
         </div>
 
-        {/* 右侧表单 */}
         <div className="auth-form-wrap">
           <div className="auth-form-card">
             <div className="auth-form-header">

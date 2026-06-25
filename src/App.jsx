@@ -70,12 +70,11 @@ function HomePage() {
       <nav className="navbar">
         <div className="nav-inner">
           <Link to="/" className="nav-logo">
-            <span className="logo-icon">A</span>
+            <img src="/favicon.svg" alt="anticraft" className="logo-icon" />
             <span className="logo-text">anticraft</span>
           </Link>
           <div className="nav-right">
             <div className="nav-links">
-              <a href="#about">关于</a>
               <a href="#projects">项目</a>
               <a href="#contact">联系</a>
             </div>
@@ -95,53 +94,16 @@ function HomePage() {
             <span className="title-divider">·</span>
             <span className="title-cn">逆匠</span>
           </h1>
-          <p className="hero-subtitle">
-            以匠心为刃，破常规之笼。<br />
-            <span className="subtitle-extra">在秩序中寻找裂痕，在裂痕中创造可能。</span>
-          </p>
           <div className="hero-actions">
             <a href="#projects" className="btn btn-primary">
               探索项目
               <span className="btn-arrow">→</span>
-            </a>
-            <a href="#about" className="btn btn-secondary">
-              了解更多
             </a>
           </div>
         </div>
         <div className="hero-scroll">
           <div className="scroll-line" />
           <span className="scroll-text">滚动浏览</span>
-        </div>
-      </section>
-
-      <section id="about" className="section about-section">
-        <div className="section-inner">
-          <div className="section-header">
-            <span className="section-tag">ABOUT</span>
-            <h2 className="section-title">逆匠之道</h2>
-            <p className="section-desc">
-              「逆匠」并非反对匠心，而是拒绝被定义的匠心。
-              我们相信真正的创造始于对既有规则的审视与超越。
-            </p>
-          </div>
-          <div className="about-cards">
-            <div className="about-card" style={{ '--delay': '0ms' }}>
-              <div className="card-icon">⚡</div>
-              <h3>破格</h3>
-              <p>跳出框架重新审视问题，在常规路径之外找到最优解。</p>
-            </div>
-            <div className="about-card" style={{ '--delay': '150ms' }}>
-              <div className="card-icon">🔨</div>
-              <h3>淬炼</h3>
-              <p>每一次打磨都是对完美的逼近，细节中见真章。</p>
-            </div>
-            <div className="about-card" style={{ '--delay': '300ms' }}>
-              <div className="card-icon">🌌</div>
-              <h3>创造</h3>
-              <p>从零到一构建前所未有之物，让想法落地成真。</p>
-            </div>
-          </div>
         </div>
       </section>
 

@@ -66,7 +66,7 @@
   margin: 24px;
   border-radius: 24px;
   border: 1px solid var(--border-color);
-  background: rgba(18, 18, 26, 0.6);
+  background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(40px);
   -webkit-backdrop-filter: blur(40px);
   overflow: hidden;
@@ -120,22 +120,16 @@
   margin-bottom: 24px;
 }
 
-.brand-logo-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.brand-logo-img {
   width: 56px;
   height: 56px;
   border-radius: 16px;
-  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
-  font-size: 24px;
-  font-weight: 800;
-  color: #fff;
   box-shadow: 0 8px 32px rgba(108, 92, 231, 0.3);
   transition: transform 0.3s ease;
+  display: block;
 }
 
-.auth-brand-logo:hover .brand-logo-icon {
+.auth-brand-logo:hover .brand-logo-img {
   transform: scale(1.05);
 }
 
@@ -217,7 +211,7 @@
   display: flex;
   gap: 0;
   margin-bottom: 16px;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(0, 0, 0, 0.03);
   border-radius: 12px;
   padding: 4px;
   border: 1px solid var(--border-color);
@@ -300,7 +294,7 @@
 .form-input {
   width: 100%;
   padding: 12px 14px 12px 42px;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(0, 0, 0, 0.02);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   color: var(--text-primary);
