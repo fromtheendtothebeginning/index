@@ -153,6 +153,26 @@
   width: 100%;
 }
 
+.nav-login-btn {
+  padding: 7px 18px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent-1), #8b7cf7);
+  color: #fff !important;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(108, 92, 231, 0.25);
+}
+
+.nav-login-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(108, 92, 231, 0.35) !important;
+}
+
+.nav-login-btn::after {
+  display: none !important;
+}
+
 /* ---------- Hero ---------- */
 .hero {
   position: relative;

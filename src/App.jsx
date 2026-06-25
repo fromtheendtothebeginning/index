@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { Routes, Route, Link } from 'react-router-dom'
+import AuthPage from './pages/AuthPage'
 import './App.css'
 
-function App() {
+function HomePage() {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -19,14 +21,15 @@ function App() {
       {/* 导航 */}
       <nav className="navbar">
         <div className="nav-inner">
-          <a href="/" className="nav-logo">
+          <Link to="/" className="nav-logo">
             <span className="logo-icon">A</span>
             <span className="logo-text">anticraft</span>
-          </a>
+          </Link>
           <div className="nav-links">
             <a href="#about">关于</a>
             <a href="#projects">项目</a>
             <a href="#contact">联系</a>
+            <Link to="/auth" className="nav-login-btn">登录</Link>
           </div>
         </div>
       </nav>
@@ -171,6 +174,15 @@ function App() {
         </div>
       </footer>
     </div>
+  )
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/auth" element={<AuthPage />} />
+    </Routes>
   )
 }
 

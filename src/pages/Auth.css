@@ -1,0 +1,451 @@
+/* ============================================
+   Auth / 登录注册 — 样式
+   ============================================ */
+
+/* ---------- 页面布局 ---------- */
+.auth-page {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* ---------- 背景 ---------- */
+.auth-grid {
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(108, 92, 231, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(108, 92, 231, 0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.auth-glow {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+  animation: auth-glow-float 6s ease-in-out infinite alternate;
+}
+
+.ag-1 {
+  width: 500px;
+  height: 500px;
+  top: -150px;
+  left: -100px;
+  background: radial-gradient(circle, rgba(108, 92, 231, 0.12), transparent 70%);
+}
+
+.ag-2 {
+  width: 450px;
+  height: 450px;
+  bottom: -100px;
+  right: -80px;
+  background: radial-gradient(circle, rgba(0, 206, 201, 0.08), transparent 70%);
+  animation-delay: -3s;
+}
+
+@keyframes auth-glow-float {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(30px, -30px); }
+}
+
+/* ---------- 容器 ---------- */
+.auth-container {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  max-width: 960px;
+  min-height: 600px;
+  margin: 24px;
+  border-radius: 24px;
+  border: 1px solid var(--border-color);
+  background: rgba(18, 18, 26, 0.6);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: auth-enter 0.6s ease-out;
+}
+
+@keyframes auth-enter {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ---------- 左侧品牌 ---------- */
+.auth-brand {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  background: linear-gradient(135deg, rgba(108, 92, 231, 0.06), rgba(0, 206, 201, 0.03));
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-brand::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 30% 40%, rgba(108, 92, 231, 0.05), transparent 50%);
+  pointer-events: none;
+}
+
+.auth-brand-content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  max-width: 320px;
+}
+
+.auth-brand-logo {
+  display: inline-block;
+  margin-bottom: 24px;
+}
+
+.brand-logo-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  font-size: 24px;
+  font-weight: 800;
+  color: #fff;
+  box-shadow: 0 8px 32px rgba(108, 92, 231, 0.3);
+  transition: transform 0.3s ease;
+}
+
+.auth-brand-logo:hover .brand-logo-icon {
+  transform: scale(1.05);
+}
+
+.auth-brand-title {
+  margin-bottom: 16px;
+}
+
+.brand-title-en {
+  display: block;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #f0f0f5, var(--accent-1));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.brand-title-cn {
+  display: block;
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.15em;
+  margin-top: 4px;
+}
+
+.auth-brand-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.auth-brand-quote {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-style: italic;
+  line-height: 1.7;
+  padding: 16px 0;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 24px;
+}
+
+.auth-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+  transition: color 0.2s;
+}
+
+.auth-back-link:hover {
+  color: var(--accent-1);
+}
+
+/* ---------- 右侧表单 ---------- */
+.auth-form-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+}
+
+.auth-form-card {
+  width: 100%;
+  max-width: 380px;
+}
+
+/* ---------- 表单头部 ---------- */
+.auth-form-header {
+  margin-bottom: 32px;
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 4px;
+  border: 1px solid var(--border-color);
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.auth-tab.active {
+  background: var(--accent-1);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3);
+}
+
+.auth-tab:disabled {
+  cursor: default;
+}
+
+.auth-form-hint {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* ---------- 表单 ---------- */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-server-error {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(231, 76, 60, 0.1);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  color: #e74c3c;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.form-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.form-input-icon {
+  position: absolute;
+  left: 14px;
+  font-size: 16px;
+  pointer-events: none;
+  opacity: 0.6;
+  z-index: 1;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 14px 12px 42px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.form-input::placeholder {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.form-input:focus {
+  border-color: var(--accent-1);
+  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.12);
+  background: rgba(108, 92, 231, 0.04);
+}
+
+.form-input.error {
+  border-color: #e74c3c;
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+}
+
+.form-error {
+  font-size: 12px;
+  color: #e74c3c;
+  padding-left: 4px;
+}
+
+/* ---------- 提交按钮 ---------- */
+.auth-submit {
+  width: 100%;
+  justify-content: center;
+  padding: 14px 28px;
+  font-size: 15px;
+  margin-top: 4px;
+}
+
+/* ---------- 切换模式 ---------- */
+.auth-switch {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.auth-switch-btn {
+  background: none;
+  border: none;
+  color: var(--accent-1);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 4px;
+  transition: color 0.2s;
+}
+
+.auth-switch-btn:hover {
+  color: var(--accent-2);
+}
+
+/* ---------- 成功提示 ---------- */
+.auth-success {
+  text-align: center;
+  padding: 40px 0;
+  animation: fade-up 0.4s ease;
+}
+
+.success-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-2), #00b894);
+  font-size: 28px;
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(0, 206, 201, 0.3);
+}
+
+.auth-success h3 {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.auth-success p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- 响应式 ---------- */
+@media (max-width: 768px) {
+  .auth-container {
+    flex-direction: column;
+    max-width: 480px;
+    margin: 16px;
+  }
+
+  .auth-brand {
+    padding: 32px 24px;
+  }
+
+  .auth-brand-content {
+    max-width: 100%;
+  }
+
+  .brand-title-en {
+    font-size: 26px;
+  }
+
+  .brand-title-cn {
+    font-size: 18px;
+  }
+
+  .auth-form-wrap {
+    padding: 32px 24px;
+  }
+
+  .auth-form-card {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-container {
+    margin: 8px;
+    border-radius: 16px;
+  }
+
+  .auth-brand {
+    padding: 24px 16px;
+  }
+
+  .auth-form-wrap {
+    padding: 24px 16px;
+  }
+}
