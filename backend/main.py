@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db, init_db
 from models import User
-from schemas import RegisterRequest, LoginRequest, TokenResponse, UserResponse
+from schemas import RegisterRequest, LoginRequest, UpdateProfileRequest, TokenResponse, UserResponse, MessageResponse
 from auth import hash_password, verify_password, create_access_token, decode_access_token
 
 # ============================================
@@ -48,19 +48,15 @@ def health_check():
 def register(req: RegisterRequest, db: Session = Depends(get_db)):
     """用户注册"""
 
-    existing = db.query(User).filter(
-        (User.username == req.username) | (User.email == req.email)
-    ).first()
+    existing = db.query(User).filter(User.username == req.username).first()
     if existing:
-        field = "用户名" if existing.username == req.username else "邮箱"
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"{field}已被注册",
+            detail="用户名已被注册",
         )
 
     user = User(
         username=req.username,
-        email=req.email,
         hashed_password=hash_password(req.password),
     )
     db.add(user)
@@ -105,6 +101,33 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
+
+    return UserResponse.model_validate(user)
+
+
+@app.put("/api/user/profile", response_model=UserResponse, tags=["用户"])
+def update_profile(
+    req: UpdateProfileRequest,
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+):
+    """更新当前用户昵称和头像"""
+    payload = decode_access_token(token)
+    if payload is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
+
+    user_id = int(payload.get("sub"))
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
+
+    if req.nickname is not None:
+        user.nickname = req.nickname
+    if req.avatar_url is not None:
+        user.avatar_url = req.avatar_url
+
+    db.commit()
+    db.refresh(user)
 
     return UserResponse.model_validate(user)
 

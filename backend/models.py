@@ -10,8 +10,10 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     username = Column(String(50), unique=True, nullable=False, index=True, comment="用户名")
-    email = Column(String(120), unique=True, nullable=False, comment="邮箱")
+    email = Column(String(120), unique=True, nullable=True, comment="邮箱")
     hashed_password = Column(String(255), nullable=False, comment="加密后的密码")
+    nickname = Column(String(50), nullable=True, comment="昵称")
+    avatar_url = Column(String(500), nullable=True, comment="头像 URL")
     is_active = Column(Boolean, default=True, comment="是否激活")
     created_at = Column(DateTime(timezone=True), server_default=func.now(), comment="注册时间")
     updated_at = Column(

@@ -7,7 +7,7 @@ const API_BASE = '/api'
 function AuthPage() {
   const navigate = useNavigate()
   const [mode, setMode] = useState('login')
-  const [form, setForm] = useState({ username: '', email: '', password: '', confirm: '' })
+  const [form, setForm] = useState({ username: '', password: '', confirm: '' })
   const [errors, setErrors] = useState({})
   const [serverError, setServerError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -22,8 +22,6 @@ function AuthPage() {
   const validate = () => {
     const errs = {}
     if (!form.username.trim()) errs.username = '请输入用户名'
-    if (mode === 'register' && !form.email.trim()) errs.email = '请输入邮箱'
-    if (mode === 'register' && form.email && !/\S+@\S+\.\S+/.test(form.email)) errs.email = '邮箱格式不正确'
     if (!form.password) errs.password = '请输入密码'
     if (form.password && form.password.length < 6) errs.password = '密码至少6位'
     if (mode === 'register' && form.password !== form.confirm) errs.confirm = '两次密码不一致'
@@ -44,7 +42,6 @@ function AuthPage() {
       const body = {
         username: form.username,
         password: form.password,
-        ...(mode === 'register' && { email: form.email }),
       }
 
       const res = await fetch(endpoint, {
@@ -176,24 +173,6 @@ function AuthPage() {
                   </div>
                   {errors.username && <span className="form-error">{errors.username}</span>}
                 </div>
-
-                {mode === 'register' && (
-                  <div className="form-group">
-                    <label className="form-label">邮箱</label>
-                    <div className="form-input-wrap">
-                      <span className="form-input-icon">&#9993;</span>
-                      <input
-                        type="email"
-                        name="email"
-                        className={`form-input ${errors.email ? 'error' : ''}`}
-                        placeholder="输入邮箱"
-                        value={form.email}
-                        onChange={handleChange}
-                      />
-                    </div>
-                    {errors.email && <span className="form-error">{errors.email}</span>}
-                  </div>
-                )}
 
                 <div className="form-group">
                   <label className="form-label">密码</label>

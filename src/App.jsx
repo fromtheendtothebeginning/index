@@ -1,7 +1,56 @@
 import { useState, useEffect } from 'react'
-import { Routes, Route, Link } from 'react-router-dom'
+import { Routes, Route, Link, useNavigate } from 'react-router-dom'
 import AuthPage from './pages/AuthPage'
+import ProfileEdit from './pages/ProfileEdit'
 import './App.css'
+
+function NavbarUser() {
+  const [user, setUser] = useState(null)
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const sync = () => {
+      const raw = localStorage.getItem('user')
+      if (raw) {
+        try { setUser(JSON.parse(raw)) } catch { setUser(null) }
+      } else {
+        setUser(null)
+      }
+    }
+    sync()
+    window.addEventListener('storage', sync)
+    return () => window.removeEventListener('storage', sync)
+  }, [])
+
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    setUser(null)
+    navigate('/')
+  }
+
+  const getInitial = (name) => (name ? name.charAt(0).toUpperCase() : '?')
+
+  if (user) {
+    return (
+      <div className="nav-user">
+        <Link to="/profile" className="nav-user-avatar" title="编辑资料">
+          {user.avatar_url ? (
+            <img src={user.avatar_url} alt="" className="nav-avatar-img" />
+          ) : (
+            <span className="nav-avatar-letter">
+              {getInitial(user.nickname || user.username)}
+            </span>
+          )}
+        </Link>
+        <span className="nav-user-name">{user.nickname || user.username}</span>
+        <button className="nav-logout-btn" onClick={handleLogout}>退出</button>
+      </div>
+    )
+  }
+
+  return <Link to="/auth" className="nav-login-btn">登录</Link>
+}
 
 function HomePage() {
   const [mounted, setMounted] = useState(false)
@@ -12,7 +61,6 @@ function HomePage() {
 
   return (
     <div className={`app ${mounted ? 'mounted' : ''}`}>
-      {/* 背景装饰 */}
       <div className="bg-grid" />
       <div className="bg-glow glow-1" />
       <div className="bg-glow glow-2" />
@@ -25,16 +73,17 @@ function HomePage() {
             <span className="logo-icon">A</span>
             <span className="logo-text">anticraft</span>
           </Link>
-          <div className="nav-links">
-            <a href="#about">关于</a>
-            <a href="#projects">项目</a>
-            <a href="#contact">联系</a>
-            <Link to="/auth" className="nav-login-btn">登录</Link>
+          <div className="nav-right">
+            <div className="nav-links">
+              <a href="#about">关于</a>
+              <a href="#projects">项目</a>
+              <a href="#contact">联系</a>
+            </div>
+            <NavbarUser />
           </div>
         </div>
       </nav>
 
-      {/* Hero 区域 */}
       <section className="hero">
         <div className="hero-content">
           <div className="hero-badge">
@@ -66,7 +115,6 @@ function HomePage() {
         </div>
       </section>
 
-      {/* 关于 */}
       <section id="about" className="section about-section">
         <div className="section-inner">
           <div className="section-header">
@@ -97,7 +145,6 @@ function HomePage() {
         </div>
       </section>
 
-      {/* 项目 */}
       <section id="projects" className="section projects-section">
         <div className="section-inner">
           <div className="section-header">
@@ -137,7 +184,6 @@ function HomePage() {
         </div>
       </section>
 
-      {/* 联系 */}
       <section id="contact" className="section contact-section">
         <div className="section-inner">
           <div className="section-header">
@@ -164,7 +210,6 @@ function HomePage() {
         </div>
       </section>
 
-      {/* 底部 */}
       <footer className="footer">
         <div className="footer-inner">
           <p className="footer-copyright">
@@ -182,6 +227,7 @@ function App() {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/auth" element={<AuthPage />} />
+      <Route path="/profile" element={<ProfileEdit />} />
     </Routes>
   )
 }

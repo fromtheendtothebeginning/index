@@ -1,0 +1,236 @@
+/* ============================================
+   ProfileEdit / 编辑个人资料 — 样式
+   ============================================ */
+
+.profile-page {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.profile-grid {
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(108, 92, 231, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(108, 92, 231, 0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.profile-glow {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.pg-1 {
+  width: 400px;
+  height: 400px;
+  top: -100px;
+  right: -80px;
+  background: radial-gradient(circle, rgba(108, 92, 231, 0.1), transparent 70%);
+}
+
+.pg-2 {
+  width: 350px;
+  height: 350px;
+  bottom: -80px;
+  left: -60px;
+  background: radial-gradient(circle, rgba(0, 206, 201, 0.08), transparent 70%);
+}
+
+/* ── 容器 ── */
+.profile-container {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 520px;
+  margin: 24px;
+  padding: 40px;
+  border-radius: 24px;
+  border: 1px solid var(--border-color);
+  background: rgba(18, 18, 26, 0.6);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: profile-enter 0.5s ease-out;
+}
+
+@keyframes profile-enter {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── 头部 ── */
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.profile-back {
+  font-size: 14px;
+  color: var(--text-muted);
+  transition: color 0.2s;
+  white-space: nowrap;
+}
+
+.profile-back:hover {
+  color: var(--accent-1);
+}
+
+.profile-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* ── 头像 ── */
+.profile-avatar-section {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 32px;
+  padding: 20px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+}
+
+.profile-avatar-preview {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-letter {
+  font-size: 30px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.profile-avatar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.avatar-name {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.avatar-username {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* ── 表单 ── */
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.profile-error {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(231, 76, 60, 0.1);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  color: #e74c3c;
+  font-size: 13px;
+}
+
+.profile-success {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(0, 206, 201, 0.1);
+  border: 1px solid rgba(0, 206, 201, 0.3);
+  color: var(--accent-2);
+  font-size: 14px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.profile-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.profile-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.profile-input {
+  width: 100%;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.profile-input::placeholder {
+  color: var(--text-muted);
+}
+
+.profile-input:focus {
+  border-color: var(--accent-1);
+  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.12);
+  background: rgba(108, 92, 231, 0.04);
+}
+
+.profile-field-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.profile-save-btn {
+  width: 100%;
+  justify-content: center;
+  padding: 14px 28px;
+  font-size: 15px;
+  margin-top: 4px;
+}
+
+/* ── 响应式 ── */
+@media (max-width: 480px) {
+  .profile-container {
+    margin: 12px;
+    padding: 24px 16px;
+  }
+
+  .profile-avatar-section {
+    flex-direction: column;
+    text-align: center;
+  }
+}
