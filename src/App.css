@@ -6,7 +6,19 @@
 .app {
   position: relative;
   min-height: 100vh;
-  overflow: hidden;
+}
+
+/* ---------- 滚动揭示动画 ---------- */
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(48px);
+  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.scroll-reveal.revealed {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* ---------- 背景 ---------- */
@@ -217,6 +229,131 @@
 
 .nav-links a:hover::after {
   width: 100%;
+}
+
+.nav-item-active,
+.nav-links .nav-item-active,
+.nav-dropdown-trigger.nav-item-active {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* ---------- 导航下拉菜单（B站风格） ---------- */
+.nav-dropdown {
+  position: relative;
+}
+
+.nav-dropdown-trigger {
+  font-size: 14px;
+  color: var(--text-secondary);
+  transition: color 0.2s;
+  position: relative;
+  text-decoration: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.nav-dropdown-trigger::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 1.5px;
+  background: var(--accent-1);
+  transition: width 0.3s ease;
+}
+
+.nav-dropdown-trigger .arrow-down {
+  font-size: 10px;
+  transition: transform 0.25s ease;
+  display: inline-block;
+}
+
+.nav-dropdown:hover .nav-dropdown-trigger {
+  color: var(--text-primary);
+}
+
+.nav-dropdown:hover .nav-dropdown-trigger::after {
+  width: 100%;
+}
+
+.nav-dropdown:hover .nav-dropdown-trigger .arrow-down {
+  transform: rotate(180deg);
+}
+
+.nav-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px) scale(0.96);
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 6px;
+  min-width: 130px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+              visibility 0.25s;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+  z-index: 200;
+  transition-delay: 0s;
+}
+
+.nav-dropdown:hover .nav-dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0) scale(1);
+  transition-delay: 0.1s;
+}
+
+.nav-dropdown-menu::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 6px solid var(--border-color);
+}
+
+.nav-dropdown-menu::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 5px solid #fff;
+  z-index: 1;
+}
+
+.nav-dropdown-menu a {
+  display: block;
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.nav-dropdown-menu a:hover {
+  background: rgba(108, 92, 231, 0.08);
+  color: var(--accent-1);
+}
+
+.nav-dropdown-menu a::after {
+  display: none;
 }
 
 .nav-login-btn {

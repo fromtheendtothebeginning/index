@@ -17,6 +17,11 @@ class LoginRequest(BaseModel):
     password: str = Field(..., description="密码")
 
 
+class ResetPasswordRequest(BaseModel):
+    username: str = Field(..., min_length=2, max_length=50, description="用户名")
+    new_password: str = Field(..., min_length=6, max_length=128, description="新密码")
+
+
 class UpdateProfileRequest(BaseModel):
     nickname: Optional[str] = Field(None, max_length=50, description="昵称")
     avatar_url: Optional[str] = Field(None, max_length=500, description="头像 URL")
@@ -43,3 +48,53 @@ class TokenResponse(BaseModel):
 
 class MessageResponse(BaseModel):
     message: str
+
+
+# ── 博客请求 ──
+
+class CreateBlogRequest(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200, description="文章标题")
+    content_md: str = Field(..., min_length=1, max_length=65535, description="Markdown 内容")
+
+
+class UpdateBlogRequest(BaseModel):
+    title: Optional[str] = Field(None, min_length=1, max_length=200, description="文章标题")
+    content_md: Optional[str] = Field(None, min_length=1, max_length=65535, description="Markdown 内容")
+
+
+# ── 博客响应 ──
+
+class BlogAuthorResponse(BaseModel):
+    id: int
+    username: str
+    nickname: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
+class BlogResponse(BaseModel):
+    id: int
+    title: str
+    content_md: str
+    author_id: int
+    author: Optional[BlogAuthorResponse] = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class BlogListItem(BaseModel):
+    id: int
+    title: str
+    author_id: int
+    author: Optional[BlogAuthorResponse] = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class BlogListResponse(BaseModel):
+    total: int
+    blogs: list[BlogListItem]

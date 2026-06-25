@@ -12,6 +12,8 @@ function AuthPage() {
   const [serverError, setServerError] = useState('')
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [showPwd, setShowPwd] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -175,13 +177,34 @@ function AuthPage() {
                   <div className="form-input-wrap">
                     <span className="form-input-icon">&#128274;</span>
                     <input
-                      type="password"
+                      type={showPwd ? 'text' : 'password'}
                       name="password"
                       className={`form-input ${errors.password ? 'error' : ''}`}
                       placeholder="输入密码"
                       value={form.password}
                       onChange={handleChange}
                     />
+                    <button
+                      type="button"
+                      className="pwd-toggle"
+                      onClick={() => setShowPwd(!showPwd)}
+                      tabIndex={-1}
+                      aria-label={showPwd ? '隐藏密码' : '显示密码'}
+                    >
+                      {showPwd ? (
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                          <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                          <line x1="1" y1="1" x2="23" y2="23"/>
+                          <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/>
+                        </svg>
+                      ) : (
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                          <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                      )}
+                    </button>
                   </div>
                   {errors.password && <span className="form-error">{errors.password}</span>}
                 </div>
@@ -192,13 +215,34 @@ function AuthPage() {
                     <div className="form-input-wrap">
                       <span className="form-input-icon">&#128274;</span>
                       <input
-                        type="password"
+                        type={showConfirm ? 'text' : 'password'}
                         name="confirm"
                         className={`form-input ${errors.confirm ? 'error' : ''}`}
                         placeholder="再次输入密码"
                         value={form.confirm}
                         onChange={handleChange}
                       />
+                      <button
+                        type="button"
+                        className="pwd-toggle"
+                        onClick={() => setShowConfirm(!showConfirm)}
+                        tabIndex={-1}
+                        aria-label={showConfirm ? '隐藏密码' : '显示密码'}
+                      >
+                        {showConfirm ? (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                            <line x1="1" y1="1" x2="23" y2="23"/>
+                            <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/>
+                          </svg>
+                        ) : (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                          </svg>
+                        )}
+                      </button>
                     </div>
                     {errors.confirm && <span className="form-error">{errors.confirm}</span>}
                   </div>

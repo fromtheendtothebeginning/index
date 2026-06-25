@@ -62,8 +62,9 @@
   display: flex;
   width: 100%;
   max-width: 960px;
-  min-height: 600px;
-  margin: 24px;
+  min-height: auto;
+  max-height: calc(100vh - 32px);
+  margin: 40px 24px 24px;
   border-radius: 24px;
   border: 1px solid var(--border-color);
   background: rgba(255, 255, 255, 0.8);
@@ -91,21 +92,40 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 48px;
-  background: linear-gradient(135deg, rgba(108, 92, 231, 0.06), rgba(0, 206, 201, 0.03));
+  padding: 28px 32px;
+  background: linear-gradient(160deg, rgba(108, 92, 231, 0.08) 0%, rgba(108, 92, 231, 0.02) 40%, rgba(0, 206, 201, 0.04) 100%);
   position: relative;
   overflow: hidden;
 }
 
+/* 装饰性光晕 */
 .auth-brand::before {
   content: '';
   position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle at 30% 40%, rgba(108, 92, 231, 0.05), transparent 50%);
+  top: -30%;
+  left: -20%;
+  width: 70%;
+  height: 70%;
+  background: radial-gradient(circle, rgba(108, 92, 231, 0.1), transparent 70%);
   pointer-events: none;
+  animation: auth-brand-glow 6s ease-in-out infinite alternate;
+}
+
+.auth-brand::after {
+  content: '';
+  position: absolute;
+  bottom: -20%;
+  right: -15%;
+  width: 50%;
+  height: 50%;
+  background: radial-gradient(circle, rgba(0, 206, 201, 0.08), transparent 70%);
+  pointer-events: none;
+  animation: auth-brand-glow 8s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes auth-brand-glow {
+  0% { transform: translate(0, 0) scale(1); opacity: 0.6; }
+  100% { transform: translate(20px, -20px) scale(1.1); opacity: 1; }
 }
 
 .auth-brand-content {
@@ -113,39 +133,52 @@
   z-index: 1;
   text-align: center;
   max-width: 320px;
+  padding-top: 24px;
 }
 
-.auth-brand-logo {
-  display: inline-block;
+.auth-brand-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  text-decoration: none;
   margin-bottom: 24px;
+  animation: auth-logo-float 4s ease-in-out infinite;
+  transition: opacity 0.2s;
+}
+
+.auth-brand-header:hover {
+  opacity: 0.85;
+}
+
+@keyframes auth-logo-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
 }
 
 .brand-logo-img {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
   box-shadow: 0 8px 32px rgba(108, 92, 231, 0.3);
-  transition: transform 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
   display: block;
+  flex-shrink: 0;
 }
 
-.auth-brand-logo:hover .brand-logo-img {
-  transform: scale(1.05);
-}
-
-.auth-brand-title {
-  margin-bottom: 16px;
+.auth-brand-header:hover .brand-logo-img {
+  transform: scale(1.08);
+  box-shadow: 0 12px 40px rgba(108, 92, 231, 0.45);
 }
 
 .brand-title-en {
-  display: block;
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 800;
   letter-spacing: -0.02em;
-  background: linear-gradient(135deg, #f0f0f5, var(--accent-1));
+  background: linear-gradient(135deg, var(--accent-1) 0%, #8b7cf7 40%, var(--accent-2) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+  line-height: 1;
 }
 
 .brand-title-cn {
@@ -161,7 +194,7 @@
   font-size: 14px;
   color: var(--text-secondary);
   line-height: 1.6;
-  margin-bottom: 24px;
+  margin-bottom: 12px;
 }
 
 .auth-brand-quote {
@@ -169,10 +202,10 @@
   color: var(--text-muted);
   font-style: italic;
   line-height: 1.7;
-  padding: 16px 0;
-  border-top: 1px solid var(--border-color);
-  border-bottom: 1px solid var(--border-color);
-  margin-bottom: 24px;
+  padding: 10px 0;
+  border-top: 1px solid rgba(108, 92, 231, 0.15);
+  border-bottom: 1px solid rgba(108, 92, 231, 0.15);
+  margin-bottom: 12px;
 }
 
 .auth-back-link {
@@ -194,7 +227,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 48px;
+  padding: 28px 32px;
 }
 
 .auth-form-card {
@@ -204,7 +237,7 @@
 
 /* ---------- 表单头部 ---------- */
 .auth-form-header {
-  margin-bottom: 32px;
+  margin-bottom: 20px;
 }
 
 .auth-tabs {
@@ -240,6 +273,19 @@
   cursor: default;
 }
 
+.auth-form-title {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.auth-form-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
 .auth-form-hint {
   font-size: 14px;
   color: var(--text-secondary);
@@ -250,7 +296,7 @@
 .auth-form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
 }
 
 .form-server-error {
@@ -293,7 +339,7 @@
 
 .form-input {
   width: 100%;
-  padding: 12px 14px 12px 42px;
+  padding: 12px 44px 12px 42px;
   background: rgba(0, 0, 0, 0.02);
   border: 1px solid var(--border-color);
   border-radius: 12px;
@@ -320,10 +366,57 @@
   box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
 }
 
+/* ---------- 密码可见性切换 ---------- */
+.pwd-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+  z-index: 2;
+  line-height: 0;
+  border-radius: 6px;
+}
+
+.pwd-toggle:hover {
+  color: var(--accent-1);
+}
+
+.pwd-toggle:focus-visible {
+  outline: 2px solid var(--accent-1);
+  outline-offset: 2px;
+}
+
 .form-error {
   font-size: 12px;
   color: #e74c3c;
   padding-left: 4px;
+}
+
+/* ---------- 表单附加链接 ---------- */
+.form-extras {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -8px;
+}
+
+.forgot-password-link {
+  font-size: 13px;
+  color: var(--text-muted);
+  transition: color 0.2s;
+  text-decoration: none;
+}
+
+.forgot-password-link:hover {
+  color: var(--accent-1);
 }
 
 /* ---------- 提交按钮 ---------- */

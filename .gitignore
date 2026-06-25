@@ -19,6 +19,7 @@ Thumbs.db
 # IDE / 编辑器
 .idea/
 .vscode/
+.deepseek/
 *.suo
 *.ntvs*
 *.njsproj
@@ -43,3 +44,7 @@ __pycache__/
 *.egg-info/
 .venv/
 backend/.venv/
+
+# 项目上下文
+context.md
+todo.md

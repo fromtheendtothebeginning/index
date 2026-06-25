@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react'
 import { Routes, Route, Link, useNavigate } from 'react-router-dom'
 import AuthPage from './pages/AuthPage'
+import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
+import BlogListPage from './pages/BlogListPage'
+import BlogDetailPage from './pages/BlogDetailPage'
+import BlogEditorPage from './pages/BlogEditorPage'
 import ProfileEdit from './pages/ProfileEdit'
 import './App.css'
 
@@ -49,7 +55,7 @@ function NavbarUser() {
     )
   }
 
-  return <Link to="/auth" className="nav-login-btn">登录</Link>
+  return <Link to="/login" className="nav-login-btn">登录</Link>
 }
 
 function HomePage() {
@@ -58,6 +64,27 @@ function HomePage() {
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // 滚动到视口时触发卡片滑入动画
+  useEffect(() => {
+    const els = document.querySelectorAll('.scroll-reveal')
+    if (!els.length) return
+
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('revealed')
+            obs.unobserve(entry.target)
+          }
+        })
+      },
+      { threshold: 0.15, rootMargin: '0px 0px -40px 0px' }
+    )
+
+    els.forEach((el) => obs.observe(el))
+    return () => obs.disconnect()
+  }, [mounted])
 
   return (
     <div className={`app ${mounted ? 'mounted' : ''}`}>
@@ -75,8 +102,15 @@ function HomePage() {
           </Link>
           <div className="nav-right">
             <div className="nav-links">
-              <a href="#projects">项目</a>
-              <a href="#contact">联系</a>
+              <Link to="/blogs">博客</Link>
+              <div className="nav-dropdown">
+                <Link to="/" className="nav-dropdown-trigger nav-item-active">首页<span className="arrow-down">▾</span></Link>
+                <div className="nav-dropdown-menu">
+                  <a href="#hero" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>开始</a>
+                  <a href="#projects">项目</a>
+                  <a href="#contact">联系</a>
+                </div>
+              </div>
             </div>
             <NavbarUser />
           </div>
@@ -109,13 +143,13 @@ function HomePage() {
 
       <section id="projects" className="section projects-section">
         <div className="section-inner">
-          <div className="section-header">
+          <div className="section-header scroll-reveal">
             <span className="section-tag">PROJECTS</span>
             <h2 className="section-title">近期项目</h2>
             <p className="section-desc">每一个项目都是一次对边界的试探。</p>
           </div>
           <div className="project-grid">
-            <div className="project-card">
+            <div className="project-card scroll-reveal">
               <div className="project-card-bg" />
               <div className="project-card-content">
                 <div className="project-tags">
@@ -129,7 +163,7 @@ function HomePage() {
                 </div>
               </div>
             </div>
-            <div className="project-card">
+            <div className="project-card scroll-reveal">
               <div className="project-card-bg" />
               <div className="project-card-content">
                 <div className="project-tags">
@@ -148,12 +182,12 @@ function HomePage() {
 
       <section id="contact" className="section contact-section">
         <div className="section-inner">
-          <div className="section-header">
+          <div className="section-header scroll-reveal">
             <span className="section-tag">CONTACT</span>
             <h2 className="section-title">保持连接</h2>
             <p className="section-desc">无论你是想合作、交流想法，还是单纯打个招呼——我们都在。</p>
           </div>
-          <div className="contact-links">
+          <div className="contact-links scroll-reveal">
             <a href="mailto:hello@anticraft.dev" className="contact-item">
               <span className="contact-icon">✉</span>
               <div>
@@ -189,6 +223,13 @@ function App() {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/auth" element={<AuthPage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/blogs" element={<BlogListPage />} />
+      <Route path="/blogs/new" element={<BlogEditorPage />} />
+      <Route path="/blogs/:id" element={<BlogDetailPage />} />
+      <Route path="/blogs/:id/edit" element={<BlogEditorPage />} />
       <Route path="/profile" element={<ProfileEdit />} />
     </Routes>
   )
