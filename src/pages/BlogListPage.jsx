@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import Modal from '../components/Modal'
 import './Blog.css'
 
 const API_BASE = '/api'
+const CATEGORIES = ['技术讨论', '更新日志', '娱乐论坛']
 
 function BlogListPage() {
   const [blogs, setBlogs] = useState([])
@@ -15,6 +17,9 @@ function BlogListPage() {
   const limit = 12
   const [user, setUser] = useState(null)
   const navigate = useNavigate()
+
+  // 管理员操作
+  const [withdrawTarget, setWithdrawTarget] = useState(null) // { id, title }
 
   useEffect(() => {
     const raw = localStorage.getItem('user')
@@ -61,6 +66,54 @@ function BlogListPage() {
     return () => obs.disconnect()
   }, [blogs])
 
+  const isAdmin = user && user.role === 'admin'
+
+  const authHeaders = () => {
+    const token = localStorage.getItem('token')
+    return { Authorization: `Bearer ${token}` }
+  }
+
+  // 管理员撤回博客
+  const handleWithdraw = async () => {
+    if (!withdrawTarget) return
+    try {
+      const res = await fetch(`/api/admin/blogs/${withdrawTarget.id}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      })
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        alert(d.detail || '撤回失败')
+        return
+      }
+      setBlogs(prev => prev.filter(b => b.id !== withdrawTarget.id))
+      setTotal(t => Math.max(0, t - 1))
+    } catch {
+      alert('网络错误')
+    } finally {
+      setWithdrawTarget(null)
+    }
+  }
+
+  // 管理员设置分类
+  const handleSetCategory = async (blogId, newCat) => {
+    try {
+      const res = await fetch(`/api/admin/blogs/${blogId}/category`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ category: newCat || null }),
+      })
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        alert(d.detail || '分类修改失败')
+        return
+      }
+      setBlogs(prev => prev.map(b => b.id === blogId ? { ...b, category: newCat || null } : b))
+    } catch {
+      alert('网络错误')
+    }
+  }
+
   const totalPages = Math.ceil(total / limit)
 
   return (
@@ -103,26 +156,54 @@ function BlogListPage() {
           <>
             <div className="blog-grid">
               {blogs.map(blog => (
-                <Link to={`/blogs/${blog.id}`} key={blog.id} className="blog-card scroll-reveal">
-                  <div className="blog-card-body">
-                    <h2 className="blog-card-title">
-                      {blog.category && <span className="blog-card-category">{blog.category}</span>}
-                      {blog.title}
-                    </h2>
-                    <div className="blog-card-meta">
-                      <span className="blog-card-author">
-                        {blog.author?.nickname || blog.author?.username || '匿名'}
-                      </span>
-                      <span className="blog-card-date">
-                        {new Date(blog.created_at).toLocaleDateString('zh-CN')}
-                      </span>
-                      <span className="blog-card-stats">
-                        <span className="blog-card-stat" title="点赞数">♥ {blog.like_count || 0}</span>
-                        <span className="blog-card-stat" title="评论数">💬 {blog.comment_count || 0}</span>
-                      </span>
+                <div key={blog.id} className="blog-card scroll-reveal">
+                  <Link to={`/blogs/${blog.id}`} className="blog-card-link">
+                    <div className="blog-card-body">
+                      <h2 className="blog-card-title">
+                        {blog.category && <span className="blog-card-category">{blog.category}</span>}
+                        {blog.title}
+                      </h2>
+                      <div className="blog-card-meta">
+                        <span className="blog-card-author">
+                          {blog.author?.nickname || blog.author?.username || '匿名'}
+                        </span>
+                        <span className="blog-card-date">
+                          {new Date(blog.created_at).toLocaleDateString('zh-CN')}
+                        </span>
+                        <span className="blog-card-stats">
+                          <span className="blog-card-stat" title="点赞数">♥ {blog.like_count || 0}</span>
+                          <span className="blog-card-stat" title="评论数">💬 {blog.comment_count || 0}</span>
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </Link>
+                  </Link>
+                  {isAdmin && (
+                    <div className="blog-card-admin" onClick={e => e.preventDefault()}>
+                      <select
+                        className="blog-card-category-select"
+                        value={blog.category || ''}
+                        onChange={(e) => handleSetCategory(blog.id, e.target.value)}
+                        title="设置分类"
+                      >
+                        <option value="">未分类</option>
+                        {CATEGORIES.map(cat => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+                      <button
+                        className="blog-card-withdraw"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          setWithdrawTarget({ id: blog.id, title: blog.title })
+                        }}
+                        title="撤回"
+                      >
+                        撤回
+                      </button>
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
 
@@ -148,6 +229,16 @@ function BlogListPage() {
           </>
         )}
       </div>
+
+      <Modal
+        open={!!withdrawTarget}
+        title="管理员撤回博客"
+        message={withdrawTarget ? `确认撤回《${withdrawTarget.title}》？撤回后博客将被删除，无法恢复。` : ''}
+        confirmText="确认撤回"
+        danger
+        onConfirm={handleWithdraw}
+        onCancel={() => setWithdrawTarget(null)}
+      />
     </div>
   )
 }

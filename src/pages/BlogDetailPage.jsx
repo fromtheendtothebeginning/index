@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import Modal from '../components/Modal'
 import { renderMd } from '../utils/markdown'
 import './Blog.css'
 
@@ -21,6 +22,12 @@ function BlogDetailPage() {
   const [commentText, setCommentText] = useState('')
   const [commentPosting, setCommentPosting] = useState(false)
   const [commentError, setCommentError] = useState('')
+  // 评论删除弹窗
+  const [commentToDelete, setCommentToDelete] = useState(null)
+
+  // 管理员分类
+  const [adminCategory, setAdminCategory] = useState('')
+  const [categorySaving, setCategorySaving] = useState(false)
 
   useEffect(() => {
     const raw = localStorage.getItem('user')
@@ -54,6 +61,11 @@ function BlogDetailPage() {
       .catch(() => {})
       .finally(() => setCommentsLoading(false))
   }, [id])
+
+  // 同步管理员分类
+  useEffect(() => {
+    if (blog) setAdminCategory(blog.category || '')
+  }, [blog])
 
   const handleDelete = async () => {
     const token = localStorage.getItem('token')
@@ -152,11 +164,11 @@ function BlogDetailPage() {
     }
   }
 
-  const handleDeleteComment = async (commentId) => {
-    if (!window.confirm('确认删除这条评论？')) return
+  const handleDeleteComment = async () => {
+    if (!commentToDelete) return
     const token = localStorage.getItem('token')
     try {
-      const res = await fetch(`/api/comments/${commentId}`, {
+      const res = await fetch(`/api/comments/${commentToDelete}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -165,10 +177,12 @@ function BlogDetailPage() {
         alert(data.detail || '删除失败')
         return
       }
-      setComments(prev => prev.filter(c => c.id !== commentId))
+      setComments(prev => prev.filter(c => c.id !== commentToDelete))
       setBlog(b => b ? { ...b, comment_count: Math.max(0, b.comment_count - 1) } : b)
     } catch {
       alert('网络错误')
+    } finally {
+      setCommentToDelete(null)
     }
   }
 
@@ -194,6 +208,33 @@ function BlogDetailPage() {
   }
 
   const isAuthor = user && blog && user.id === blog.author_id
+  const isAdmin = user && user.role === 'admin'
+
+  const handleAdminCategory = async (newCat) => {
+    setAdminCategory(newCat)
+    if (!isAdmin || !blog) return
+    setCategorySaving(true)
+    const token = localStorage.getItem('token')
+    try {
+      const res = await fetch(`/api/admin/blogs/${blog.id}/category`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ category: newCat || null }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        alert(data.detail || '分类修改失败')
+        setAdminCategory(blog.category || '')
+        return
+      }
+      setBlog(b => b ? { ...b, category: newCat || null } : b)
+    } catch {
+      alert('网络错误')
+      setAdminCategory(blog.category || '')
+    } finally {
+      setCategorySaving(false)
+    }
+  }
 
   return (
     <div className="blog-page">
@@ -220,11 +261,25 @@ function BlogDetailPage() {
             </span>
           </div>
 
-          {isAuthor && (
+          {(isAuthor || isAdmin) && (
             <div className="blog-detail-actions">
-              <Link to={`/blogs/${blog.id}/edit`} className="btn-edit">编辑</Link>
+              {(isAuthor || isAdmin) && <Link to={`/blogs/${blog.id}/edit`} className="btn-edit">编辑</Link>}
+              {isAdmin && (
+                <select
+                  className="admin-category-inline"
+                  value={adminCategory}
+                  onChange={(e) => handleAdminCategory(e.target.value)}
+                  disabled={categorySaving}
+                  title="管理员设置分类"
+                >
+                  <option value="">未分类</option>
+                  <option value="技术讨论">技术讨论</option>
+                  <option value="更新日志">更新日志</option>
+                  <option value="娱乐论坛">娱乐论坛</option>
+                </select>
+              )}
               <button className="btn-delete" onClick={() => setShowDeleteModal(true)} disabled={deleting}>
-                {deleting ? '删除中...' : '删除'}
+                {deleting ? '删除中...' : (isAdmin && !isAuthor ? '撤回' : '删除')}
               </button>
             </div>
           )}
@@ -309,10 +364,10 @@ function BlogDetailPage() {
                       </div>
                       <div className="comment-content">{c.content}</div>
                     </div>
-                    {user && user.id === c.user_id && (
+                    {user && (user.id === c.user_id || user.role === 'admin') && (
                       <button
                         className="comment-delete-btn"
-                        onClick={() => handleDeleteComment(c.id)}
+                        onClick={() => setCommentToDelete(c.id)}
                         title="删除"
                       >
                         ×
@@ -326,20 +381,24 @@ function BlogDetailPage() {
         </div>
       </div>
 
-      {showDeleteModal && (
-        <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
-          <div className="modal-sheet" onClick={e => e.stopPropagation()}>
-            <h3>确认删除</h3>
-            <p>这篇博客将被永久删除，无法恢复。确定继续吗？</p>
-            <div className="modal-actions">
-              <button className="btn btn-secondary" onClick={() => setShowDeleteModal(false)}>取消</button>
-              <button className="btn btn-danger" onClick={handleDelete} disabled={deleting}>
-                {deleting ? '删除中...' : '确认删除'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal
+        open={showDeleteModal}
+        title="确认删除"
+        message={isAdmin && !isAuthor ? '管理员将撤回这篇博客，操作不可恢复。确定继续吗？' : '这篇博客将被永久删除，无法恢复。确定继续吗？'}
+        confirmText={deleting ? '删除中...' : '确认删除'}
+        danger
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteModal(false)}
+      />
+      <Modal
+        open={!!commentToDelete}
+        title="删除评论"
+        message="确认删除这条评论？删除后无法恢复。"
+        confirmText="确认删除"
+        danger
+        onConfirm={handleDeleteComment}
+        onCancel={() => setCommentToDelete(null)}
+      />
     </div>
   )
 }

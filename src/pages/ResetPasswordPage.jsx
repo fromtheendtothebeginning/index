@@ -5,7 +5,7 @@ import './Auth.css'
 function ResetPasswordPage() {
   const navigate = useNavigate()
   const [step, setStep] = useState(1)
-  const [form, setForm] = useState({ username: '', newPassword: '', confirm: '' })
+  const [form, setForm] = useState({ username: '', newPassword: '', confirm: '', inviteCode: '' })
   const [errors, setErrors] = useState({})
   const [serverError, setServerError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -52,6 +52,7 @@ function ResetPasswordPage() {
     if (!form.newPassword) errs.newPassword = '请输入新密码'
     if (form.newPassword && form.newPassword.length < 6) errs.newPassword = '密码至少6位'
     if (form.newPassword !== form.confirm) errs.confirm = '两次密码不一致'
+    if (!form.inviteCode.trim()) errs.inviteCode = '请输入邀请码'
     setErrors(errs)
     if (Object.keys(errs).length > 0) return
 
@@ -65,6 +66,7 @@ function ResetPasswordPage() {
         body: JSON.stringify({
           username: form.username,
           new_password: form.newPassword,
+          invite_code: form.inviteCode.trim(),
         }),
       })
 
@@ -250,6 +252,22 @@ function ResetPasswordPage() {
                     </button>
                   </div>
                   {errors.confirm && <span className="form-error">{errors.confirm}</span>}
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">邀请码</label>
+                  <div className="form-input-wrap">
+                    <span className="form-input-icon">&#127873;</span>
+                    <input
+                      type="text"
+                      name="inviteCode"
+                      className={`form-input ${errors.inviteCode ? 'error' : ''}`}
+                      placeholder="输入邀请码以验证身份"
+                      value={form.inviteCode}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  {errors.inviteCode && <span className="form-error">{errors.inviteCode}</span>}
                 </div>
 
                 <button type="submit" className="btn btn-primary auth-submit" disabled={loading}>

@@ -9,6 +9,7 @@ import BlogListPage from './pages/BlogListPage'
 import BlogDetailPage from './pages/BlogDetailPage'
 import BlogEditorPage from './pages/BlogEditorPage'
 import ProfileEdit from './pages/ProfileEdit'
+import AdminPage from './pages/AdminPage'
 import './App.css'
 
 function HomePage() {
@@ -174,6 +175,7 @@ function App() {
       <Route path="/blogs/:id" element={<BlogDetailPage />} />
       <Route path="/blogs/:id/edit" element={<BlogEditorPage />} />
       <Route path="/profile" element={<ProfileEdit />} />
+      <Route path="/admin" element={<AdminPage />} />
     </Routes>
   )
 }

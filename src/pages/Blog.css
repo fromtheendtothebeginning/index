@@ -95,20 +95,70 @@
 }
 
 .blog-card {
-  display: block;
+  display: flex;
+  flex-direction: column;
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid var(--border-color);
   border-radius: 16px;
   padding: 24px;
-  text-decoration: none;
   transition: all 0.3s ease;
-  cursor: pointer;
+  position: relative;
 }
 
 .blog-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
   border-color: var(--accent-1);
+}
+
+.blog-card-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  cursor: pointer;
+  flex: 1;
+}
+
+/* 管理员卡片操作栏 */
+.blog-card-admin {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(0, 0, 0, 0.08);
+}
+
+.blog-card-category-select {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  background: rgba(108, 92, 231, 0.08);
+  border: 1px solid rgba(108, 92, 231, 0.25);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.blog-card-category-select:hover {
+  border-color: var(--accent-1, #6c5ce7);
+  background: rgba(108, 92, 231, 0.15);
+}
+
+.blog-card-withdraw {
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  background: rgba(231, 76, 60, 0.08);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  color: #e74c3c;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.blog-card-withdraw:hover {
+  background: rgba(231, 76, 60, 0.15);
+  border-color: #e74c3c;
 }
 
 .blog-card-body {
@@ -234,8 +284,10 @@
 
 .blog-detail-actions {
   display: flex;
+  align-items: center;
   gap: 12px;
   margin-bottom: 32px;
+  flex-wrap: wrap;
 }
 
 .btn-edit,
@@ -271,6 +323,28 @@
 }
 
 .btn-delete:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 管理员内联分类选择器 */
+.admin-category-inline {
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  background: rgba(108, 92, 231, 0.1);
+  border: 1px solid rgba(108, 92, 231, 0.3);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-category-inline:hover {
+  border-color: var(--accent-1, #6c5ce7);
+  background: rgba(108, 92, 231, 0.18);
+}
+
+.admin-category-inline:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -590,7 +664,7 @@
 .blog-filter-btn {
   background: transparent;
   border: 1px solid var(--border-color, #333);
-  color: var(--text-muted, #888);
+  color: var(--text-muted, #4a4a5e);
   padding: 6px 18px;
   border-radius: 20px;
   cursor: pointer;
@@ -629,7 +703,7 @@
   border: 1px solid var(--border-color, #333);
   border-radius: 6px;
   background: transparent;
-  color: var(--text-muted, #888);
+  color: var(--text-muted, #4a4a5e);
   cursor: pointer;
   margin-right: 10px;
   height: 40px;
@@ -692,7 +766,7 @@
 .modal-sheet p {
   margin: 0 0 24px;
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary);
   line-height: 1.5;
 }
 .modal-actions {

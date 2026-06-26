@@ -159,6 +159,15 @@ function ProfileEdit() {
 
           {saved && <div className="profile-success">&#10003; 保存成功</div>}
 
+          {user.role === 'admin' && (
+            <>
+              <hr className="profile-divider" />
+              <Link to="/admin" className="btn btn-primary profile-admin-btn">
+                进入管理后台
+              </Link>
+            </>
+          )}
+
           <hr className="profile-divider" />
 
           <button

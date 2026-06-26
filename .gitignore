@@ -4,6 +4,9 @@ node_modules/
 # 构建输出
 dist/
 
+# Vite 临时时间戳文件
+*.timestamp-*.mjs
+
 # 本地环境
 .env
 .env.local
