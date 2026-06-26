@@ -37,6 +37,7 @@ yarn-error.log*
 .eslintcache
 
 deploy.bat
+deploy-backend.bat
 
 # Python
 __pycache__/
@@ -48,3 +49,5 @@ backend/.venv/
 # 项目上下文
 context.md
 todo.md
+deploy-fresh-server.bat
+deploy-config.bat

@@ -63,9 +63,8 @@ function AuthPage() {
       localStorage.setItem('user', JSON.stringify(data.user))
       setSubmitted(true)
 
-      if (mode === 'login') {
-        setTimeout(() => navigate('/'), 1500)
-      }
+      // 注册成功后同样直接跳转首页（后端已返回 token）
+      setTimeout(() => navigate('/'), 1500)
     } catch (err) {
       setServerError('网络错误，请检查 API 服务是否启动')
     } finally {
@@ -138,16 +137,7 @@ function AuthPage() {
               <div className="auth-success">
                 <div className="success-icon">&#10003;</div>
                 <h3>{mode === 'login' ? '登录成功' : '注册成功'}</h3>
-                <p>
-                  {mode === 'login'
-                    ? '正在跳转到首页...'
-                    : '请登录你的新账户'}
-                </p>
-                {mode === 'register' && (
-                  <button className="btn btn-primary" onClick={() => { setMode('login'); setSubmitted(false) }}>
-                    前往登录
-                  </button>
-                )}
+                <p>正在跳转到首页...</p>
               </div>
             ) : (
               <form className="auth-form" onSubmit={handleSubmit} noValidate>
