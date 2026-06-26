@@ -206,11 +206,11 @@ function HomePage() {
                 <span className="contact-value">jianghuxingxzhe@icloud.com</span>
               </div>
             </a>
-            <a href="https://github.com/from_the_end_to_the_beginning" target="_blank" rel="noopener noreferrer" className="contact-item">
+            <a href="https://github.com/fromtheendtothebeginning" target="_blank" rel="noopener noreferrer" className="contact-item">
               <span className="contact-icon">⌘</span>
               <div>
                 <span className="contact-label">GitHub</span>
-                <span className="contact-value">@from_the_end_to_the_beginning</span>
+                <span className="contact-value">@fromtheendtothebeginning</span>
               </div>
             </a>
           </div>
