@@ -131,8 +131,8 @@ function BlogEditorPage() {
                 <Link to="/" className="nav-dropdown-trigger">首页<span className="arrow-down">▾</span></Link>
                 <div className="nav-dropdown-menu">
                   <Link to="/" onClick={() => setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50)}>开始</Link>
-                  <a href="/#projects">项目</a>
-                  <a href="/#contact">联系</a>
+                  <Link to="/#projects" onClick={() => setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100)}>项目</Link>
+                  <Link to="/#contact" onClick={() => setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100)}>联系</Link>
                 </div>
               </div>
             </div>
@@ -157,12 +157,11 @@ function BlogEditorPage() {
       </nav>
 
       <div className="blog-main">
-        <div className="blog-editor">
-          <div className="editor-header">
-            <Link to="/" className="blog-back-link">← 回到首页</Link>
-            <Link to="/blogs" className="blog-back-link">&larr; 返回列表</Link>
+          <div className="blog-editor">
+            <div className="editor-header">
+              <Link to="/blogs" className="blog-back-link">&larr; 返回列表</Link>
+            </div>
             <h1 className="editor-title">{isEdit ? '编辑文章' : '写文章'}</h1>
-          </div>
 
           {error && <div className="form-server-error">{error}</div>}
 

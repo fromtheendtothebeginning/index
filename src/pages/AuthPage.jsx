@@ -93,7 +93,7 @@ function AuthPage() {
             </Link>
             <h1 className="auth-brand-title">
               <span className="brand-title-en">anticraft</span>
-              <span className="brand-title-cn">逆匠</span>
+              <span className="brand-title-cn">anticraft</span>
             </h1>
             <p className="auth-brand-desc">
               以匠心为刃，破常规之笼。

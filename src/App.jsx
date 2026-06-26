@@ -65,6 +65,17 @@ function HomePage() {
     setMounted(true)
   }, [])
 
+  // 从其他页面带 hash 跳转（如 /#projects）时滚动到对应模块
+  useEffect(() => {
+    if (window.location.hash) {
+      const id = window.location.hash.slice(1)
+      const el = document.getElementById(id)
+      if (el) {
+        setTimeout(() => el.scrollIntoView({ behavior: 'smooth' }), 100)
+      }
+    }
+  }, [mounted])
+
   // 滚动到视口时触发卡片滑入动画
   useEffect(() => {
     const els = document.querySelectorAll('.scroll-reveal')
@@ -188,18 +199,18 @@ function HomePage() {
             <p className="section-desc">无论你是想合作、交流想法，还是单纯打个招呼——我们都在。</p>
           </div>
           <div className="contact-links scroll-reveal">
-            <a href="mailto:hello@anticraft.dev" className="contact-item">
+            <a href="mailto:jianghuxingxzhe@icloud.com" className="contact-item">
               <span className="contact-icon">✉</span>
               <div>
                 <span className="contact-label">邮件</span>
-                <span className="contact-value">hello@anticraft.dev</span>
+                <span className="contact-value">jianghuxingxzhe@icloud.com</span>
               </div>
             </a>
-            <a href="https://github.com/anticraft" target="_blank" rel="noopener noreferrer" className="contact-item">
+            <a href="https://github.com/from_the_end_to_the_beginning" target="_blank" rel="noopener noreferrer" className="contact-item">
               <span className="contact-icon">⌘</span>
               <div>
                 <span className="contact-label">GitHub</span>
-                <span className="contact-value">@anticraft</span>
+                <span className="contact-value">@from_the_end_to_the_beginning</span>
               </div>
             </a>
           </div>

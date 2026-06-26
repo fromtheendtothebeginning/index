@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "anticraft / 逆匠 — 首页",
+  "description": "anticraft — 首页",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

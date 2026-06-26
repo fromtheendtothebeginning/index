@@ -74,8 +74,8 @@ function BlogListPage() {
                 <Link to="/" className="nav-dropdown-trigger">首页<span className="arrow-down">▾</span></Link>
                 <div className="nav-dropdown-menu">
                   <Link to="/" onClick={() => setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50)}>开始</Link>
-                  <a href="/#projects">项目</a>
-                  <a href="/#contact">联系</a>
+                  <Link to="/#projects" onClick={() => setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100)}>项目</Link>
+                  <Link to="/#contact" onClick={() => setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100)}>联系</Link>
                 </div>
               </div>
             </div>
@@ -102,9 +102,6 @@ function BlogListPage() {
       <div className="blog-main">
         <div className="blog-header scroll-reveal">
           <div className="blog-header-content">
-            <div className="blog-breadcrumb">
-              <Link to="/" className="blog-home-link">← 回到首页</Link>
-            </div>
             <h1 className="blog-title">博客</h1>
             <p className="blog-subtitle">记录思考，分享创造</p>
           </div>
