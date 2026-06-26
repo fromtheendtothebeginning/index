@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import Navbar from '../components/Navbar'
 import './Blog.css'
 
 const API_BASE = '/api'
@@ -9,6 +10,8 @@ function BlogListPage() {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(0)
+  const [searchParams] = useSearchParams()
+  const [filterCategory, setFilterCategory] = useState(searchParams.get('category') || '')
   const limit = 12
   const [user, setUser] = useState(null)
   const navigate = useNavigate()
@@ -22,7 +25,8 @@ function BlogListPage() {
 
   useEffect(() => {
     setLoading(true)
-    fetch(`${API_BASE}/blogs?skip=${page * limit}&limit=${limit}`)
+    const cat = filterCategory ? `&category=${encodeURIComponent(filterCategory)}` : ''
+    fetch(`${API_BASE}/blogs?skip=${page * limit}&limit=${limit}${cat}`)
       .then(r => r.json())
       .then(data => {
         setBlogs(data.blogs || [])
@@ -30,7 +34,14 @@ function BlogListPage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [page])
+  }, [page, filterCategory])
+
+  // 从 URL searchParams 同步分类（导航栏下拉点击时触发）
+  useEffect(() => {
+    const cat = searchParams.get('category') || ''
+    setFilterCategory(cat)
+    setPage(0)
+  }, [searchParams])
 
   useEffect(() => {
     const els = document.querySelectorAll('.scroll-reveal')
@@ -50,54 +61,11 @@ function BlogListPage() {
     return () => obs.disconnect()
   }, [blogs])
 
-  const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    setUser(null)
-    navigate('/')
-  }
-
   const totalPages = Math.ceil(total / limit)
 
   return (
     <div className="blog-page">
-      <nav className="navbar">
-        <div className="nav-inner">
-          <Link to="/" className="nav-logo">
-            <img src="/favicon.svg" alt="anticraft" className="logo-icon" />
-            <span className="logo-text">anticraft</span>
-          </Link>
-          <div className="nav-right">
-            <div className="nav-links">
-              <Link to="/blogs" className="nav-item-active">博客</Link>
-              <div className="nav-dropdown">
-                <Link to="/" className="nav-dropdown-trigger">首页<span className="arrow-down">▾</span></Link>
-                <div className="nav-dropdown-menu">
-                  <Link to="/" onClick={() => setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50)}>开始</Link>
-                  <Link to="/#projects" onClick={() => setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100)}>项目</Link>
-                  <Link to="/#contact" onClick={() => setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100)}>联系</Link>
-                </div>
-              </div>
-            </div>
-            {user ? (
-              <div className="nav-user">
-                <Link to="/profile" className="nav-user-avatar" title="编辑资料">
-                  {user.avatar_url ? (
-                    <img src={user.avatar_url} alt="" className="nav-avatar-img" />
-                  ) : (
-                    <span className="nav-avatar-letter">
-                      {(user.nickname || user.username).charAt(0).toUpperCase()}
-                    </span>
-                  )}
-                </Link>
-                <button className="nav-logout-btn" onClick={handleLogout}>退出</button>
-              </div>
-            ) : (
-              <Link to="/login" className="nav-login-btn">登录</Link>
-            )}
-          </div>
-        </div>
-      </nav>
+      <Navbar activePage="blog" />
 
       <div className="blog-main">
         <div className="blog-header scroll-reveal">
@@ -110,6 +78,18 @@ function BlogListPage() {
               写文章
             </Link>
           )}
+        </div>
+
+        <div className="blog-filters">
+          {['', '技术讨论', '更新日志'].map(cat => (
+            <button
+              key={cat || 'all'}
+              className={`blog-filter-btn ${filterCategory === cat ? 'active' : ''}`}
+              onClick={() => { setFilterCategory(cat); setPage(0) }}
+            >
+              {cat || '全部'}
+            </button>
+          ))}
         </div>
 
         {loading ? (
@@ -125,7 +105,10 @@ function BlogListPage() {
               {blogs.map(blog => (
                 <Link to={`/blogs/${blog.id}`} key={blog.id} className="blog-card scroll-reveal">
                   <div className="blog-card-body">
-                    <h2 className="blog-card-title">{blog.title}</h2>
+                    <h2 className="blog-card-title">
+                      {blog.category && <span className="blog-card-category">{blog.category}</span>}
+                      {blog.title}
+                    </h2>
                     <div className="blog-card-meta">
                       <span className="blog-card-author">
                         {blog.author?.nickname || blog.author?.username || '匿名'}

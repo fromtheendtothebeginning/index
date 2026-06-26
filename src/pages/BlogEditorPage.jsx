@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
+import Navbar from '../components/Navbar'
 import './Blog.css'
 
 function renderMd(text) {
@@ -34,6 +35,7 @@ function BlogEditorPage() {
   const isEdit = Boolean(id)
   const textareaRef = useRef(null)
   const [title, setTitle] = useState('')
+  const [category, setCategory] = useState('')
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving] = useState(false)
@@ -55,6 +57,7 @@ function BlogEditorPage() {
       .then(r => r.json())
       .then(data => {
         setTitle(data.title)
+        setCategory(data.category || '')
         setContent(data.content_md)
       })
       .catch(() => setError('加载失败'))
@@ -96,7 +99,7 @@ function BlogEditorPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ title: title.trim(), content_md: content }),
+        body: JSON.stringify({ title: title.trim(), category: category || '', content_md: content }),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.detail || '保存失败'); return }
@@ -118,43 +121,7 @@ function BlogEditorPage() {
 
   return (
     <div className="blog-page">
-      <nav className="navbar">
-        <div className="nav-inner">
-          <Link to="/" className="nav-logo">
-            <img src="/favicon.svg" alt="anticraft" className="logo-icon" />
-            <span className="logo-text">anticraft</span>
-          </Link>
-          <div className="nav-right">
-            <div className="nav-links">
-              <Link to="/blogs" className="nav-item-active">博客</Link>
-              <div className="nav-dropdown">
-                <Link to="/" className="nav-dropdown-trigger">首页<span className="arrow-down">▾</span></Link>
-                <div className="nav-dropdown-menu">
-                  <Link to="/" onClick={() => setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50)}>开始</Link>
-                  <Link to="/#projects" onClick={() => setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100)}>项目</Link>
-                  <Link to="/#contact" onClick={() => setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100)}>联系</Link>
-                </div>
-              </div>
-            </div>
-            {user ? (
-              <div className="nav-user">
-                <Link to="/profile" className="nav-user-avatar" title="编辑资料">
-                  {user.avatar_url ? (
-                    <img src={user.avatar_url} alt="" className="nav-avatar-img" />
-                  ) : (
-                    <span className="nav-avatar-letter">
-                      {(user.nickname || user.username).charAt(0).toUpperCase()}
-                    </span>
-                  )}
-                </Link>
-                <button className="nav-logout-btn" onClick={() => { localStorage.removeItem('token'); localStorage.removeItem('user'); setUser(null); navigate('/'); }}>退出</button>
-              </div>
-            ) : (
-              <Link to="/login" className="nav-login-btn">登录</Link>
-            )}
-          </div>
-        </div>
-      </nav>
+      <Navbar activePage="blog" />
 
       <div className="blog-main">
           <div className="blog-editor">
@@ -202,6 +169,14 @@ function BlogEditorPage() {
           </div>
 
           <div className="editor-actions">
+            <div className="nav-dropdown">
+              <button className="category-btn">{category || '无'} <span className="arrow-down">▾</span></button>
+              <div className="nav-dropdown-menu">
+                <a href="#" onClick={e => { e.preventDefault(); setCategory(''); }}>无</a>
+                <a href="#" onClick={e => { e.preventDefault(); setCategory('技术讨论'); }}>技术讨论</a>
+                <a href="#" onClick={e => { e.preventDefault(); setCategory('更新日志'); }}>更新日志</a>
+              </div>
+            </div>
             <button
               className="btn btn-primary"
               onClick={handleSave}

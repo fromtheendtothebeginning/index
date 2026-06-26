@@ -135,6 +135,19 @@ function ProfileEdit() {
           </button>
 
           {saved && <div className="profile-success">&#10003; 保存成功</div>}
+
+          <hr className="profile-divider" />
+
+          <button
+            className="btn btn-danger profile-logout-btn"
+            onClick={() => {
+              localStorage.removeItem('token')
+              localStorage.removeItem('user')
+              navigate('/')
+            }}
+          >
+            退出登录
+          </button>
         </div>
       </div>
     </div>

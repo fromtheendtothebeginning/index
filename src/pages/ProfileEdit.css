@@ -234,3 +234,25 @@
     text-align: center;
   }
 }
+
+/* ---- 退出按钮 ---- */
+.profile-divider {
+  border: none;
+  border-top: 1px solid var(--border-color, #333);
+  margin: 28px 0 20px;
+}
+.profile-logout-btn {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid #e74c3c;
+  background: transparent;
+  color: #e74c3c;
+  transition: all 0.2s;
+}
+.profile-logout-btn:hover {
+  background: #e74c3c;
+  color: #fff;
+}

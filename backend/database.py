@@ -6,7 +6,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 # 指定 .env 路径为 backend/.env（与当前文件同目录）
-_dotenv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+_local_dotenv = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+_root_dotenv = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".env")
+_dotenv_path = _local_dotenv if os.path.exists(_local_dotenv) else _root_dotenv
 load_dotenv(dotenv_path=_dotenv_path)
 
 # ============================================

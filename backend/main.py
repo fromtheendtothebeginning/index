@@ -1,5 +1,7 @@
 # main.py — FastAPI 应用入口
 
+from typing import Optional
+
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
@@ -174,11 +176,14 @@ def get_current_user_obj(token: str = Depends(oauth2_scheme), db: Session = Depe
 
 
 @app.get("/api/blogs", response_model=BlogListResponse, tags=["博客"])
-def list_blogs(skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
-    """获取博客列表（按更新时间倒序）"""
-    total = db.query(Blog).count()
+def list_blogs(skip: int = 0, limit: int = 20, category: Optional[str] = None, db: Session = Depends(get_db)):
+    """获取博客列表（按更新时间倒序，可按分类筛选）"""
+    query = db.query(Blog)
+    if category:
+        query = query.filter(Blog.category == category)
+    total = query.count()
     blogs = (
-        db.query(Blog)
+        query
         .options(joinedload(Blog.author))
         .order_by(Blog.updated_at.desc())
         .offset(skip)
@@ -206,6 +211,7 @@ def create_blog(
     """创建博客文章（需登录）"""
     blog = Blog(
         title=req.title,
+        category=req.category,
         content_md=req.content_md,
         author_id=current_user.id,
     )
@@ -233,6 +239,8 @@ def update_blog(
 
     if req.title is not None:
         blog.title = req.title
+    if req.category is not None:
+        blog.category = req.category
     if req.content_md is not None:
         blog.content_md = req.content_md
 

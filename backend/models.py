@@ -30,6 +30,7 @@ class Blog(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     title = Column(String(200), nullable=False, comment="文章标题")
+    category = Column(String(50), nullable=True, comment="分类：技术讨论 / 更新日志")
     content_md = Column(Text, nullable=False, comment="Markdown 内容")
     author_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), comment="发布时间")

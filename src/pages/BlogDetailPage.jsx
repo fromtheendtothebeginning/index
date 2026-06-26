@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
+import Navbar from '../components/Navbar'
 import './Blog.css'
 
 function renderMd(text) {
@@ -36,6 +37,7 @@ function BlogDetailPage() {
   const [error, setError] = useState('')
   const [user, setUser] = useState(null)
   const [deleting, setDeleting] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   useEffect(() => {
     const raw = localStorage.getItem('user')
@@ -57,7 +59,6 @@ function BlogDetailPage() {
   }, [id])
 
   const handleDelete = async () => {
-    if (!window.confirm('确定删除这篇博客？')) return
     const token = localStorage.getItem('token')
     setDeleting(true)
     try {
@@ -103,43 +104,7 @@ function BlogDetailPage() {
 
   return (
     <div className="blog-page">
-      <nav className="navbar">
-        <div className="nav-inner">
-          <Link to="/" className="nav-logo">
-            <img src="/favicon.svg" alt="anticraft" className="logo-icon" />
-            <span className="logo-text">anticraft</span>
-          </Link>
-          <div className="nav-right">
-            <div className="nav-links">
-              <Link to="/blogs" className="nav-item-active">博客</Link>
-              <div className="nav-dropdown">
-                <Link to="/" className="nav-dropdown-trigger">首页<span className="arrow-down">▾</span></Link>
-                <div className="nav-dropdown-menu">
-                  <Link to="/" onClick={() => setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50)}>开始</Link>
-                  <Link to="/#projects" onClick={() => setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100)}>项目</Link>
-                  <Link to="/#contact" onClick={() => setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100)}>联系</Link>
-                </div>
-              </div>
-            </div>
-            {user ? (
-              <div className="nav-user">
-                <Link to="/profile" className="nav-user-avatar" title="编辑资料">
-                  {user.avatar_url ? (
-                    <img src={user.avatar_url} alt="" className="nav-avatar-img" />
-                  ) : (
-                    <span className="nav-avatar-letter">
-                      {(user.nickname || user.username).charAt(0).toUpperCase()}
-                    </span>
-                  )}
-                </Link>
-                <button className="nav-logout-btn" onClick={() => { localStorage.removeItem('token'); localStorage.removeItem('user'); setUser(null); navigate('/'); }}>退出</button>
-              </div>
-            ) : (
-              <Link to="/login" className="nav-login-btn">登录</Link>
-            )}
-          </div>
-        </div>
-      </nav>
+      <Navbar activePage="blog" />
 
       <div className="blog-main">
         <div className="blog-detail">
@@ -147,7 +112,10 @@ function BlogDetailPage() {
             <Link to="/blogs" className="blog-back-link">&larr; 返回列表</Link>
           </div>
 
-          <h1 className="blog-detail-title">{blog.title}</h1>
+          <h1 className="blog-detail-title">
+            {blog.category && <span className="blog-card-category">{blog.category}</span>}
+            {blog.title}
+          </h1>
           <div className="blog-detail-meta">
             <span className="blog-detail-author">
               作者：{blog.author?.nickname || blog.author?.username || '匿名'}
@@ -162,7 +130,7 @@ function BlogDetailPage() {
           {isAuthor && (
             <div className="blog-detail-actions">
               <Link to={`/blogs/${blog.id}/edit`} className="btn-edit">编辑</Link>
-              <button className="btn-delete" onClick={handleDelete} disabled={deleting}>
+              <button className="btn-delete" onClick={() => setShowDeleteModal(true)} disabled={deleting}>
                 {deleting ? '删除中...' : '删除'}
               </button>
             </div>
@@ -174,6 +142,21 @@ function BlogDetailPage() {
           />
         </div>
       </div>
+
+      {showDeleteModal && (
+        <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
+          <div className="modal-sheet" onClick={e => e.stopPropagation()}>
+            <h3>确认删除</h3>
+            <p>这篇博客将被永久删除，无法恢复。确定继续吗？</p>
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={() => setShowDeleteModal(false)}>取消</button>
+              <button className="btn btn-danger" onClick={handleDelete} disabled={deleting}>
+                {deleting ? '删除中...' : '确认删除'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

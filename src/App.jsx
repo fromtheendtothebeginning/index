@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Routes, Route, Link, useNavigate } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
+import Navbar from './components/Navbar'
 import AuthPage from './pages/AuthPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
@@ -9,54 +10,6 @@ import BlogDetailPage from './pages/BlogDetailPage'
 import BlogEditorPage from './pages/BlogEditorPage'
 import ProfileEdit from './pages/ProfileEdit'
 import './App.css'
-
-function NavbarUser() {
-  const [user, setUser] = useState(null)
-  const navigate = useNavigate()
-
-  useEffect(() => {
-    const sync = () => {
-      const raw = localStorage.getItem('user')
-      if (raw) {
-        try { setUser(JSON.parse(raw)) } catch { setUser(null) }
-      } else {
-        setUser(null)
-      }
-    }
-    sync()
-    window.addEventListener('storage', sync)
-    return () => window.removeEventListener('storage', sync)
-  }, [])
-
-  const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    setUser(null)
-    navigate('/')
-  }
-
-  const getInitial = (name) => (name ? name.charAt(0).toUpperCase() : '?')
-
-  if (user) {
-    return (
-      <div className="nav-user">
-        <Link to="/profile" className="nav-user-avatar" title="编辑资料">
-          {user.avatar_url ? (
-            <img src={user.avatar_url} alt="" className="nav-avatar-img" />
-          ) : (
-            <span className="nav-avatar-letter">
-              {getInitial(user.nickname || user.username)}
-            </span>
-          )}
-        </Link>
-        <span className="nav-user-name">{user.nickname || user.username}</span>
-        <button className="nav-logout-btn" onClick={handleLogout}>退出</button>
-      </div>
-    )
-  }
-
-  return <Link to="/login" className="nav-login-btn">登录</Link>
-}
 
 function HomePage() {
   const [mounted, setMounted] = useState(false)
@@ -105,28 +58,7 @@ function HomePage() {
       <div className="bg-glow glow-3" />
 
       {/* 导航 */}
-      <nav className="navbar">
-        <div className="nav-inner">
-          <Link to="/" className="nav-logo">
-            <img src="/favicon.svg" alt="anticraft" className="logo-icon" />
-            <span className="logo-text">anticraft</span>
-          </Link>
-          <div className="nav-right">
-            <div className="nav-links">
-              <Link to="/blogs">博客</Link>
-              <div className="nav-dropdown">
-                <Link to="/" className="nav-dropdown-trigger nav-item-active">首页<span className="arrow-down">▾</span></Link>
-                <div className="nav-dropdown-menu">
-                  <a href="#hero" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>开始</a>
-                  <a href="#projects">项目</a>
-                  <a href="#contact">联系</a>
-                </div>
-              </div>
-            </div>
-            <NavbarUser />
-          </div>
-        </div>
-      </nav>
+      <Navbar activePage="home" />
 
       <section className="hero">
         <div className="hero-content">

@@ -54,11 +54,13 @@ class MessageResponse(BaseModel):
 
 class CreateBlogRequest(BaseModel):
     title: str = Field(..., min_length=1, max_length=200, description="文章标题")
+    category: Optional[str] = Field(None, max_length=50, description="分类：技术讨论 / 更新日志")
     content_md: str = Field(..., min_length=1, max_length=65535, description="Markdown 内容")
 
 
 class UpdateBlogRequest(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=200, description="文章标题")
+    category: Optional[str] = Field(None, max_length=50, description="分类：技术讨论 / 更新日志")
     content_md: Optional[str] = Field(None, min_length=1, max_length=65535, description="Markdown 内容")
 
 
@@ -75,6 +77,7 @@ class BlogAuthorResponse(BaseModel):
 class BlogResponse(BaseModel):
     id: int
     title: str
+    category: Optional[str] = None
     content_md: str
     author_id: int
     author: Optional[BlogAuthorResponse] = None
@@ -87,6 +90,7 @@ class BlogResponse(BaseModel):
 class BlogListItem(BaseModel):
     id: int
     title: str
+    category: Optional[str] = None
     author_id: int
     author: Optional[BlogAuthorResponse] = None
     created_at: datetime
