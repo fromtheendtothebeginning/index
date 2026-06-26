@@ -1,33 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import { renderMd } from '../utils/markdown'
 import './Blog.css'
-
-function renderMd(text) {
-  if (!text) return ''
-  let html = text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code class="lang-$1">$2</code></pre>')
-  html = html.replace(/`([^`]+)`/g, '<code>$1</code>')
-  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" loading="lazy" />')
-  html = html.replace(/(?<!!)\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
-  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>')
-  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>')
-  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>')
-  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>')
-  html = html.replace(/^- (.+)$/gm, '<li>$1</li>')
-  html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
-  html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
-  html = html.replace(/\n\n/g, '</p><p>')
-  html = '<p>' + html + '</p>'
-  html = html.replace(/<p><\/p>/g, '')
-  html = html.replace(/<\/?p>(<ul>|<\/ul>|<pre>|<\/pre>|<h[1-3]>|<\/h[1-3]>)/g, '$1')
-  html = html.replace(/(<ul>|<\/ul>|<pre>|<\/pre>|<h[1-3]>|<\/h[1-3]>)<\/?p>/g, '$1')
-  return html
-}
 
 function BlogDetailPage() {
   const { id } = useParams()
@@ -39,6 +14,14 @@ function BlogDetailPage() {
   const [deleting, setDeleting] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
 
+  // 点赞 / 评论相关状态
+  const [likePending, setLikePending] = useState(false)
+  const [comments, setComments] = useState([])
+  const [commentsLoading, setCommentsLoading] = useState(false)
+  const [commentText, setCommentText] = useState('')
+  const [commentPosting, setCommentPosting] = useState(false)
+  const [commentError, setCommentError] = useState('')
+
   useEffect(() => {
     const raw = localStorage.getItem('user')
     if (raw) {
@@ -48,7 +31,10 @@ function BlogDetailPage() {
 
   useEffect(() => {
     setLoading(true)
-    fetch(`/api/blogs/${id}`)
+    const token = localStorage.getItem('token')
+    fetch(`/api/blogs/${id}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
       .then(r => {
         if (!r.ok) throw new Error('博客不存在')
         return r.json()
@@ -56,6 +42,17 @@ function BlogDetailPage() {
       .then(data => setBlog(data))
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
+  }, [id])
+
+  // 加载评论列表
+  useEffect(() => {
+    if (!id) return
+    setCommentsLoading(true)
+    fetch(`/api/blogs/${id}/comments`)
+      .then(r => r.json())
+      .then(data => setComments(data.comments || []))
+      .catch(() => {})
+      .finally(() => setCommentsLoading(false))
   }, [id])
 
   const handleDelete = async () => {
@@ -76,6 +73,102 @@ function BlogDetailPage() {
       alert('网络错误')
     } finally {
       setDeleting(false)
+    }
+  }
+
+  const handleToggleLike = async () => {
+    if (!user) {
+      navigate('/login')
+      return
+    }
+    if (likePending || !blog) return
+    const token = localStorage.getItem('token')
+    setLikePending(true)
+    // 乐观更新
+    const prevLiked = blog.liked_by_me
+    const prevCount = blog.like_count
+    setBlog({
+      ...blog,
+      liked_by_me: !prevLiked,
+      like_count: prevLiked ? prevCount - 1 : prevCount + 1,
+    })
+    try {
+      const res = await fetch(`/api/blogs/${id}/like`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) {
+        // 回滚
+        setBlog({ ...blog, liked_by_me: prevLiked, like_count: prevCount })
+        const data = await res.json().catch(() => ({}))
+        alert(data.detail || '操作失败')
+        return
+      }
+      const data = await res.json()
+      setBlog(b => b ? { ...b, liked_by_me: data.liked, like_count: data.like_count } : b)
+    } catch {
+      setBlog({ ...blog, liked_by_me: prevLiked, like_count: prevCount })
+      alert('网络错误')
+    } finally {
+      setLikePending(false)
+    }
+  }
+
+  const handlePostComment = async (e) => {
+    e.preventDefault()
+    const text = commentText.trim()
+    if (!text) {
+      setCommentError('评论内容不能为空')
+      return
+    }
+    if (!user) {
+      navigate('/login')
+      return
+    }
+    const token = localStorage.getItem('token')
+    setCommentPosting(true)
+    setCommentError('')
+    try {
+      const res = await fetch(`/api/blogs/${id}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ content: text }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setCommentError(data.detail || '发表失败')
+        return
+      }
+      setComments(prev => [...prev, data])
+      setCommentText('')
+      setBlog(b => b ? { ...b, comment_count: b.comment_count + 1 } : b)
+    } catch {
+      setCommentError('网络错误')
+    } finally {
+      setCommentPosting(false)
+    }
+  }
+
+  const handleDeleteComment = async (commentId) => {
+    if (!window.confirm('确认删除这条评论？')) return
+    const token = localStorage.getItem('token')
+    try {
+      const res = await fetch(`/api/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        alert(data.detail || '删除失败')
+        return
+      }
+      setComments(prev => prev.filter(c => c.id !== commentId))
+      setBlog(b => b ? { ...b, comment_count: Math.max(0, b.comment_count - 1) } : b)
+    } catch {
+      alert('网络错误')
     }
   }
 
@@ -140,6 +233,96 @@ function BlogDetailPage() {
             className="blog-content markdown-body"
             dangerouslySetInnerHTML={{ __html: renderMd(blog.content_md) }}
           />
+
+          {/* 互动栏：点赞 + 评论数 */}
+          <div className="blog-interaction">
+            <button
+              className={`like-btn ${blog.liked_by_me ? 'liked' : ''}`}
+              onClick={handleToggleLike}
+              disabled={likePending}
+              aria-label="点赞"
+            >
+              <span className="like-icon">{blog.liked_by_me ? '♥' : '♡'}</span>
+              <span className="like-count">{blog.like_count || 0}</span>
+            </button>
+            <a href="#comments" className="comment-count-link">
+              <span className="comment-icon">💬</span>
+              <span>{blog.comment_count || 0} 条评论</span>
+            </a>
+          </div>
+
+          {/* 评论区 */}
+          <section id="comments" className="comments-section">
+            <h3 className="comments-title">评论 {comments.length > 0 && <span className="comments-count">({comments.length})</span>}</h3>
+
+            {user ? (
+              <form className="comment-form" onSubmit={handlePostComment}>
+                <textarea
+                  className="comment-input"
+                  placeholder="写下你的评论..."
+                  value={commentText}
+                  onChange={e => setCommentText(e.target.value)}
+                  rows={3}
+                  maxLength={2000}
+                />
+                {commentError && <div className="form-server-error">{commentError}</div>}
+                <div className="comment-form-actions">
+                  <button type="submit" className="btn btn-primary" disabled={commentPosting}>
+                    {commentPosting ? '发表中...' : '发表评论'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="comment-login-hint">
+                <Link to="/login">登录</Link> 后参与评论
+              </div>
+            )}
+
+            <div className="comments-list">
+              {commentsLoading ? (
+                <div className="comments-empty">加载评论中...</div>
+              ) : comments.length === 0 ? (
+                <div className="comments-empty">还没有评论，来说点什么吧</div>
+              ) : (
+                comments.map(c => (
+                  <div key={c.id} className="comment-item">
+                    <div className="comment-avatar">
+                      {c.user?.avatar_url ? (
+                        <img src={c.user.avatar_url} alt="" className="comment-avatar-img" />
+                      ) : (
+                        <span className="comment-avatar-letter">
+                          {(c.user?.nickname || c.user?.username || '?').charAt(0).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <div className="comment-body">
+                      <div className="comment-header">
+                        <span className="comment-author">
+                          {c.user?.nickname || c.user?.username || '匿名'}
+                        </span>
+                        <span className="comment-time">
+                          {new Date(c.created_at).toLocaleString('zh-CN', {
+                            year: 'numeric', month: '2-digit', day: '2-digit',
+                            hour: '2-digit', minute: '2-digit'
+                          })}
+                        </span>
+                      </div>
+                      <div className="comment-content">{c.content}</div>
+                    </div>
+                    {user && user.id === c.user_id && (
+                      <button
+                        className="comment-delete-btn"
+                        onClick={() => handleDeleteComment(c.id)}
+                        title="删除"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
         </div>
       </div>
 

@@ -1,33 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import { renderMd } from '../utils/markdown'
 import './Blog.css'
-
-function renderMd(text) {
-  if (!text) return ''
-  let html = text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code class="lang-$1">$2</code></pre>')
-  html = html.replace(/`([^`]+)`/g, '<code>$1</code>')
-  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" loading="lazy" />')
-  html = html.replace(/(?<!!)\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
-  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>')
-  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>')
-  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>')
-  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>')
-  html = html.replace(/^- (.+)$/gm, '<li>$1</li>')
-  html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
-  html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
-  html = html.replace(/\n\n/g, '</p><p>')
-  html = '<p>' + html + '</p>'
-  html = html.replace(/<p><\/p>/g, '')
-  html = html.replace(/<\/?p>(<ul>|<\/ul>|<pre>|<\/pre>|<h[1-3]>|<\/h[1-3]>)/g, '$1')
-  html = html.replace(/(<ul>|<\/ul>|<pre>|<\/pre>|<h[1-3]>|<\/h[1-3]>)<\/?p>/g, '$1')
-  return html
-}
 
 function BlogEditorPage() {
   const { id } = useParams()
@@ -175,6 +150,7 @@ function BlogEditorPage() {
                 <a href="#" onClick={e => { e.preventDefault(); setCategory(''); }}>无</a>
                 <a href="#" onClick={e => { e.preventDefault(); setCategory('技术讨论'); }}>技术讨论</a>
                 <a href="#" onClick={e => { e.preventDefault(); setCategory('更新日志'); }}>更新日志</a>
+                <a href="#" onClick={e => { e.preventDefault(); setCategory('娱乐论坛'); }}>娱乐论坛</a>
               </div>
             </div>
             <button

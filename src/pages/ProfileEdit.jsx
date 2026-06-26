@@ -20,10 +20,33 @@ function ProfileEdit() {
       navigate('/auth')
       return
     }
-    const u = JSON.parse(userStr)
-    setUser(u)
-    setNickname(u.nickname || '')
-    setAvatarUrl(u.avatar_url || '')
+    // 校验账户是否仍在数据库中存在，不存在则退出登录
+    fetch('/api/user/me', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => {
+        if (r.status === 401 || r.status === 404) {
+          localStorage.removeItem('token')
+          localStorage.removeItem('user')
+          navigate('/auth')
+          return null
+        }
+        return r.ok ? r.json() : null
+      })
+      .then(data => {
+        if (!data) return
+        localStorage.setItem('user', JSON.stringify(data))
+        setUser(data)
+        setNickname(data.nickname || '')
+        setAvatarUrl(data.avatar_url || '')
+      })
+      .catch(() => {
+        // 网络错误时回退到 localStorage
+        const u = JSON.parse(userStr)
+        setUser(u)
+        setNickname(u.nickname || '')
+        setAvatarUrl(u.avatar_url || '')
+      })
   }, [navigate])
 
   const getInitial = (name) => {

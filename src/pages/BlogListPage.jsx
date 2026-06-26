@@ -81,7 +81,7 @@ function BlogListPage() {
         </div>
 
         <div className="blog-filters">
-          {['', '技术讨论', '更新日志'].map(cat => (
+          {['', '技术讨论', '更新日志', '娱乐论坛'].map(cat => (
             <button
               key={cat || 'all'}
               className={`blog-filter-btn ${filterCategory === cat ? 'active' : ''}`}
@@ -115,6 +115,10 @@ function BlogListPage() {
                       </span>
                       <span className="blog-card-date">
                         {new Date(blog.created_at).toLocaleDateString('zh-CN')}
+                      </span>
+                      <span className="blog-card-stats">
+                        <span className="blog-card-stat" title="点赞数">♥ {blog.like_count || 0}</span>
+                        <span className="blog-card-stat" title="评论数">💬 {blog.comment_count || 0}</span>
                       </span>
                     </div>
                   </div>

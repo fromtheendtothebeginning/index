@@ -20,6 +20,41 @@ function Navbar({ activePage }) {
     return () => window.removeEventListener('storage', sync)
   }, [])
 
+  // 校验当前登录用户的账户是否仍在数据库中存在
+  // 若后端返回 401/404（账户已被删除），则清除本地登录态并刷新
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    const storedUser = localStorage.getItem('user')
+    if (!token || !storedUser) return
+    let cancelled = false
+    fetch('/api/user/me', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => {
+        if (cancelled) return null
+        if (r.status === 401 || r.status === 404) {
+          // 账户不存在或令牌无效 —— 退出登录
+          localStorage.removeItem('token')
+          localStorage.removeItem('user')
+          setUser(null)
+          // 触发 storage 事件以同步其他组件
+          window.dispatchEvent(new StorageEvent('storage', { key: 'user' }))
+          return null
+        }
+        return r.ok ? r.json() : null
+      })
+      .then(data => {
+        if (cancelled || !data) return
+        // 同步最新用户信息
+        localStorage.setItem('user', JSON.stringify(data))
+        setUser(data)
+      })
+      .catch(() => {
+        // 网络错误时静默处理，不打扰用户
+      })
+    return () => { cancelled = true }
+  }, [])
+
   const scrollToSection = (id) => {
     if (window.location.pathname !== '/') {
       navigate('/')
@@ -56,6 +91,7 @@ function Navbar({ activePage }) {
                 <Link to="/blogs">全部</Link>
                 <Link to="/blogs?category=技术讨论">技术讨论</Link>
                 <Link to="/blogs?category=更新日志">更新日志</Link>
+                <Link to="/blogs?category=娱乐论坛">娱乐论坛</Link>
               </div>
             </div>
             {/* 首页下拉 */}

@@ -141,6 +141,18 @@
   font-weight: 500;
 }
 
+.blog-card-stats {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.blog-card-stat {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
 .blog-pagination {
   display: flex;
   align-items: center;
@@ -347,6 +359,58 @@
   color: var(--text-secondary);
   margin: 16px 0;
   font-style: italic;
+}
+
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  font-weight: 600;
+  margin: 24px 0 12px;
+  letter-spacing: -0.01em;
+  font-size: 17px;
+}
+
+.markdown-body h4 { font-size: 18px; }
+.markdown-body h5 { font-size: 16px; }
+.markdown-body h6 { font-size: 15px; color: var(--text-muted); }
+
+.markdown-body del {
+  color: var(--text-muted);
+}
+
+.markdown-body hr {
+  border: none;
+  border-top: 1px solid var(--border-color);
+  margin: 32px 0;
+}
+
+.markdown-body ol {
+  margin-bottom: 16px;
+  padding-left: 24px;
+  list-style: decimal;
+}
+
+.markdown-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 14px;
+}
+
+.markdown-body table th,
+.markdown-body table td {
+  border: 1px solid var(--border-color);
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.markdown-body table th {
+  background: rgba(108, 92, 231, 0.06);
+  font-weight: 600;
+}
+
+.markdown-body table tr:nth-child(even) td {
+  background: rgba(0, 0, 0, 0.02);
 }
 
 /* ---------- 编辑器 ---------- */
@@ -671,4 +735,266 @@
 @keyframes fadeIn {
   from { opacity: 0; }
   to   { opacity: 1; }
+}
+
+/* ============================================
+   互动栏 / 点赞 / 评论
+   ============================================ */
+
+.blog-interaction {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-top: 40px;
+  padding: 20px 0;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.like-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border: 1px solid var(--border-color);
+  border-radius: 24px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.like-btn:hover:not(:disabled) {
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+
+.like-btn.liked {
+  background: rgba(231, 76, 60, 0.08);
+  border-color: rgba(231, 76, 60, 0.4);
+  color: #e74c3c;
+}
+
+.like-btn .like-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.like-btn .like-count {
+  font-weight: 600;
+  min-width: 16px;
+  text-align: center;
+}
+
+.like-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.comment-count-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.comment-count-link:hover {
+  color: var(--accent-1);
+}
+
+/* ---------- 评论区 ---------- */
+.comments-section {
+  margin-top: 40px;
+}
+
+.comments-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: var(--text-primary);
+}
+
+.comments-count {
+  font-size: 14px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.comment-form {
+  margin-bottom: 32px;
+}
+
+.comment-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+  min-height: 80px;
+}
+
+.comment-input:focus {
+  border-color: var(--accent-1);
+  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+}
+
+.comment-input::placeholder {
+  color: var(--text-muted);
+}
+
+.comment-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.comment-login-hint {
+  padding: 16px 20px;
+  background: rgba(108, 92, 231, 0.04);
+  border: 1px dashed var(--border-color);
+  border-radius: 12px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.comment-login-hint a {
+  color: var(--accent-1);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.comments-empty {
+  text-align: center;
+  padding: 40px 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.comment-item {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  position: relative;
+  transition: background 0.2s;
+}
+
+.comment-item:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.comment-avatar {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(108, 92, 231, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comment-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.comment-avatar-letter {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent-1);
+}
+
+.comment-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.comment-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.comment-author {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.comment-time {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.comment-content {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.comment-delete-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 50%;
+  opacity: 0;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comment-item:hover .comment-delete-btn {
+  opacity: 1;
+}
+
+.comment-delete-btn:hover {
+  background: rgba(231, 76, 60, 0.1);
+  color: #e74c3c;
+}
+
+@media (max-width: 768px) {
+  .blog-interaction {
+    gap: 16px;
+  }
+  .comment-delete-btn {
+    opacity: 1;
+  }
 }

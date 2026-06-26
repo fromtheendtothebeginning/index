@@ -54,13 +54,13 @@ class MessageResponse(BaseModel):
 
 class CreateBlogRequest(BaseModel):
     title: str = Field(..., min_length=1, max_length=200, description="文章标题")
-    category: Optional[str] = Field(None, max_length=50, description="分类：技术讨论 / 更新日志")
+    category: Optional[str] = Field(None, max_length=50, description="分类：技术讨论 / 更新日志 / 娱乐论坛")
     content_md: str = Field(..., min_length=1, max_length=65535, description="Markdown 内容")
 
 
 class UpdateBlogRequest(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=200, description="文章标题")
-    category: Optional[str] = Field(None, max_length=50, description="分类：技术讨论 / 更新日志")
+    category: Optional[str] = Field(None, max_length=50, description="分类：技术讨论 / 更新日志 / 娱乐论坛")
     content_md: Optional[str] = Field(None, min_length=1, max_length=65535, description="Markdown 内容")
 
 
@@ -81,6 +81,9 @@ class BlogResponse(BaseModel):
     content_md: str
     author_id: int
     author: Optional[BlogAuthorResponse] = None
+    like_count: int = 0
+    comment_count: int = 0
+    liked_by_me: bool = False
     created_at: datetime
     updated_at: datetime
 
@@ -93,6 +96,8 @@ class BlogListItem(BaseModel):
     category: Optional[str] = None
     author_id: int
     author: Optional[BlogAuthorResponse] = None
+    like_count: int = 0
+    comment_count: int = 0
     created_at: datetime
     updated_at: datetime
 
@@ -102,3 +107,42 @@ class BlogListItem(BaseModel):
 class BlogListResponse(BaseModel):
     total: int
     blogs: list[BlogListItem]
+
+
+# ── 点赞 ──
+
+class LikeToggleResponse(BaseModel):
+    liked: bool
+    like_count: int
+
+
+# ── 评论 ──
+
+class CommentUserResponse(BaseModel):
+    id: int
+    username: str
+    nickname: Optional[str] = None
+    avatar_url: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
+class CommentResponse(BaseModel):
+    id: int
+    blog_id: int
+    user_id: int
+    content: str
+    created_at: datetime
+    updated_at: datetime
+    user: Optional[CommentUserResponse] = None
+
+    model_config = {"from_attributes": True}
+
+
+class CommentListResponse(BaseModel):
+    total: int
+    comments: list[CommentResponse]
+
+
+class CreateCommentRequest(BaseModel):
+    content: str = Field(..., min_length=1, max_length=2000, description="评论内容")
