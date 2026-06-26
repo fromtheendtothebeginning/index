@@ -1,8 +1,8 @@
-# anticraft · 逆匠
+# anticraft
 
 > 以匠心为刃，破常规之笼。
 
-**anticraft**（中文名：**逆匠**）是一个全栈品牌落地页项目，包含品牌展示首页与用户认证系统。并非反对匠心，而是拒绝被定义的匠心——在秩序中寻找裂痕，在裂痕中创造可能。
+**anticraft** 是一个全栈博客系统，包含品牌首页展示、用户认证、博客文章管理等功能。暗色主题设计，支持分类筛选。
 
 ---
 
@@ -11,9 +11,9 @@
 | 层 | 技术 | 说明 |
 |---|------|------|
 | **前端** | React 18 + Vite 5 | 纯 CSS 暗色主题动画页面 |
-| **前端路由** | react-router-dom | 首页 `/` + 认证页 `/auth` |
+| **前端路由** | react-router-dom v7 | SPA 路由，博客详情/编辑等 |
 | **后端** | Python FastAPI | RESTful API 服务 |
-| **数据库** | MySQL 8.4 | 用户数据持久化 |
+| **数据库** | MySQL 8.4 | 用户与博客数据持久化 |
 | **认证** | JWT + bcrypt | 密码 SHA-256 预哈希后 bcrypt 加密 |
 
 ---
@@ -54,7 +54,7 @@ mysql -u root -p -e "CREATE DATABASE anticraft CHARACTER SET utf8mb4 COLLATE utf
 
 ### 4. 配置环境变量
 
-复制项目根目录的 `.env` 文件，修改 `DB_PASSWORD` 为你的 MySQL 密码：
+编辑项目根目录的 `.env` 文件：
 
 ```env
 DB_USER=root
@@ -62,6 +62,7 @@ DB_PASSWORD=你的数据库密码
 DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_NAME=anticraft
+SECRET_KEY=随机长字符串用于JWT加密
 ```
 
 ### 5. 启动
@@ -87,6 +88,7 @@ npm run dev
 | 页面 | 地址 |
 |------|------|
 | 首页 | http://localhost:3000 |
+| 博客列表 | http://localhost:3000/blogs |
 | 登录/注册 | http://localhost:3000/auth |
 | API 文档 | http://127.0.0.1:8000/docs |
 | 健康检查 | http://127.0.0.1:8000/api/health |
@@ -102,31 +104,47 @@ anticraft/
 ├── package.json             # npm 项目配置
 ├── vite.config.js           # Vite 配置 + /api 代理
 ├── index.html               # 入口 HTML
+├── anticraft.nginx.conf     # Nginx 配置模板（部署用）
 │
 ├── backend/                 # Python FastAPI 后端
 │   ├── .venv/               # Python 虚拟环境
 │   ├── requirements.txt     # Python 依赖
-│   ├── main.py              # FastAPI 应用入口 & API 路由
+│   ├── main.py              # FastAPI 应用入口 & 所有 API 路由
 │   ├── database.py          # MySQL 连接 & 会话管理
-│   ├── models.py            # SQLAlchemy User 模型
+│   ├── models.py            # SQLAlchemy 模型（User, Blog）
 │   ├── schemas.py           # Pydantic 请求/响应模型
 │   └── auth.py              # 密码加密 + JWT 令牌
-│
-├── public/
-│   └── favicon.svg
 │
 ├── src/                     # React 前端
 │   ├── main.jsx             # React 入口（BrowserRouter）
 │   ├── App.jsx              # 路由 & 首页组件
-│   ├── App.css              # 首页样式（~700 行）
+│   ├── App.css              # 首页样式
 │   ├── index.css            # 全局变量 & 基础样式
+│   ├── components/
+│   │   └── Navbar.jsx       # 共享导航栏组件
 │   └── pages/
-│       ├── AuthPage.jsx     # 登录/注册页面
-│       └── Auth.css         # 认证页面样式
+│       ├── AuthPage.jsx     # 登录/注册（双栏合一）
+│       ├── LoginPage.jsx    # 独立登录页
+│       ├── RegisterPage.jsx # 独立注册页
+│       ├── ResetPasswordPage.jsx
+│       ├── BlogListPage.jsx # 博客列表（含分类筛选）
+│       ├── BlogDetailPage.jsx # 博客详情
+│       ├── BlogEditorPage.jsx # 博客创建/编辑
+│       ├── ProfileEdit.jsx  # 编辑个人资料
+│       ├── Auth.css
+│       ├── Blog.css
+│       └── ProfileEdit.css
 │
-├── start-backend.bat        # 后端启动脚本
-├── start-frontend.bat       # 前端启动脚本
-└── README.md
+├── log/                     # 开发日志
+│   └── 2026-06-26.md
+│
+├── deploy.bat               # 全量部署（构建 + 上传 + 迁移 + 重启）
+├── deploy-backend.bat       # 仅部署后端
+├── deploy-fresh-server.bat  # 从零初始化服务器
+├── deploy-config.bat        # 部署配置（IP/密码/路径）
+├── README.md
+├── warning.md               # 常见部署错误记录
+└── todo.md                  # 任务清单
 ```
 
 ---
@@ -139,13 +157,21 @@ anticraft/
 | `POST` | `/api/register` | 用户注册，返回 JWT | 否 |
 | `POST` | `/api/login` | 用户登录，返回 JWT | 否 |
 | `GET` | `/api/user/me` | 获取当前用户信息 | Bearer Token |
+| `PUT` | `/api/user/profile` | 更新昵称/头像 | Bearer Token |
+| `GET` | `/api/user/check-username` | 检查用户名是否存在 | 否 |
+| `PUT` | `/api/user/reset-password` | 重置密码 | 否 |
+| `GET` | `/api/blogs` | 博客列表（分页，支持 `?category=` 筛选） | 否 |
+| `GET` | `/api/blogs/{id}` | 博客详情 | 否 |
+| `POST` | `/api/blogs` | 创建博客（需分类） | Bearer Token |
+| `PUT` | `/api/blogs/{id}` | 更新博客 | Bearer Token（仅作者） |
+| `DELETE` | `/api/blogs/{id}` | 删除博客 | Bearer Token（仅作者） |
 
 ### 注册示例
 
 ```bash
 curl -X POST http://127.0.0.1:8000/api/register \
   -H "Content-Type: application/json" \
-  -d '{"username": "test", "email": "test@example.com", "password": "123456"}'
+  -d '{"username": "test", "password": "123456"}'
 ```
 
 ### 登录示例
@@ -156,19 +182,30 @@ curl -X POST http://127.0.0.1:8000/api/login \
   -d '{"username": "test", "password": "123456"}'
 ```
 
+### 创建博客（带分类）
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/blogs \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"title": "文章标题", "category": "技术讨论", "content_md": "## Markdown 内容"}'
+```
+
 ---
 
 ## 前端页面
 
-| 区域 | 说明 |
-|------|------|
-| **导航栏** | 品牌 logo + 锚点导航（关于 / 项目 / 联系）+ 登录按钮 |
-| **Hero** | 渐变品牌标题、slogan、CTA 按钮、滚动指示 |
-| **关于** | 三张卡片阐述逆匠理念：破格 · 淬炼 · 创造 |
-| **项目** | 近期项目展示卡片 |
-| **联系** | 邮件与 GitHub 链接 |
-| **页脚** | 版权信息与 motto |
-| **登录/注册** | 双栏布局，左侧品牌展示，右侧表单，支持登录/注册切换 |
+| 页面 | 路由 | 说明 |
+|------|------|------|
+| **首页** | `/` | Hero + 项目展示 + 联系信息 |
+| **博客列表** | `/blogs` | 博客卡片 + 分类筛选（全部/技术讨论/更新日志） |
+| **博客详情** | `/blogs/{id}` | Markdown 渲染 + 作者操作（编辑/删除） |
+| **写文章** | `/blogs/new` | 标题 + 分类 + Markdown 编辑器 + 实时预览 |
+| **编辑文章** | `/blogs/{id}/edit` | 同上，预填现有内容 |
+| **登录** | `/login` | 用户名 + 密码 |
+| **注册** | `/register` | 用户名 + 密码 + 确认密码 |
+| **重置密码** | `/reset-password` | 两步验证：用户名 → 新密码 |
+| **编辑资料** | `/profile` | 昵称 + 头像 URL + 退出登录 |
 
 ---
 
@@ -195,7 +232,26 @@ curl -X POST http://127.0.0.1:8000/api/login \
 
 ## 生产部署
 
-### 构建前端
+### 一键部署（推荐）
+
+修改 `deploy-config.bat` 中的服务器信息和密码，然后运行：
+
+```bash
+deploy.bat
+```
+
+该脚本会自动执行：
+1. 构建前端
+2. 上传前端产物到服务器
+3. 上传后端源码
+4. 安装/配置 MySQL
+5. 创建 Python 虚拟环境并安装依赖
+6. 配置 systemd 服务（anticraft-api）
+7. 配置 Nginx 反向代理
+8. 自动迁移数据库（新增列等）
+9. 验证 API 是否正常
+
+### 手动构建前端
 
 ```bash
 npm run build
@@ -205,27 +261,10 @@ npm run build
 
 ### Nginx 配置参考
 
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-    root /var/www/anticraft/dist;
-    index index.html;
-
-    location /api {
-        proxy_pass http://127.0.0.1:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-}
-```
+参考 `anticraft.nginx.conf`，静态文件路径 `/var/www/anticraft/dist/`，API 代理到 `127.0.0.1:8000`。
 
 ---
 
-## License
+## 常见问题
 
-MIT
+见 `warning.md` 文件，记录了部署和开发中遇到的常见错误及解决方案。
