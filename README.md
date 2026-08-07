@@ -136,7 +136,7 @@ anticraft/
 │   ├── requirements.txt
 │   ├── main.py              # FastAPI 应用入口 & 所有 API 路由
 │   ├── database.py          # MySQL 连接 + init_db + run_migrations
-│   ├── models.py            # SQLAlchemy 模型（User/Blog/BlogLike/Comment/InviteCode）
+│   ├── models.py            # SQLAlchemy 模型（User/Blog/BlogLike/Comment/InviteCode/Project）
 │   ├── schemas.py           # Pydantic 请求/响应模型
 │   └── auth.py              # 密码加密 + JWT + 角色守卫
 │
@@ -156,10 +156,14 @@ anticraft/
 │       ├── BlogListPage.jsx
 │       ├── BlogDetailPage.jsx
 │       ├── BlogEditorPage.jsx
+│       ├── ProjectListPage.jsx     # 项目列表
+│       ├── ProjectDetailPage.jsx   # 项目详情 + 关联博客
+│       ├── ProjectEditorPage.jsx   # 新建/编辑项目
 │       ├── ProfileEdit.jsx
 │       ├── AdminPage.jsx    # 管理员后台
 │       ├── Auth.css
 │       ├── Blog.css
+│       ├── Project.css
 │       ├── ProfileEdit.css
 │       └── AdminPage.css
 │
@@ -201,6 +205,16 @@ anticraft/
 | `PUT` | `/api/blogs/{id}` | 更新（仅作者） | Bearer |
 | `DELETE` | `/api/blogs/{id}` | 删除（仅作者） | Bearer |
 
+### 项目
+| 方法 | 路径 | 说明 | 认证 |
+|------|------|------|------|
+| `GET` | `/api/projects` | 项目列表（含博客数） | 否 |
+| `GET` | `/api/projects/{id}` | 项目详情（含关联博客，发布时间倒序） | 否 |
+| `POST` | `/api/projects` | 创建项目（封面图床 URL） | Bearer |
+| `PUT` | `/api/projects/{id}` | 编辑项目（仅作者/管理员） | Bearer |
+| `PUT` | `/api/projects/{id}/blogs` | 批量设置关联博客（全量替换，仅作者/管理员） | Bearer |
+| `DELETE` | `/api/projects/{id}` | 删除项目（仅作者/管理员，博客自动解除关联） | Bearer |
+
 ### 点赞 / 评论
 | 方法 | 路径 | 说明 | 认证 |
 |------|------|------|------|
@@ -240,6 +254,9 @@ anticraft/
 | **登录/注册** | `/auth` | 登录/注册双 Tab 合一（`/login` 重定向至此） |
 | **重置密码** | `/reset-password` | 用户名 + 邀请码 + 新密码 |
 | **编辑资料** | `/profile` | 昵称 + 头像 + 退出登录 |
+| **项目列表** | `/projects` | 项目卡片网格（封面/简介/博客数） |
+| **项目详情** | `/projects/{id}` | 封面 + 简介 + 关联博客（按发布时间从新到旧） |
+| **新建/编辑项目** | `/projects/new`、`/projects/{id}/edit` | 项目名 + 封面图床 URL + 简介 |
 | **管理员后台** | `/admin` | 用户/评论/博客/邀请码四 Tab |
 
 ---

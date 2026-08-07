@@ -9,6 +9,12 @@
 - `npm run build` — 构建前端到 `dist/`
 - **没有测试框架、没有 linter/typecheck**。验证方式：启动后 `curl http://127.0.0.1:8000/api/health`，或 `npm run build` 确认构建通过。
 
+## 完成后的默认动作
+- 每次任务完成并验证通过后，**自动启动本地前后端并保持存活**，向用户汇报地址与端口：
+  - 前端 http://localhost:3000（`/api` 经 Vite 代理到后端）
+  - 后端 http://127.0.0.1:8000（本机若 8000 被 Windows/Hyper-V 排除区间占用，改用 18000 并同步 `vite.config.js` 代理；端口说明见 `log/acceptance-2026-08-06.md`）
+- 启动方式：用 WMI/CIM（`Invoke-CimMethod Win32_Process Create`）脱离会话启动，日志写 `log/back.out.log` / `log/fe.out.log`，PID 存 `log/run.pids`。
+
 ## 后端
 - 虚拟环境 `backend/.venv`（Python 3.14）。入口是根目录的 `python backend/main.py`，main.py 内部用同目录相对导入（`from database import ...`）。
 - 依赖锁版本，勿随意升级：`mysql-connector-python==8.4.0`（9.x 兼容问题）、`bcrypt==5.0.0`（passlib 不兼容，直接 `import bcrypt`）、`pyjwt`（不用 python-jose，避免 C 扩展编译）。
@@ -21,6 +27,7 @@
 
 ## 数据库迁移（关键）
 - 启动时 `init_db()` 只建新表；已有表的新增列必须写进 `database.py` 的 `run_migrations()`（ALTER TABLE 逻辑），否则旧库报 `Unknown column`。在 `models.py` 加列时务必同步迁移逻辑。
+- **`create_all` 不会为已存在的同名旧表补列**：`projects` 表是早期已删功能的遗留表（含 `owner_id`/`image_url`/`tags`/`is_featured` 旧列），曾导致 INSERT 报缺列、`Field 'owner_id' doesn't have a default value`。库中若存在同名的遗留旧表，必须在 `run_migrations()` 里补齐新列并把阻塞的 NOT NULL 旧列改为可空。
 - 迁移还会：为无专属邀请码的用户补发可重复使用邀请码；把用户 `end` 提升为 admin（首个管理员账号）。
 
 ## 业务规则

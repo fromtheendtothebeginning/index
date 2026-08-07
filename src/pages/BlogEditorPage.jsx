@@ -12,6 +12,8 @@ function BlogEditorPage() {
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState('')
   const [content, setContent] = useState('')
+  const [projects, setProjects] = useState([])
+  const [projectId, setProjectId] = useState('')
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -34,10 +36,18 @@ function BlogEditorPage() {
         setTitle(data.title)
         setCategory(data.category || '')
         setContent(data.content_md)
+        setProjectId(data.project_id || '')
       })
       .catch(() => setError('加载失败'))
       .finally(() => setLoading(false))
   }, [id, isEdit])
+
+  useEffect(() => {
+    fetch('/api/projects')
+      .then(r => r.json())
+      .then(data => setProjects(data.projects || []))
+      .catch(() => {})
+  }, [])
 
   const handleInsertImage = () => {
     const url = prompt('输入图片 URL（支持图床链接）：')
@@ -74,7 +84,12 @@ function BlogEditorPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ title: title.trim(), category: category || '', content_md: content }),
+        body: JSON.stringify({
+          title: title.trim(),
+          category: category || '',
+          content_md: content,
+          project_id: projectId === '' ? null : projectId,
+        }),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.detail || '保存失败'); return }
@@ -151,6 +166,17 @@ function BlogEditorPage() {
                 <a href="#" onClick={e => { e.preventDefault(); setCategory('技术讨论'); }}>技术讨论</a>
                 <a href="#" onClick={e => { e.preventDefault(); setCategory('更新日志'); }}>更新日志</a>
                 <a href="#" onClick={e => { e.preventDefault(); setCategory('娱乐论坛'); }}>娱乐论坛</a>
+              </div>
+            </div>
+            <div className="nav-dropdown">
+              <button className="category-btn">
+                {projects.find(p => p.id === projectId)?.name || '不关联'} <span className="arrow-down">▾</span>
+              </button>
+              <div className="nav-dropdown-menu">
+                <a href="#" onClick={e => { e.preventDefault(); setProjectId(''); }}>不关联</a>
+                {projects.map(p => (
+                  <a key={p.id} href="#" onClick={e => { e.preventDefault(); setProjectId(p.id); }}>{p.name}</a>
+                ))}
               </div>
             </div>
             <button

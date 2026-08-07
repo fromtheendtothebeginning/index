@@ -1,20 +1,33 @@
 import { useState, useEffect } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, Link } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import AuthPage from './pages/AuthPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import BlogListPage from './pages/BlogListPage'
 import BlogDetailPage from './pages/BlogDetailPage'
 import BlogEditorPage from './pages/BlogEditorPage'
+import ProjectListPage from './pages/ProjectListPage'
+import ProjectDetailPage from './pages/ProjectDetailPage'
+import ProjectEditorPage from './pages/ProjectEditorPage'
 import ProfileEdit from './pages/ProfileEdit'
 import AdminPage from './pages/AdminPage'
+import { renderMd } from './utils/markdown'
 import './App.css'
 
 function HomePage() {
   const [mounted, setMounted] = useState(false)
+  const [recentProjects, setRecentProjects] = useState([])
+  const [projectsLoading, setProjectsLoading] = useState(true)
 
   useEffect(() => {
     setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    fetch('/api/projects')
+      .then(r => r.json())
+      .then(d => setRecentProjects((d.projects || []).slice(0, 3)))
+      .finally(() => setProjectsLoading(false))
   }, [])
 
   // 从其他页面带 hash 跳转（如 /#projects）时滚动到对应模块
@@ -91,33 +104,44 @@ function HomePage() {
             <p className="section-desc">每一个项目都是一次对边界的试探。</p>
           </div>
           <div className="project-grid">
-            <div className="project-card scroll-reveal">
-              <div className="project-card-bg" />
-              <div className="project-card-content">
-                <div className="project-tags">
-                  <span className="tag">React</span>
-                  <span className="tag">Vite</span>
-                </div>
-                <h3>逆匠首页</h3>
-                <p>极简风格的全新品牌落地页，承载逆匠的设计哲学。</p>
-                <div className="project-meta">
-                  <span className="meta-status active">进行中</span>
+            {projectsLoading ? (
+              <div className="project-card scroll-reveal">
+                <div className="project-card-bg" />
+                <div className="project-card-content">
+                  <p>加载中...</p>
                 </div>
               </div>
-            </div>
-            <div className="project-card scroll-reveal">
-              <div className="project-card-bg" />
-              <div className="project-card-content">
-                <div className="project-tags">
-                  <span className="tag">即将发布</span>
-                </div>
-                <h3>更多项目</h3>
-                <p>正在酝酿中的新项目，敬请期待。</p>
-                <div className="project-meta">
-                  <span className="meta-status pending">筹备中</span>
+            ) : recentProjects.length === 0 ? (
+              <div className="project-card scroll-reveal">
+                <div className="project-card-bg" />
+                <div className="project-card-content">
+                  <h3>暂无项目</h3>
+                  <p>敬请期待</p>
                 </div>
               </div>
-            </div>
+            ) : (
+              recentProjects.map(p => (
+                <Link to={`/projects/${p.id}`} key={p.id} className="project-card scroll-reveal">
+                  {p.cover_url ? (
+                    <img src={p.cover_url} alt={p.name} className="project-cover" />
+                  ) : (
+                    <div className="project-card-bg" />
+                  )}
+                  <div className="project-card-content">
+                    {p.tags && p.tags.length > 0 && (
+                      <div className="project-tags">
+                        {p.tags.map(t => <span key={t} className="tag">{t}</span>)}
+                      </div>
+                    )}
+                    <h3>{p.name}</h3>
+                    <div
+                      className="markdown-body project-card-desc"
+                      dangerouslySetInnerHTML={{ __html: renderMd(p.description || '') }}
+                    />
+                  </div>
+                </Link>
+              ))
+            )}
           </div>
         </div>
       </section>
@@ -171,6 +195,10 @@ function App() {
       <Route path="/blogs/new" element={<BlogEditorPage />} />
       <Route path="/blogs/:id" element={<BlogDetailPage />} />
       <Route path="/blogs/:id/edit" element={<BlogEditorPage />} />
+      <Route path="/projects" element={<ProjectListPage />} />
+      <Route path="/projects/new" element={<ProjectEditorPage />} />
+      <Route path="/projects/:id" element={<ProjectDetailPage />} />
+      <Route path="/projects/:id/edit" element={<ProjectEditorPage />} />
       <Route path="/profile" element={<ProfileEdit />} />
       <Route path="/admin" element={<AdminPage />} />
     </Routes>

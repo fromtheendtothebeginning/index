@@ -32,6 +32,7 @@ class Blog(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     title = Column(String(200), nullable=False, comment="文章标题")
     category = Column(String(50), nullable=True, comment="分类：技术讨论 / 更新日志 / 娱乐论坛")
+    project_id = Column(Integer, ForeignKey("projects.id", ondelete="SET NULL"), nullable=True, index=True)
     content_md = Column(Text, nullable=False, comment="Markdown 内容")
     author_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), comment="发布时间")
@@ -40,11 +41,35 @@ class Blog(Base):
     )
 
     author = relationship("User", backref="blogs")
+    project = relationship("Project", back_populates="blogs")
     likes = relationship("BlogLike", backref="blog", cascade="all, delete-orphan")
     comments = relationship("Comment", backref="blog", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Blog(id={self.id}, title='{self.title}')>"
+
+
+class Project(Base):
+    """项目 —— 用于聚合多篇博客"""
+
+    __tablename__ = "projects"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    name = Column(String(200), nullable=False, comment="项目名")
+    description = Column(Text, nullable=True, comment="项目简介")
+    cover_url = Column(String(500), nullable=True, comment="封面图床 URL")
+    tags = Column(Text, nullable=True, comment="标签，逗号分隔")
+    author_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), comment="创建时间")
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), comment="更新时间"
+    )
+
+    author = relationship("User", backref="projects")
+    blogs = relationship("Blog", back_populates="project")
+
+    def __repr__(self):
+        return f"<Project(id={self.id}, name='{self.name}')>"
 
 
 class BlogLike(Base):

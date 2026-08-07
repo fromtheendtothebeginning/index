@@ -94,6 +94,8 @@ function Navbar({ activePage }) {
                 <Link to="/blogs?category=娱乐论坛">娱乐论坛</Link>
               </div>
             </div>
+            {/* 项目入口 */}
+            <Link to="/projects" className={`nav-dropdown-trigger ${activePage === 'project' ? 'nav-item-active' : ''}`}>项目</Link>
             {/* 首页下拉 */}
             <div className="nav-dropdown">
               <Link

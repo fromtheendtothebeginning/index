@@ -289,6 +289,14 @@ function BlogDetailPage() {
             dangerouslySetInnerHTML={{ __html: renderMd(blog.content_md) }}
           />
 
+          {blog.project && (
+            <Link to={`/projects/${blog.project.id}`} className="blog-project-link">
+              <span className="blog-project-label">所属项目</span>
+              <span className="blog-project-name">{blog.project.name}</span>
+              <span className="blog-project-arrow">&rarr;</span>
+            </Link>
+          )}
+
           {/* 互动栏：点赞 + 评论数 */}
           <div className="blog-interaction">
             <button

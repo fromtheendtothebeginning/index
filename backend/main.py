@@ -9,7 +9,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session, joinedload
 
 from database import get_db, init_db, run_migrations
-from models import User, Blog, BlogLike, Comment, InviteCode
+from models import User, Blog, BlogLike, Comment, InviteCode, Project
 from schemas import (
     RegisterRequest, LoginRequest, ResetPasswordRequest, UpdateProfileRequest,
     CreateBlogRequest, UpdateBlogRequest, TokenResponse, UserResponse,
@@ -20,6 +20,8 @@ from schemas import (
     AdminBlogListItem, AdminBlogListResponse, UpdateBlogCategoryRequest,
     InviteCodeResponse, InviteCodeListResponse, CreateInviteCodeResponse,
     UpdateInviteCodeReusableRequest,
+    CreateProjectRequest, UpdateProjectRequest, ProjectResponse,
+    ProjectListResponse, ProjectDetailResponse, UpdateProjectBlogsRequest,
 )
 from auth import hash_password, verify_password, create_access_token, decode_access_token
 
@@ -284,7 +286,7 @@ def list_blogs(
     total = query.count()
     blogs = (
         query
-        .options(joinedload(Blog.author))
+        .options(joinedload(Blog.author), joinedload(Blog.project))
         .order_by(Blog.updated_at.desc())
         .offset(skip)
         .limit(limit)
@@ -302,7 +304,7 @@ def get_blog(
     db: Session = Depends(get_db),
 ):
     """获取单篇博客详情"""
-    blog = db.query(Blog).options(joinedload(Blog.author)).filter(Blog.id == blog_id).first()
+    blog = db.query(Blog).options(joinedload(Blog.author), joinedload(Blog.project)).filter(Blog.id == blog_id).first()
     if not blog:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="博客不存在")
     current_user = get_optional_user(token, db)
@@ -317,17 +319,22 @@ def create_blog(
     db: Session = Depends(get_db),
 ):
     """创建博客文章（需登录）"""
+    if req.project_id is not None:
+        project = db.query(Project).filter(Project.id == req.project_id).first()
+        if not project:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="项目不存在")
     blog = Blog(
         title=req.title,
         category=req.category,
         content_md=req.content_md,
         author_id=current_user.id,
+        project_id=req.project_id,
     )
     db.add(blog)
     db.commit()
     db.refresh(blog)
-    # 重新查询以加载 author 关系
-    blog = db.query(Blog).options(joinedload(Blog.author)).filter(Blog.id == blog.id).first()
+    # 重新查询以加载 author / project 关系
+    blog = db.query(Blog).options(joinedload(Blog.author), joinedload(Blog.project)).filter(Blog.id == blog.id).first()
     _attach_blog_stats(blog, db, current_user)
     return blog
 
@@ -339,11 +346,13 @@ def update_blog(
     current_user: User = Depends(get_current_user_obj),
     db: Session = Depends(get_db),
 ):
-    """更新博客文章（仅作者）"""
-    blog = db.query(Blog).options(joinedload(Blog.author)).filter(Blog.id == blog_id).first()
+    """更新博客文章（作者或管理员）"""
+    blog = db.query(Blog).options(joinedload(Blog.author), joinedload(Blog.project)).filter(Blog.id == blog_id).first()
     if not blog:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="博客不存在")
-    if blog.author_id != current_user.id:
+    is_owner = blog.author_id == current_user.id
+    is_admin = current_user.role == "admin"
+    if not is_owner and not is_admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="无权修改他人博客")
 
     if req.title is not None:
@@ -352,6 +361,12 @@ def update_blog(
         blog.category = req.category
     if req.content_md is not None:
         blog.content_md = req.content_md
+    if "project_id" in req.model_fields_set:
+        if req.project_id is not None:
+            project = db.query(Project).filter(Project.id == req.project_id).first()
+            if not project:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="项目不存在")
+        blog.project_id = req.project_id
 
     db.commit()
     db.refresh(blog)
@@ -377,6 +392,194 @@ def delete_blog(
     db.delete(blog)
     db.commit()
     return MessageResponse(message="博客已删除")
+
+
+# ============================================
+# 项目 API
+# ============================================
+
+@app.get("/api/projects", response_model=ProjectListResponse, tags=["项目"])
+def list_projects(
+    skip: int = 0,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+):
+    """获取项目列表（按创建时间倒序，附带每个项目的博客数）"""
+    total = db.query(Project).count()
+    projects = (
+        db.query(Project)
+        .options(joinedload(Project.author))
+        .order_by(Project.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    for p in projects:
+        p.blog_count = db.query(Blog).filter(Blog.project_id == p.id).count()
+    return ProjectListResponse(total=total, projects=projects)
+
+
+@app.get("/api/projects/{project_id}", response_model=ProjectDetailResponse, tags=["项目"])
+def get_project(project_id: int, db: Session = Depends(get_db)):
+    """获取项目详情（含项目下的博客列表，按发布时间从新到旧）"""
+    project = (
+        db.query(Project)
+        .options(joinedload(Project.author))
+        .filter(Project.id == project_id)
+        .first()
+    )
+    if not project:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="项目不存在")
+
+    blogs = (
+        db.query(Blog)
+        .options(joinedload(Blog.author), joinedload(Blog.project))
+        .filter(Blog.project_id == project_id)
+        .order_by(Blog.created_at.desc())
+        .all()
+    )
+    for b in blogs:
+        _attach_blog_stats(b, db, None)
+    project.blogs = blogs
+    return project
+
+
+@app.post("/api/projects", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED, tags=["项目"])
+def create_project(
+    req: CreateProjectRequest,
+    current_user: User = Depends(get_current_user_obj),
+    db: Session = Depends(get_db),
+):
+    """创建项目（需登录）"""
+    project = Project(
+        name=req.name,
+        description=req.description,
+        cover_url=req.cover_url,
+        author_id=current_user.id,
+    )
+    if req.tags is not None:
+        project.tags = ",".join(t.strip() for t in req.tags if t.strip())
+    db.add(project)
+    db.commit()
+    db.refresh(project)
+    # 重新查询以加载 author 关系
+    project = (
+        db.query(Project)
+        .options(joinedload(Project.author))
+        .filter(Project.id == project.id)
+        .first()
+    )
+    project.blog_count = 0
+    return project
+
+
+@app.put("/api/projects/{project_id}", response_model=ProjectResponse, tags=["项目"])
+def update_project(
+    project_id: int,
+    req: UpdateProjectRequest,
+    current_user: User = Depends(get_current_user_obj),
+    db: Session = Depends(get_db),
+):
+    """更新项目（仅作者或管理员）"""
+    project = (
+        db.query(Project)
+        .options(joinedload(Project.author))
+        .filter(Project.id == project_id)
+        .first()
+    )
+    if not project:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="项目不存在")
+    is_owner = project.author_id == current_user.id
+    is_admin = current_user.role == "admin"
+    if not is_owner and not is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="无权修改他人项目")
+
+    for field in ("name", "description", "cover_url"):
+        value = getattr(req, field)
+        if value is not None:
+            setattr(project, field, value)
+    if req.tags is not None:
+        project.tags = ",".join(t.strip() for t in req.tags if t.strip())
+
+    db.commit()
+    db.refresh(project)
+    project.blog_count = db.query(Blog).filter(Blog.project_id == project.id).count()
+    return project
+
+
+@app.put("/api/projects/{project_id}/blogs", response_model=ProjectDetailResponse, tags=["项目"])
+def update_project_blogs(
+    project_id: int,
+    req: UpdateProjectBlogsRequest,
+    current_user: User = Depends(get_current_user_obj),
+    db: Session = Depends(get_db),
+):
+    """项目编辑界面批量设置关联博客（全量替换，作者或管理员）"""
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="项目不存在")
+    is_owner = project.author_id == current_user.id
+    is_admin = current_user.role == "admin"
+    if not is_owner and not is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="无权修改他人项目")
+
+    wanted = set(req.blog_ids)
+    if len(wanted) != len(req.blog_ids):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="博客 ID 列表包含重复项")
+    if wanted:
+        existing = {b[0] for b in db.query(Blog.id).filter(Blog.id.in_(wanted)).all()}
+        if existing != wanted:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="包含不存在的博客")
+
+    # 解除本项目中不在列表内的博客
+    q = db.query(Blog).filter(Blog.project_id == project_id)
+    if wanted:
+        q = q.filter(~Blog.id.in_(wanted))
+    q.update({"project_id": None}, synchronize_session=False)
+    # 将列表中的博客关联到本项目
+    if wanted:
+        db.query(Blog).filter(Blog.id.in_(wanted)).update(
+            {"project_id": project_id}, synchronize_session=False
+        )
+    db.commit()
+
+    project = (
+        db.query(Project)
+        .options(joinedload(Project.author))
+        .filter(Project.id == project_id)
+        .first()
+    )
+    blogs = (
+        db.query(Blog)
+        .options(joinedload(Blog.author), joinedload(Blog.project))
+        .filter(Blog.project_id == project_id)
+        .order_by(Blog.created_at.desc())
+        .all()
+    )
+    for b in blogs:
+        _attach_blog_stats(b, db, None)
+    project.blogs = blogs
+    return project
+
+
+@app.delete("/api/projects/{project_id}", response_model=MessageResponse, tags=["项目"])
+def delete_project(
+    project_id: int,
+    current_user: User = Depends(get_current_user_obj),
+    db: Session = Depends(get_db),
+):
+    """删除项目（仅作者或管理员，项目下博客的 project_id 由数据库置空）"""
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="项目不存在")
+    is_owner = project.author_id == current_user.id
+    is_admin = current_user.role == "admin"
+    if not is_owner and not is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="无权删除他人项目")
+
+    db.delete(project)
+    db.commit()
+    return MessageResponse(message="项目已删除")
 
 
 # ============================================

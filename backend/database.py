@@ -91,6 +91,31 @@ def run_migrations():
                     "ALTER TABLE blogs ADD COLUMN category VARCHAR(50) NULL AFTER title"
                 ))
                 conn.commit()
+            if "project_id" not in columns:
+                conn.execute(text("ALTER TABLE blogs ADD COLUMN project_id INT NULL"))
+                conn.execute(text(
+                    "ALTER TABLE blogs ADD CONSTRAINT fk_blog_project "
+                    "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL"
+                ))
+                conn.commit()
+        # projects 表兼容旧版遗留表（早期已删 Project 功能留下的表缺新列，create_all 不补已有表）
+        if insp.has_table("projects"):
+            pcolumns = {c["name"] for c in insp.get_columns("projects")}
+            if "cover_url" not in pcolumns:
+                conn.execute(text("ALTER TABLE projects ADD COLUMN cover_url VARCHAR(500) NULL"))
+                conn.commit()
+            if "author_id" not in pcolumns:
+                conn.execute(text("ALTER TABLE projects ADD COLUMN author_id INT NULL"))
+                conn.commit()
+            if "owner_id" in pcolumns:
+                # 旧版遗留列：回填 author_id（继承 owner_id），并把 owner_id 置为可空，
+                # 否则 INSERT（新模型不含 owner_id）报 "Field 'owner_id' doesn't have a default value"
+                conn.execute(text(
+                    "UPDATE projects SET author_id = owner_id "
+                    "WHERE author_id IS NULL AND owner_id IS NOT NULL"
+                ))
+                conn.execute(text("ALTER TABLE projects MODIFY owner_id INT NULL"))
+                conn.commit()
         # invite_codes 表新增 is_reusable / owner_user_id 列
         if insp.has_table("invite_codes"):
             columns = {c["name"] for c in insp.get_columns("invite_codes")}

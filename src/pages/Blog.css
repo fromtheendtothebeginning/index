@@ -999,3 +999,54 @@
     opacity: 1;
   }
 }
+
+/* ---------- 所属项目 ---------- */
+.blog-project-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 480px;
+  margin: 40px auto 0;
+  padding: 14px 20px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.blog-project-link:hover {
+  border-color: var(--accent-1);
+  box-shadow: 0 4px 16px rgba(108, 92, 231, 0.1);
+}
+
+.blog-project-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(108, 92, 231, 0.08);
+  flex-shrink: 0;
+}
+
+.blog-project-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.blog-project-arrow {
+  font-size: 16px;
+  color: var(--accent-1);
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+.blog-project-link:hover .blog-project-arrow {
+  transform: translateX(4px);
+}

@@ -1,6 +1,6 @@
 # schemas.py — Pydantic 请求/响应模型
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
 from typing import Optional
 
@@ -59,12 +59,35 @@ class CreateBlogRequest(BaseModel):
     title: str = Field(..., min_length=1, max_length=200, description="文章标题")
     category: Optional[str] = Field(None, max_length=50, description="分类：技术讨论 / 更新日志 / 娱乐论坛")
     content_md: str = Field(..., min_length=1, max_length=65535, description="Markdown 内容")
+    project_id: Optional[int] = None
 
 
 class UpdateBlogRequest(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=200, description="文章标题")
     category: Optional[str] = Field(None, max_length=50, description="分类：技术讨论 / 更新日志 / 娱乐论坛")
     content_md: Optional[str] = Field(None, min_length=1, max_length=65535, description="Markdown 内容")
+    project_id: Optional[int] = None
+
+
+# ── 项目请求 ──
+
+class CreateProjectRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200, description="项目名")
+    description: Optional[str] = Field(None, max_length=65535, description="项目简介")
+    cover_url: Optional[str] = Field(None, max_length=500, description="封面图床 URL")
+    tags: Optional[list[str]] = Field(None, description="项目标签列表")
+
+
+class UpdateProjectRequest(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=200, description="项目名")
+    description: Optional[str] = Field(None, max_length=65535, description="项目简介")
+    cover_url: Optional[str] = Field(None, max_length=500, description="封面图床 URL")
+    tags: Optional[list[str]] = Field(None, description="项目标签列表")
+
+
+class UpdateProjectBlogsRequest(BaseModel):
+    """项目编辑界面批量设置关联博客（全量替换）"""
+    blog_ids: list[int] = Field(..., description="本项目关联的博客 ID 列表")
 
 
 # ── 博客响应 ──
@@ -77,6 +100,13 @@ class BlogAuthorResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ProjectSummaryResponse(BaseModel):
+    """博客上展示的项目摘要"""
+    id: int
+    name: str
+    model_config = {"from_attributes": True}
+
+
 class BlogResponse(BaseModel):
     id: int
     title: str
@@ -84,6 +114,8 @@ class BlogResponse(BaseModel):
     content_md: str
     author_id: int
     author: Optional[BlogAuthorResponse] = None
+    project_id: Optional[int] = None
+    project: Optional[ProjectSummaryResponse] = None
     like_count: int = 0
     comment_count: int = 0
     liked_by_me: bool = False
@@ -99,6 +131,8 @@ class BlogListItem(BaseModel):
     category: Optional[str] = None
     author_id: int
     author: Optional[BlogAuthorResponse] = None
+    project_id: Optional[int] = None
+    project: Optional[ProjectSummaryResponse] = None
     like_count: int = 0
     comment_count: int = 0
     created_at: datetime
@@ -110,6 +144,61 @@ class BlogListItem(BaseModel):
 class BlogListResponse(BaseModel):
     total: int
     blogs: list[BlogListItem]
+
+
+# ── 项目响应 ──
+
+class ProjectResponse(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+    cover_url: Optional[str] = None
+    tags: list[str] = []
+    author_id: int
+    author: Optional[BlogAuthorResponse] = None
+    blog_count: int = 0
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+    @field_validator("tags", mode="before")
+    @classmethod
+    def _parse_tags(cls, v):
+        if isinstance(v, str):
+            return [t.strip() for t in v.split(",") if t.strip()]
+        if v is None:
+            return []
+        return v
+
+
+class ProjectListResponse(BaseModel):
+    total: int
+    projects: list[ProjectResponse]
+
+
+class ProjectDetailResponse(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+    cover_url: Optional[str] = None
+    tags: list[str] = []
+    author_id: int
+    author: Optional[BlogAuthorResponse] = None
+    created_at: datetime
+    updated_at: datetime
+    blogs: list[BlogListItem] = []
+
+    model_config = {"from_attributes": True}
+
+    @field_validator("tags", mode="before")
+    @classmethod
+    def _parse_tags(cls, v):
+        if isinstance(v, str):
+            return [t.strip() for t in v.split(",") if t.strip()]
+        if v is None:
+            return []
+        return v
 
 
 # ── 点赞 ──
