@@ -13,6 +13,7 @@ function ProjectEditorPage() {
   const [description, setDescription] = useState('')
   const [tags, setTags] = useState('')
   const [bgColor, setBgColor] = useState('')
+  const [linkUrl, setLinkUrl] = useState('')
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -22,7 +23,20 @@ function ProjectEditorPage() {
 
   useEffect(() => {
     const token = localStorage.getItem('token')
-    if (!token) navigate('/auth')
+    if (!token) {
+      navigate('/auth')
+      return
+    }
+    const raw = localStorage.getItem('user')
+    if (raw) {
+      try {
+        const u = JSON.parse(raw)
+        if (u.role !== 'admin') {
+          navigate('/projects')
+          return
+        }
+      } catch {}
+    }
   }, [navigate])
 
   useEffect(() => {
@@ -35,6 +49,7 @@ function ProjectEditorPage() {
         setDescription(data.description || '')
         setTags((data.tags || []).join(', '))
         setBgColor(data.bg_color || '')
+        setLinkUrl(data.link_url || '')
         setSelectedBlogIds((data.blogs || []).map(b => b.id))
       })
       .catch(() => setError('加载失败'))
@@ -75,6 +90,7 @@ function ProjectEditorPage() {
           cover_url: coverUrl || null,
           tags: tags.split(/[,，]/).map(s => s.trim()).filter(Boolean),
           bg_color: bgColor || null,
+          link_url: linkUrl || null,
         }),
       })
       const data = await res.json()
@@ -184,6 +200,17 @@ function ProjectEditorPage() {
               <button type="button" className="btn" onClick={() => setBgColor('')}>自动</button>
               <span className="editor-hint">{bgColor ? '已自定义' : '自动（跟随图片主色）'}</span>
             </div>
+          </div>
+
+          <div className="editor-field">
+            <label className="editor-label">项目链接（GitHub / 下载 URL，可选）</label>
+            <input
+              type="text"
+              className="editor-title-input"
+              placeholder="输入项目主页 / GitHub / 下载地址"
+              value={linkUrl}
+              onChange={e => setLinkUrl(e.target.value)}
+            />
           </div>
 
           {isEdit ? (

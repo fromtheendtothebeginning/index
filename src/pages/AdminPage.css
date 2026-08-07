@@ -497,3 +497,73 @@
     padding: 16px;
   }
 }
+
+/* 评论项：内容左 + 删除按钮右侧 */
+.admin-comment-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.admin-comment-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.comment-delete-btn {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(231, 76, 60, 0.1);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  border-radius: 6px;
+  color: #e74c3c;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.comment-delete-btn:hover {
+  background: #e74c3c;
+  color: #fff;
+}
+
+/* 友情链接管理 */
+.admin-link-form {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.admin-link-input {
+  flex: 1;
+  min-width: 160px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #1a1a2e;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.admin-link-input:focus {
+  border-color: var(--accent-1, #6c5ce7);
+}
+
+.admin-row-links {
+  grid-template-columns: 1.2fr 2fr 1.5fr 1fr;
+  min-width: 600px;
+}
+
+.admin-link-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: nowrap;
+}

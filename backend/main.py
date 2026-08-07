@@ -9,7 +9,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session, joinedload
 
 from database import get_db, init_db, run_migrations
-from models import User, Blog, BlogLike, Comment, InviteCode, Project
+from models import User, Blog, BlogLike, Comment, InviteCode, Project, FriendLink
 from schemas import (
     RegisterRequest, LoginRequest, ResetPasswordRequest, UpdateProfileRequest,
     CreateBlogRequest, UpdateBlogRequest, TokenResponse, UserResponse,
@@ -22,6 +22,8 @@ from schemas import (
     UpdateInviteCodeReusableRequest,
     CreateProjectRequest, UpdateProjectRequest, ProjectResponse,
     ProjectListResponse, ProjectDetailResponse, UpdateProjectBlogsRequest,
+    FriendLinkRequest, FriendLinkResponse, FriendLinkListResponse,
+    UpdateFriendLinkRequest,
 )
 from auth import hash_password, verify_password, create_access_token, decode_access_token
 
@@ -447,10 +449,10 @@ def get_project(project_id: int, db: Session = Depends(get_db)):
 @app.post("/api/projects", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED, tags=["项目"])
 def create_project(
     req: CreateProjectRequest,
-    current_user: User = Depends(get_current_user_obj),
+    current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """创建项目（需登录）"""
+    """创建项目（仅管理员）"""
     project = Project(
         name=req.name,
         description=req.description,
@@ -461,6 +463,8 @@ def create_project(
         project.tags = ",".join(t.strip() for t in req.tags if t.strip())
     if req.bg_color is not None:
         project.bg_color = req.bg_color or None
+    if req.link_url is not None:
+        project.link_url = req.link_url or None
     db.add(project)
     db.commit()
     db.refresh(project)
@@ -502,6 +506,8 @@ def update_project(
             setattr(project, field, value)
     if "bg_color" in req.model_fields_set:
         project.bg_color = req.bg_color or None
+    if "link_url" in req.model_fields_set:
+        project.link_url = req.link_url or None
     if req.tags is not None:
         project.tags = ",".join(t.strip() for t in req.tags if t.strip())
 
@@ -873,6 +879,82 @@ def admin_update_invite_reusable(
     db.refresh(invite)
     invite.owner_username = invite.owner.username if invite.owner else None
     return invite
+
+
+# ============================================
+# 友情链接 API
+# ============================================
+
+@app.get("/api/friend-links", response_model=FriendLinkListResponse, tags=["友情链接"])
+def list_friend_links(db: Session = Depends(get_db)):
+    """获取友情链接列表（按 id 正序，公开）"""
+    links = db.query(FriendLink).order_by(FriendLink.id.asc()).all()
+    return FriendLinkListResponse(total=len(links), links=links)
+
+
+@app.post("/api/admin/friend-links", response_model=FriendLinkResponse, status_code=status.HTTP_201_CREATED, tags=["友情链接"])
+def create_friend_link(
+    req: FriendLinkRequest,
+    _admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """创建友情链接（仅管理员）"""
+    link = FriendLink(
+        name=req.name,
+        url=req.url,
+        description=req.description,
+    )
+    db.add(link)
+    db.commit()
+    db.refresh(link)
+    return link
+
+
+@app.get("/api/admin/friend-links", response_model=FriendLinkListResponse, tags=["友情链接"])
+def admin_list_friend_links(
+    _admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """管理端友情链接列表（按 id 正序，仅管理员）"""
+    links = db.query(FriendLink).order_by(FriendLink.id.asc()).all()
+    return FriendLinkListResponse(total=len(links), links=links)
+
+
+@app.put("/api/admin/friend-links/{link_id}", response_model=FriendLinkResponse, tags=["友情链接"])
+def update_friend_link(
+    link_id: int,
+    req: UpdateFriendLinkRequest,
+    _admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """更新友情链接（仅管理员，非 None 字段逐个更新）"""
+    link = db.query(FriendLink).filter(FriendLink.id == link_id).first()
+    if not link:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="友情链接不存在")
+    if req.name is not None:
+        link.name = req.name
+    if req.url is not None:
+        link.url = req.url
+    if "description" in req.model_fields_set:
+        link.description = req.description or None
+    db.commit()
+    db.refresh(link)
+    return link
+
+
+@app.delete("/api/admin/friend-links/{link_id}", response_model=MessageResponse, tags=["友情链接"])
+def delete_friend_link(
+    link_id: int,
+    _admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """删除友情链接（仅管理员）"""
+    link = db.query(FriendLink).filter(FriendLink.id == link_id).first()
+    if not link:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="友情链接不存在")
+    db.delete(link)
+    db.commit()
+    return MessageResponse(message="友情链接已删除")
 
 
 # ============================================

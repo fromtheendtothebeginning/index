@@ -118,6 +118,19 @@ function ProjectDetailPage() {
             </span>
           </div>
 
+          {project.link_url && (
+            <div className="project-actions">
+              <a
+                href={project.link_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="project-link-btn"
+              >
+                {/github\.com/i.test(project.link_url) ? 'GitHub ↗' : '项目链接 ↗'}
+              </a>
+            </div>
+          )}
+
           {(isAuthor || isAdmin) && (
             <div className="project-actions">
               <Link to={`/projects/${project.id}/edit`} className="btn-edit">编辑</Link>

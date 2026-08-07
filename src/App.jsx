@@ -19,6 +19,7 @@ function HomePage() {
   const [mounted, setMounted] = useState(false)
   const [recentProjects, setRecentProjects] = useState([])
   const [projectsLoading, setProjectsLoading] = useState(true)
+  const [friendLinks, setFriendLinks] = useState([])
 
   useEffect(() => {
     setMounted(true)
@@ -29,6 +30,13 @@ function HomePage() {
       .then(r => r.json())
       .then(d => setRecentProjects((d.projects || []).slice(0, 3)))
       .finally(() => setProjectsLoading(false))
+  }, [])
+
+  useEffect(() => {
+    fetch('/api/friend-links')
+      .then(r => r.json())
+      .then(d => setFriendLinks(d.links || []))
+      .catch(() => {})
   }, [])
 
   // 从其他页面带 hash 跳转（如 /#projects）时滚动到对应模块
@@ -61,7 +69,7 @@ function HomePage() {
 
     els.forEach((el) => obs.observe(el))
     return () => obs.disconnect()
-  }, [mounted])
+  }, [mounted, recentProjects, friendLinks])
 
   return (
     <div className={`app ${mounted ? 'mounted' : ''}`}>
@@ -146,6 +154,26 @@ function HomePage() {
           </div>
         </div>
       </section>
+
+      {friendLinks.length > 0 && (
+        <section id="friends" className="section friends-section">
+          <div className="section-inner">
+            <div className="section-header scroll-reveal">
+              <span className="section-tag">LINKS</span>
+              <h2 className="section-title">友情链接</h2>
+              <p className="section-desc">值得推荐的伙伴站点</p>
+            </div>
+            <div className="friend-links-grid scroll-reveal">
+              {friendLinks.map(f => (
+                <a key={f.id} href={f.url} target="_blank" rel="noopener noreferrer" className="friend-link-card">
+                  <span className="friend-link-name">{f.name}</span>
+                  {f.description && <span className="friend-link-desc">{f.description}</span>}
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <section id="contact" className="section contact-section">
         <div className="section-inner">

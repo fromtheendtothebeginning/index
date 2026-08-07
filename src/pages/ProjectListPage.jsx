@@ -36,7 +36,7 @@ function ProjectListPage() {
             <h1 className="project-title">项目</h1>
             <p className="project-subtitle">每一个项目都是一次对边界的试探</p>
           </div>
-          {user && (
+          {user && user.role === 'admin' && (
             <Link to="/projects/new" className="btn btn-primary">新建项目</Link>
           )}
         </div>
@@ -46,7 +46,7 @@ function ProjectListPage() {
         ) : projects.length === 0 ? (
           <div className="blog-empty">
             <p>还没有项目</p>
-            {user && <Link to="/projects/new" className="btn btn-primary">创建第一个项目</Link>}
+            {user && user.role === 'admin' && <Link to="/projects/new" className="btn btn-primary">创建第一个项目</Link>}
           </div>
         ) : (
           <div className="project-grid">

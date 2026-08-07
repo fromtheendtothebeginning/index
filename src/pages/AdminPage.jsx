@@ -17,6 +17,9 @@ function AdminPage() {
   const [comments, setComments] = useState([])
   const [blogs, setBlogs] = useState([])
   const [codes, setCodes] = useState([])
+  const [links, setLinks] = useState([])
+  const [linkForm, setLinkForm] = useState({ name: '', url: '', description: '' })
+  const [linkEditingId, setLinkEditingId] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -92,13 +95,25 @@ function AdminPage() {
     finally { setLoading(false) }
   }, [])
 
+  const loadLinks = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await fetch('/api/admin/friend-links', { headers: authHeaders() })
+      const data = await res.json()
+      setLinks(data.links || [])
+    } catch { setError('网络错误') }
+    finally { setLoading(false) }
+  }, [])
+
   useEffect(() => {
     if (!authChecked) return
     if (tab === 'users') loadUsers()
     else if (tab === 'comments') loadComments()
     else if (tab === 'blogs') loadBlogs()
     else if (tab === 'codes') loadCodes()
-  }, [authChecked, tab, loadUsers, loadComments, loadBlogs, loadCodes])
+    else if (tab === 'links') loadLinks()
+  }, [authChecked, tab, loadUsers, loadComments, loadBlogs, loadCodes, loadLinks])
 
   // 设置角色
   const handleSetRole = async (userId, role) => {
@@ -198,6 +213,47 @@ function AdminPage() {
     } catch { alert('网络错误') }
   }
 
+  // 保存 / 更新友情链接
+  const handleSaveLink = async () => {
+    if (!linkForm.name.trim() || !linkForm.url.trim()) { alert('请填写名称和链接'); return }
+    try {
+      const url = linkEditingId ? `/api/admin/friend-links/${linkEditingId}` : '/api/admin/friend-links'
+      const method = linkEditingId ? 'PUT' : 'POST'
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({
+          name: linkForm.name.trim(),
+          url: linkForm.url.trim(),
+          description: linkForm.description || null,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) { alert(data.detail || '保存失败'); return }
+      setLinkForm({ name: '', url: '', description: '' })
+      setLinkEditingId(null)
+      loadLinks()
+    } catch { alert('网络错误') }
+  }
+
+  const handleStartEditLink = (link) => {
+    setLinkForm({ name: link.name, url: link.url, description: link.description || '' })
+    setLinkEditingId(link.id)
+  }
+
+  const handleDeleteLink = async (linkId) => {
+    if (!linkId) return
+    try {
+      const res = await fetch(`/api/admin/friend-links/${linkId}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      })
+      if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.detail || '删除失败'); return }
+      setLinks(prev => prev.filter(l => l.id !== linkId))
+    } catch { alert('网络错误') }
+    finally { setModal(null) }
+  }
+
   const copyCode = (code) => {
     navigator.clipboard?.writeText(code).then(() => {
       alert(`已复制：${code}`)
@@ -226,6 +282,7 @@ function AdminPage() {
           <button className={`admin-tab ${tab === 'comments' ? 'active' : ''}`} onClick={() => setTab('comments')}>评论管理</button>
           <button className={`admin-tab ${tab === 'blogs' ? 'active' : ''}`} onClick={() => setTab('blogs')}>博客管理</button>
           <button className={`admin-tab ${tab === 'codes' ? 'active' : ''}`} onClick={() => setTab('codes')}>邀请码</button>
+          <button className={`admin-tab ${tab === 'links' ? 'active' : ''}`} onClick={() => setTab('links')}>友情链接</button>
         </div>
 
         {error && <div className="admin-error">{error}</div>}
@@ -284,16 +341,19 @@ function AdminPage() {
               <div className="admin-comment-list">
                 {comments.map(c => (
                   <div key={c.id} className="admin-comment-item">
-                    <div className="admin-comment-meta">
-                      <span className="admin-comment-author">{c.user?.nickname || c.user?.username || '匿名'}</span>
-                      <span className="admin-comment-blog">
-                        <Link to={`/blogs/${c.blog_id}`} target="_blank">{c.blog_title || `#${c.blog_id}`}</Link>
-                      </span>
-                      <span className="admin-cell-time">{fmtTime(c.created_at)}</span>
+                    <div className="admin-comment-main">
+                      <div className="admin-comment-meta">
+                        <span className="admin-comment-author">{c.user?.nickname || c.user?.username || '匿名'}</span>
+                        <span className="admin-comment-blog">
+                          <Link to={`/blogs/${c.blog_id}`} target="_blank">{c.blog_title || `#${c.blog_id}`}</Link>
+                        </span>
+                        <span className="admin-cell-time">{fmtTime(c.created_at)}</span>
+                      </div>
+                      <div className="admin-comment-content">{c.content}</div>
                     </div>
-                    <div className="admin-comment-content">{c.content}</div>
                     <button
-                      className="btn btn-danger btn-sm"
+                      className="comment-delete-btn"
+                      title="删除评论"
                       onClick={() => setModal({
                         id: c.id,
                         title: '删除评论',
@@ -302,7 +362,7 @@ function AdminPage() {
                         onConfirm: () => handleDeleteComment(c.id),
                       })}
                     >
-                      删除
+                      ×
                     </button>
                   </div>
                 ))}
@@ -361,6 +421,85 @@ function AdminPage() {
                         })}
                       >
                         撤回
+                      </button>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 友情链接管理 */}
+        {tab === 'links' && !loading && (
+          <div className="admin-section">
+            <div className="admin-section-head">
+              <h2>友情链接（{links.length}）</h2>
+            </div>
+            <div className="admin-link-form">
+              <input
+                className="admin-link-input"
+                placeholder="名称"
+                value={linkForm.name}
+                onChange={e => setLinkForm({ ...linkForm, name: e.target.value })}
+              />
+              <input
+                className="admin-link-input"
+                placeholder="URL（https://...）"
+                value={linkForm.url}
+                onChange={e => setLinkForm({ ...linkForm, url: e.target.value })}
+              />
+              <input
+                className="admin-link-input"
+                placeholder="简介（可选）"
+                value={linkForm.description}
+                onChange={e => setLinkForm({ ...linkForm, description: e.target.value })}
+              />
+              <button className="btn btn-primary btn-sm" onClick={handleSaveLink}>
+                {linkEditingId ? '保存' : '添加'}
+              </button>
+              {linkEditingId && (
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => {
+                    setLinkForm({ name: '', url: '', description: '' })
+                    setLinkEditingId(null)
+                  }}
+                >
+                  取消
+                </button>
+              )}
+            </div>
+            {links.length === 0 ? (
+              <div className="admin-empty">暂无友情链接</div>
+            ) : (
+              <div className="admin-table">
+                <div className="admin-row admin-row-head admin-row-links">
+                  <span>名称</span>
+                  <span>链接</span>
+                  <span>简介</span>
+                  <span>操作</span>
+                </div>
+                {links.map(l => (
+                  <div key={l.id} className="admin-row admin-row-links">
+                    <span>{l.name}</span>
+                    <span className="admin-cell-title">
+                      <a href={l.url} target="_blank" rel="noopener noreferrer">{l.url}</a>
+                    </span>
+                    <span>{l.description || '-'}</span>
+                    <span className="admin-link-actions">
+                      <button className="btn-role-toggle" onClick={() => handleStartEditLink(l)}>编辑</button>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={() => setModal({
+                          id: l.id,
+                          title: '删除友情链接',
+                          message: `确认删除友情链接「${l.name}」？删除后无法恢复。`,
+                          confirmText: '确认删除',
+                          onConfirm: () => handleDeleteLink(l.id),
+                        })}
+                      >
+                        删除
                       </button>
                     </span>
                   </div>

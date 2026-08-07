@@ -60,6 +60,7 @@ class Project(Base):
     cover_url = Column(String(500), nullable=True, comment="封面图床 URL")
     tags = Column(Text, nullable=True, comment="标签，逗号分隔")
     bg_color = Column(String(9), nullable=True, comment="自定义封面背景色，如 #6c5ce7")
+    link_url = Column(String(500), nullable=True, comment="项目链接（GitHub/下载，可自定义）")
     author_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), comment="创建时间")
     updated_at = Column(
@@ -123,3 +124,17 @@ class InviteCode(Base):
 
     def __repr__(self):
         return f"<InviteCode(id={self.id}, code='{self.code}', used={self.is_used}, reusable={self.is_reusable})>"
+
+
+class FriendLink(Base):
+    """友情链接"""
+    __tablename__ = "friend_links"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    name = Column(String(100), nullable=False, comment="站点名称")
+    url = Column(String(500), nullable=False, comment="链接地址")
+    description = Column(String(200), nullable=True, comment="简介")
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), comment="创建时间")
+
+    def __repr__(self):
+        return f"<FriendLink(id={self.id}, name='{self.name}')>"

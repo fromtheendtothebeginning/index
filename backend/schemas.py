@@ -77,6 +77,7 @@ class CreateProjectRequest(BaseModel):
     cover_url: Optional[str] = Field(None, max_length=500, description="封面图床 URL")
     tags: Optional[list[str]] = Field(None, description="项目标签列表")
     bg_color: Optional[str] = Field(None, max_length=9, description="自定义封面背景色，如 #6c5ce7")
+    link_url: Optional[str] = Field(None, max_length=500, description="项目链接（GitHub/下载，可自定义）")
 
 
 class UpdateProjectRequest(BaseModel):
@@ -85,6 +86,7 @@ class UpdateProjectRequest(BaseModel):
     cover_url: Optional[str] = Field(None, max_length=500, description="封面图床 URL")
     tags: Optional[list[str]] = Field(None, description="项目标签列表")
     bg_color: Optional[str] = Field(None, max_length=9, description="自定义封面背景色，如 #6c5ce7")
+    link_url: Optional[str] = Field(None, max_length=500, description="项目链接（GitHub/下载，可自定义）")
 
 
 class UpdateProjectBlogsRequest(BaseModel):
@@ -157,6 +159,7 @@ class ProjectResponse(BaseModel):
     cover_url: Optional[str] = None
     tags: list[str] = []
     bg_color: Optional[str] = None
+    link_url: Optional[str] = None
     author_id: int
     author: Optional[BlogAuthorResponse] = None
     blog_count: int = 0
@@ -187,6 +190,7 @@ class ProjectDetailResponse(BaseModel):
     cover_url: Optional[str] = None
     tags: list[str] = []
     bg_color: Optional[str] = None
+    link_url: Optional[str] = None
     author_id: int
     author: Optional[BlogAuthorResponse] = None
     created_at: datetime
@@ -336,3 +340,32 @@ class CreateInviteCodeResponse(BaseModel):
 
 class UpdateInviteCodeReusableRequest(BaseModel):
     is_reusable: bool = Field(..., description="是否可重复使用")
+
+
+# ── 友情链接 ──
+
+class FriendLinkRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100, description="站点名称")
+    url: str = Field(..., min_length=1, max_length=500, description="链接地址")
+    description: Optional[str] = Field(None, max_length=200, description="简介")
+
+
+class UpdateFriendLinkRequest(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=100, description="站点名称")
+    url: Optional[str] = Field(None, min_length=1, max_length=500, description="链接地址")
+    description: Optional[str] = Field(None, max_length=200, description="简介")
+
+
+class FriendLinkResponse(BaseModel):
+    id: int
+    name: str
+    url: str
+    description: Optional[str] = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class FriendLinkListResponse(BaseModel):
+    total: int
+    links: list[FriendLinkResponse]

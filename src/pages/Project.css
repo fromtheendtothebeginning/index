@@ -732,3 +732,21 @@
   margin-bottom: 0;
 }
 
+/* ---------- 项目外链按钮 ---------- */
+.project-link-btn {
+  display: inline-block;
+  padding: 8px 20px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent-1), #8b7cf7);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.project-link-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
