@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import AuthPage from './pages/AuthPage'
-import LoginPage from './pages/LoginPage'
-import RegisterPage from './pages/RegisterPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import BlogListPage from './pages/BlogListPage'
 import BlogDetailPage from './pages/BlogDetailPage'
@@ -167,8 +165,7 @@ function App() {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/auth" element={<AuthPage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/login" element={<Navigate to="/auth" replace />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/blogs" element={<BlogListPage />} />
       <Route path="/blogs/new" element={<BlogEditorPage />} />

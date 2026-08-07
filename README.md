@@ -151,9 +151,7 @@ anticraft/
 │   ├── utils/
 │   │   └── markdown.js      # Markdown 渲染器
 │   └── pages/
-│       ├── AuthPage.jsx
-│       ├── LoginPage.jsx
-│       ├── RegisterPage.jsx
+│       ├── AuthPage.jsx            # 登录/注册双 Tab 合一页
 │       ├── ResetPasswordPage.jsx
 │       ├── BlogListPage.jsx
 │       ├── BlogDetailPage.jsx
@@ -239,9 +237,7 @@ anticraft/
 | **博客详情** | `/blogs/{id}` | Markdown 渲染 + 点赞 + 评论 + 作者/管理员操作 |
 | **写文章** | `/blogs/new` | Markdown 编辑器 + 实时预览 |
 | **编辑文章** | `/blogs/{id}/edit` | 同上，预填内容 |
-| **登录** | `/login` | 用户名 + 密码 |
-| **注册** | `/register` | 用户名 + 密码 + 邀请码 |
-| **登录/注册合一** | `/auth` | 双栏切换 |
+| **登录/注册** | `/auth` | 登录/注册双 Tab 合一（`/login` 重定向至此） |
 | **重置密码** | `/reset-password` | 用户名 + 邀请码 + 新密码 |
 | **编辑资料** | `/profile` | 昵称 + 头像 + 退出登录 |
 | **管理员后台** | `/admin` | 用户/评论/博客/邀请码四 Tab |
@@ -309,7 +305,7 @@ npm run build    # 产物输出到 dist/
 
 ### Nginx 配置参考
 
-见 `anticraft.nginx.conf`：静态文件 `/var/www/anticraft/dist/`，`/api/` 代理到 `127.0.0.1:8000`。
+`/var/www/anticraft/dist/` 提供静态文件，`/api/` 反向代理到 `127.0.0.1:8000`。配置由 `deploy.bat` Step 7 自动生成，无需手工维护独立配置文件。
 
 ---
 

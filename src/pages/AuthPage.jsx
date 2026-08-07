@@ -2,8 +2,6 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import './Auth.css'
 
-const API_BASE = '/api'
-
 function AuthPage() {
   const navigate = useNavigate()
   const [mode, setMode] = useState('login')
@@ -200,6 +198,12 @@ function AuthPage() {
                   </div>
                   {errors.password && <span className="form-error">{errors.password}</span>}
                 </div>
+
+                {mode === 'login' && (
+                  <div className="form-group form-forgot">
+                    <Link to="/reset-password" className="forgot-password-link">忘记密码？</Link>
+                  </div>
+                )}
 
                 {mode === 'register' && (
                   <div className="form-group">

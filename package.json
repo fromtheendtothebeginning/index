@@ -8,7 +8,6 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "backend": "cmd /c \"backend\\.venv\\Scripts\\activate.bat && python backend\\main.py\"",
     "back": "cmd /c \"backend\\.venv\\Scripts\\activate.bat && python backend\\main.py\"",
     "start": "start cmd /c \"npm run dev\" & start cmd /c \"npm run back\""
   },

@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import './ProfileEdit.css'
 
-const DEFAULT_AVATAR = ''
-
 function ProfileEdit() {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)

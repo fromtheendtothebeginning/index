@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 
 /**
- * 统一弹窗组件 —— 复用 Blog.css 中的 .modal-overlay / .modal-sheet 样式
+ * 统一弹窗组件 —— 复用 App.css 中的 .modal-overlay / .modal-sheet 样式（全局共享）
  * @param {object} props
  * @param {boolean} props.open - 是否显示
  * @param {string} props.title - 标题

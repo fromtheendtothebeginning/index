@@ -11,7 +11,6 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     username = Column(String(50), unique=True, nullable=False, index=True, comment="用户名")
-    email = Column(String(120), unique=True, nullable=True, comment="邮箱")
     hashed_password = Column(String(255), nullable=False, comment="加密后的密码")
     nickname = Column(String(50), nullable=True, comment="昵称")
     avatar_url = Column(String(500), nullable=True, comment="头像 URL")
@@ -58,8 +57,6 @@ class BlogLike(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), comment="点赞时间")
 
-    user = relationship("User")
-
 
 class Comment(Base):
     """博客评论"""
@@ -97,7 +94,6 @@ class InviteCode(Base):
 
     creator = relationship("User", foreign_keys=[created_by])
     owner = relationship("User", foreign_keys=[owner_user_id])
-    used_user = relationship("User", foreign_keys=[used_by])
 
     def __repr__(self):
         return f"<InviteCode(id={self.id}, code='{self.code}', used={self.is_used}, reusable={self.is_reusable})>"
