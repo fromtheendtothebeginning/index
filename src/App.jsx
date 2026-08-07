@@ -12,6 +12,7 @@ import ProjectEditorPage from './pages/ProjectEditorPage'
 import ProfileEdit from './pages/ProfileEdit'
 import AdminPage from './pages/AdminPage'
 import { renderMd } from './utils/markdown'
+import ProjectCover from './components/ProjectCover'
 import './App.css'
 
 function HomePage() {
@@ -123,7 +124,7 @@ function HomePage() {
               recentProjects.map(p => (
                 <Link to={`/projects/${p.id}`} key={p.id} className="project-card scroll-reveal">
                   {p.cover_url ? (
-                    <img src={p.cover_url} alt={p.name} className="project-cover" />
+                    <ProjectCover src={p.cover_url} alt={p.name} className="project-cover" bgColor={p.bg_color} />
                   ) : (
                     <div className="project-card-bg" />
                   )}

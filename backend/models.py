@@ -59,6 +59,7 @@ class Project(Base):
     description = Column(Text, nullable=True, comment="项目简介")
     cover_url = Column(String(500), nullable=True, comment="封面图床 URL")
     tags = Column(Text, nullable=True, comment="标签，逗号分隔")
+    bg_color = Column(String(9), nullable=True, comment="自定义封面背景色，如 #6c5ce7")
     author_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), comment="创建时间")
     updated_at = Column(

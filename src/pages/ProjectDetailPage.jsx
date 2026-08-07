@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Modal from '../components/Modal'
+import ProjectCover from '../components/ProjectCover'
 import { renderMd } from '../utils/markdown'
 import './Project.css'
 
@@ -93,7 +94,7 @@ function ProjectDetailPage() {
           </div>
 
           {project.cover_url ? (
-            <img src={project.cover_url} alt={project.name} className="project-detail-cover" />
+            <ProjectCover src={project.cover_url} alt={project.name} className="project-detail-cover" bgColor={project.bg_color} />
           ) : (
             <div className="project-detail-cover project-cover-placeholder">
               {project.name.charAt(0)}

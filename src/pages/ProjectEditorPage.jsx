@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import ProjectCover from '../components/ProjectCover'
 import './Project.css'
 
 function ProjectEditorPage() {
@@ -11,6 +12,7 @@ function ProjectEditorPage() {
   const [coverUrl, setCoverUrl] = useState('')
   const [description, setDescription] = useState('')
   const [tags, setTags] = useState('')
+  const [bgColor, setBgColor] = useState('')
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -32,6 +34,7 @@ function ProjectEditorPage() {
         setCoverUrl(data.cover_url || '')
         setDescription(data.description || '')
         setTags((data.tags || []).join(', '))
+        setBgColor(data.bg_color || '')
         setSelectedBlogIds((data.blogs || []).map(b => b.id))
       })
       .catch(() => setError('加载失败'))
@@ -71,6 +74,7 @@ function ProjectEditorPage() {
           description: description || null,
           cover_url: coverUrl || null,
           tags: tags.split(/[,，]/).map(s => s.trim()).filter(Boolean),
+          bg_color: bgColor || null,
         }),
       })
       const data = await res.json()
@@ -140,7 +144,7 @@ function ProjectEditorPage() {
             />
             <div className="cover-preview">
               {coverUrl ? (
-                <img src={coverUrl} alt="封面预览" className="cover-preview-img" />
+                <ProjectCover src={coverUrl} alt="封面预览" className="cover-preview-img" bgColor={bgColor} />
               ) : (
                 <span className="cover-preview-placeholder">暂无封面预览</span>
               )}
@@ -167,6 +171,19 @@ function ProjectEditorPage() {
               value={tags}
               onChange={e => setTags(e.target.value)}
             />
+          </div>
+
+          <div className="editor-field">
+            <label className="editor-label">封面背景色（可选）</label>
+            <div className="editor-bg-color-row">
+              <input
+                type="color"
+                value={bgColor || '#6c5ce7'}
+                onChange={e => setBgColor(e.target.value)}
+              />
+              <button type="button" className="btn" onClick={() => setBgColor('')}>自动</button>
+              <span className="editor-hint">{bgColor ? '已自定义' : '自动（跟随图片主色）'}</span>
+            </div>
           </div>
 
           {isEdit ? (

@@ -107,6 +107,9 @@ def run_migrations():
             if "author_id" not in pcolumns:
                 conn.execute(text("ALTER TABLE projects ADD COLUMN author_id INT NULL"))
                 conn.commit()
+            if "bg_color" not in pcolumns:
+                conn.execute(text("ALTER TABLE projects ADD COLUMN bg_color VARCHAR(9) NULL"))
+                conn.commit()
             if "owner_id" in pcolumns:
                 # 旧版遗留列：回填 author_id（继承 owner_id），并把 owner_id 置为可空，
                 # 否则 INSERT（新模型不含 owner_id）报 "Field 'owner_id' doesn't have a default value"

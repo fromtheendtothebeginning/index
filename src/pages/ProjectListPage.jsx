@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import ProjectCover from '../components/ProjectCover'
 import './Project.css'
 
 const API_BASE = '/api'
@@ -52,7 +53,7 @@ function ProjectListPage() {
             {projects.map(project => (
               <Link key={project.id} to={`/projects/${project.id}`} className="project-card">
                 {project.cover_url ? (
-                  <img src={project.cover_url} alt={project.name} className="project-cover" />
+                  <ProjectCover src={project.cover_url} alt={project.name} className="project-cover" bgColor={project.bg_color} />
                 ) : (
                   <div className="project-cover project-cover-placeholder">
                     {project.name.charAt(0)}

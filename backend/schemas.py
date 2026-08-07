@@ -76,6 +76,7 @@ class CreateProjectRequest(BaseModel):
     description: Optional[str] = Field(None, max_length=65535, description="项目简介")
     cover_url: Optional[str] = Field(None, max_length=500, description="封面图床 URL")
     tags: Optional[list[str]] = Field(None, description="项目标签列表")
+    bg_color: Optional[str] = Field(None, max_length=9, description="自定义封面背景色，如 #6c5ce7")
 
 
 class UpdateProjectRequest(BaseModel):
@@ -83,6 +84,7 @@ class UpdateProjectRequest(BaseModel):
     description: Optional[str] = Field(None, max_length=65535, description="项目简介")
     cover_url: Optional[str] = Field(None, max_length=500, description="封面图床 URL")
     tags: Optional[list[str]] = Field(None, description="项目标签列表")
+    bg_color: Optional[str] = Field(None, max_length=9, description="自定义封面背景色，如 #6c5ce7")
 
 
 class UpdateProjectBlogsRequest(BaseModel):
@@ -154,6 +156,7 @@ class ProjectResponse(BaseModel):
     description: Optional[str] = None
     cover_url: Optional[str] = None
     tags: list[str] = []
+    bg_color: Optional[str] = None
     author_id: int
     author: Optional[BlogAuthorResponse] = None
     blog_count: int = 0
@@ -183,6 +186,7 @@ class ProjectDetailResponse(BaseModel):
     description: Optional[str] = None
     cover_url: Optional[str] = None
     tags: list[str] = []
+    bg_color: Optional[str] = None
     author_id: int
     author: Optional[BlogAuthorResponse] = None
     created_at: datetime

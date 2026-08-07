@@ -711,3 +711,24 @@
   font-size: 12px;
   font-weight: 500;
 }
+
+.editor-bg-color-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.editor-bg-color-row input[type='color'] {
+  width: 48px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.editor-bg-color-row .editor-hint {
+  margin-bottom: 0;
+}
+

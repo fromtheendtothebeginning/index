@@ -459,6 +459,8 @@ def create_project(
     )
     if req.tags is not None:
         project.tags = ",".join(t.strip() for t in req.tags if t.strip())
+    if req.bg_color is not None:
+        project.bg_color = req.bg_color or None
     db.add(project)
     db.commit()
     db.refresh(project)
@@ -498,6 +500,8 @@ def update_project(
         value = getattr(req, field)
         if value is not None:
             setattr(project, field, value)
+    if "bg_color" in req.model_fields_set:
+        project.bg_color = req.bg_color or None
     if req.tags is not None:
         project.tags = ",".join(t.strip() for t in req.tags if t.strip())
 
