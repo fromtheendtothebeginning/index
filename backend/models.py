@@ -92,6 +92,7 @@ class Comment(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     blog_id = Column(Integer, ForeignKey("blogs.id", ondelete="CASCADE"), nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    parent_id = Column(Integer, ForeignKey("comments.id", ondelete="CASCADE"), nullable=True, index=True, comment="父评论 ID（回复时非空）")
     content = Column(Text, nullable=False, comment="评论内容")
     created_at = Column(DateTime(timezone=True), server_default=func.now(), comment="评论时间")
     updated_at = Column(
@@ -99,9 +100,44 @@ class Comment(Base):
     )
 
     user = relationship("User")
+    parent = relationship("Comment", remote_side="Comment.id", backref="replies")
 
     def __repr__(self):
         return f"<Comment(id={self.id}, blog_id={self.blog_id})>"
+
+
+class CommentLike(Base):
+    """评论点赞记录 —— 同一用户对同一评论只能点赞一次"""
+    __tablename__ = "comment_likes"
+    __table_args__ = (UniqueConstraint("comment_id", "user_id", name="uq_comment_user_like"),)
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    comment_id = Column(Integer, ForeignKey("comments.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), comment="点赞时间")
+
+    user = relationship("User")
+
+
+class Notification(Base):
+    """站内通知 —— 评论回复 / 评论点赞"""
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True, comment="接收者 ID")
+    type = Column(String(30), nullable=False, comment="类型：comment_reply / comment_like / blog_comment_like")
+    actor_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, comment="触发者 ID")
+    blog_id = Column(Integer, ForeignKey("blogs.id", ondelete="CASCADE"), nullable=True, comment="相关博客 ID")
+    comment_id = Column(Integer, ForeignKey("comments.id", ondelete="CASCADE"), nullable=True, comment="相关评论 ID")
+    content = Column(String(300), nullable=False, comment="通知文案快照")
+    is_read = Column(Boolean, default=False, nullable=False, comment="是否已读")
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), comment="通知时间")
+
+    actor = relationship("User", foreign_keys=[actor_id])
+    recipient = relationship("User", foreign_keys=[user_id])
+
+    def __repr__(self):
+        return f"<Notification(id={self.id}, user_id={self.user_id}, type='{self.type}', read={self.is_read})>"
 
 
 class InviteCode(Base):

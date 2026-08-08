@@ -11,6 +11,7 @@ import ProjectDetailPage from './pages/ProjectDetailPage'
 import ProjectEditorPage from './pages/ProjectEditorPage'
 import ProfileEdit from './pages/ProfileEdit'
 import AdminPage from './pages/AdminPage'
+import MyPage from './pages/MyPage'
 import { renderMd } from './utils/markdown'
 import ProjectCover from './components/ProjectCover'
 import Reveal from './components/Reveal'
@@ -210,6 +211,7 @@ function App() {
       <Route path="/projects/:id/edit" element={<ProjectEditorPage />} />
       <Route path="/profile" element={<ProfileEdit />} />
       <Route path="/admin" element={<AdminPage />} />
+      <Route path="/my" element={<MyPage />} />
     </Routes>
   )
 }

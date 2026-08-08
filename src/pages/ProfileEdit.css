@@ -222,6 +222,11 @@
   margin-top: 4px;
 }
 
+.profile-admin-btn {
+  width: 100%;
+  justify-content: center;
+}
+
 /* ── 响应式 ── */
 @media (max-width: 480px) {
   .profile-container {
@@ -243,6 +248,7 @@
 }
 .profile-logout-btn {
   width: 100%;
+  justify-content: center;
   padding: 10px;
   font-size: 14px;
   border-radius: 8px;

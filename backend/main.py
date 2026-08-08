@@ -9,12 +9,13 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session, joinedload
 
 from database import get_db, init_db, run_migrations
-from models import User, Blog, BlogLike, Comment, InviteCode, Project, FriendLink
+from models import User, Blog, BlogLike, Comment, CommentLike, Notification, InviteCode, Project, FriendLink
 from schemas import (
     RegisterRequest, LoginRequest, ResetPasswordRequest, UpdateProfileRequest,
     CreateBlogRequest, UpdateBlogRequest, TokenResponse, UserResponse,
     BlogResponse, BlogListItem, BlogListResponse, MessageResponse,
-    LikeToggleResponse, CommentResponse, CommentListResponse, CreateCommentRequest,
+    LikeToggleResponse, CommentLikeToggleResponse, CommentResponse, CommentListResponse,
+    CreateCommentRequest, NotificationResponse, NotificationListResponse, MarkNotificationsReadRequest,
     AdminUserResponse, AdminUserListResponse, UpdateUserRoleRequest,
     AdminCommentResponse, AdminCommentListResponse,
     AdminBlogListItem, AdminBlogListResponse, UpdateBlogCategoryRequest,
@@ -596,6 +597,32 @@ def delete_project(
 # 点赞 API
 # ============================================
 
+def _notify(db, user_id, type_, actor_id, blog_id, comment_id, content):
+    """发站内通知并去重：同接收者/类型/触发者/目标的未读通知已存在则不再发。"""
+    dup = (
+        db.query(Notification)
+        .filter(
+            Notification.user_id == user_id,
+            Notification.type == type_,
+            Notification.actor_id == actor_id,
+            Notification.comment_id == comment_id,
+            Notification.is_read.is_(False),
+        )
+        .first()
+    )
+    if dup:
+        return
+    db.add(Notification(
+        user_id=user_id,
+        type=type_,
+        actor_id=actor_id,
+        blog_id=blog_id,
+        comment_id=comment_id,
+        content=content,
+    ))
+    db.commit()
+
+
 @app.post("/api/blogs/{blog_id}/like", response_model=LikeToggleResponse, tags=["点赞"])
 def toggle_like(
     blog_id: int,
@@ -625,17 +652,65 @@ def toggle_like(
     return LikeToggleResponse(liked=liked, like_count=like_count)
 
 
+@app.post("/api/comments/{comment_id}/like", response_model=CommentLikeToggleResponse, tags=["点赞"])
+def toggle_comment_like(
+    comment_id: int,
+    current_user: User = Depends(get_current_user_obj),
+    db: Session = Depends(get_db),
+):
+    """切换评论点赞状态（已点赞则取消，未点赞则点赞）"""
+    comment = db.query(Comment).filter(Comment.id == comment_id).first()
+    if not comment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="评论不存在")
+
+    existing = (
+        db.query(CommentLike)
+        .filter(CommentLike.comment_id == comment_id, CommentLike.user_id == current_user.id)
+        .first()
+    )
+    if existing:
+        db.delete(existing)
+        db.commit()
+        liked = False
+    else:
+        db.add(CommentLike(comment_id=comment_id, user_id=current_user.id))
+        db.commit()
+        liked = True
+        # 首次点赞才发通知（_notify 内部去重）
+        blog = db.query(Blog).filter(Blog.id == comment.blog_id).first()
+        # a) 通知评论作者（自己赞自己的评论不通知）
+        if comment.user_id != current_user.id:
+            _notify(
+                db, comment.user_id, "comment_like", current_user.id,
+                comment.blog_id, comment.id, f"「{current_user.username}」赞了你的评论",
+            )
+        # b) 博客作者与评论作者不是同一人且非当前用户时，通知博客作者
+        if blog and blog.author_id != comment.user_id and blog.author_id != current_user.id:
+            _notify(
+                db, blog.author_id, "blog_comment_like", current_user.id,
+                comment.blog_id, comment.id, f"「{current_user.username}」赞了你博客下的评论",
+            )
+
+    like_count = db.query(CommentLike).filter(CommentLike.comment_id == comment_id).count()
+    return CommentLikeToggleResponse(liked=liked, like_count=like_count)
+
+
 # ============================================
 # 评论 API
 # ============================================
 
 @app.get("/api/blogs/{blog_id}/comments", response_model=CommentListResponse, tags=["评论"])
-def list_comments(blog_id: int, db: Session = Depends(get_db)):
-    """获取某篇博客的评论列表（按时间正序）"""
+def list_comments(
+    blog_id: int,
+    token: Optional[str] = Depends(oauth2_scheme_optional),
+    db: Session = Depends(get_db),
+):
+    """获取某篇博客的评论列表（按时间正序，父评论在回复之前）"""
     blog = db.query(Blog).filter(Blog.id == blog_id).first()
     if not blog:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="博客不存在")
 
+    current_user = get_optional_user(token, db)
     comments = (
         db.query(Comment)
         .options(joinedload(Comment.user))
@@ -643,6 +718,45 @@ def list_comments(blog_id: int, db: Session = Depends(get_db)):
         .order_by(Comment.created_at.asc())
         .all()
     )
+    # 批量统计点赞数与当前用户是否点赞
+    comment_ids = [c.id for c in comments]
+    like_counts = {}
+    if comment_ids:
+        for (cid,) in (
+            db.query(CommentLike.comment_id)
+            .filter(CommentLike.comment_id.in_(comment_ids))
+            .all()
+        ):
+            like_counts[cid] = like_counts.get(cid, 0) + 1
+    liked_by_me_ids = set()
+    if comment_ids and current_user:
+        liked_by_me_ids = {
+            cid for (cid,) in (
+                db.query(CommentLike.comment_id)
+                .filter(CommentLike.comment_id.in_(comment_ids), CommentLike.user_id == current_user.id)
+                .all()
+            )
+        }
+    # 递归统计每个评论的后代回复总数（O(n)，带缓存避免重复遍历）
+    children = {}
+    for c in comments:
+        if c.parent_id is not None:
+            children.setdefault(c.parent_id, []).append(c.id)
+    reply_counts = {}
+
+    def count_descendants(cid):
+        if cid in reply_counts:
+            return reply_counts[cid]
+        total = 0
+        for child_id in children.get(cid, []):
+            total += 1 + count_descendants(child_id)
+        reply_counts[cid] = total
+        return total
+
+    for c in comments:
+        c.like_count = like_counts.get(c.id, 0)
+        c.liked_by_me = c.id in liked_by_me_ids
+        c.reply_count = count_descendants(c.id)
     return CommentListResponse(total=len(comments), comments=comments)
 
 
@@ -653,19 +767,37 @@ def create_comment(
     current_user: User = Depends(get_current_user_obj),
     db: Session = Depends(get_db),
 ):
-    """发表评论（需登录）"""
+    """发表评论（需登录，parent_id 非空时为回复）"""
     blog = db.query(Blog).filter(Blog.id == blog_id).first()
     if not blog:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="博客不存在")
 
+    parent = None
+    if req.parent_id is not None:
+        parent = db.query(Comment).filter(Comment.id == req.parent_id).first()
+        if not parent or parent.blog_id != blog_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="父评论不存在或不属于该博客",
+            )
+
     comment = Comment(
         blog_id=blog_id,
         user_id=current_user.id,
+        parent_id=req.parent_id,
         content=req.content,
     )
     db.add(comment)
     db.commit()
     db.refresh(comment)
+
+    # 回复通知：父评论作者（非本人）收到 comment_reply 通知（_notify 内部去重）
+    if parent and parent.user_id != current_user.id:
+        _notify(
+            db, parent.user_id, "comment_reply", current_user.id,
+            blog_id, comment.id, f"「{current_user.username}」回复了你的评论",
+        )
+
     # 重新查询以加载 user 关系
     comment = (
         db.query(Comment)
@@ -673,6 +805,9 @@ def create_comment(
         .filter(Comment.id == comment.id)
         .first()
     )
+    comment.like_count = 0
+    comment.liked_by_me = False
+    comment.reply_count = 0
     return comment
 
 
@@ -694,6 +829,53 @@ def delete_comment(
     db.delete(comment)
     db.commit()
     return MessageResponse(message="评论已删除")
+
+
+# ============================================
+# 通知 API
+# ============================================
+
+@app.get("/api/notifications", response_model=NotificationListResponse, tags=["通知"])
+def list_notifications(
+    current_user: User = Depends(get_current_user_obj),
+    db: Session = Depends(get_db),
+):
+    """获取当前用户的通知列表（按时间倒序）"""
+    notifications = (
+        db.query(Notification)
+        .options(joinedload(Notification.actor))
+        .filter(Notification.user_id == current_user.id)
+        .order_by(Notification.created_at.desc())
+        .all()
+    )
+    unread_count = (
+        db.query(Notification)
+        .filter(Notification.user_id == current_user.id, Notification.is_read.is_(False))
+        .count()
+    )
+    # 附加 actor_username（不在模型中，动态赋值）
+    for n in notifications:
+        n.actor_username = n.actor.username if n.actor else None
+    return NotificationListResponse(
+        total=len(notifications),
+        unread_count=unread_count,
+        notifications=notifications,
+    )
+
+
+@app.put("/api/notifications/read", response_model=MessageResponse, tags=["通知"])
+def mark_notifications_read(
+    req: MarkNotificationsReadRequest,
+    current_user: User = Depends(get_current_user_obj),
+    db: Session = Depends(get_db),
+):
+    """标记通知已读（ids 缺省则全部已读）"""
+    query = db.query(Notification).filter(Notification.user_id == current_user.id)
+    if req.ids:
+        query = query.filter(Notification.id.in_(req.ids))
+    query.update({"is_read": True}, synchronize_session=False)
+    db.commit()
+    return MessageResponse(message="已读")
 
 
 # ============================================
@@ -747,8 +929,23 @@ def admin_list_comments(
     if blog_ids:
         blogs = db.query(Blog).filter(Blog.id.in_(blog_ids)).all()
         blog_titles = {b.id: b.title for b in blogs}
+    # 批量查询父评论（作者与内容）
+    parent_ids = {c.parent_id for c in comments if c.parent_id}
+    parents = {}
+    if parent_ids:
+        p_rows = (
+            db.query(Comment, User)
+            .join(User, User.id == Comment.user_id)
+            .filter(Comment.id.in_(parent_ids))
+            .all()
+        )
+        parents = {c.id: (c, u) for c, u in p_rows}
     for c in comments:
         c.blog_title = blog_titles.get(c.blog_id)
+        if c.parent_id and c.parent_id in parents:
+            pc, pu = parents[c.parent_id]
+            c.parent_content = pc.content
+            c.parent_username = pu.nickname or pu.username
     return AdminCommentListResponse(total=len(comments), comments=comments)
 
 

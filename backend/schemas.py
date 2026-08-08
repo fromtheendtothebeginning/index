@@ -216,6 +216,11 @@ class LikeToggleResponse(BaseModel):
     like_count: int
 
 
+class CommentLikeToggleResponse(BaseModel):
+    liked: bool
+    like_count: int
+
+
 # ── 评论 ──
 
 class CommentUserResponse(BaseModel):
@@ -231,7 +236,11 @@ class CommentResponse(BaseModel):
     id: int
     blog_id: int
     user_id: int
+    parent_id: Optional[int] = None
     content: str
+    like_count: int = 0
+    liked_by_me: bool = False
+    reply_count: int = 0
     created_at: datetime
     updated_at: datetime
     user: Optional[CommentUserResponse] = None
@@ -246,6 +255,33 @@ class CommentListResponse(BaseModel):
 
 class CreateCommentRequest(BaseModel):
     content: str = Field(..., min_length=1, max_length=2000, description="评论内容")
+    parent_id: Optional[int] = Field(None, description="父评论 ID（回复时非空）")
+
+
+# ── 通知 ──
+
+class MarkNotificationsReadRequest(BaseModel):
+    ids: Optional[list[int]] = Field(None, description="要标记已读的通知 ID 列表，缺省则全部已读")
+
+
+class NotificationResponse(BaseModel):
+    id: int
+    type: str
+    content: str
+    is_read: bool
+    blog_id: Optional[int] = None
+    comment_id: Optional[int] = None
+    actor_id: int
+    actor_username: Optional[str] = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class NotificationListResponse(BaseModel):
+    total: int
+    unread_count: int
+    notifications: list[NotificationResponse]
 
 
 # ── 管理员 ──
@@ -273,11 +309,14 @@ class UpdateUserRoleRequest(BaseModel):
 
 
 class AdminCommentResponse(BaseModel):
-    """管理员视角的评论（含博客标题和用户名）"""
+    """管理员视角的评论（含博客标题、用户名与父评论）"""
     id: int
     blog_id: int
     user_id: int
     content: str
+    parent_id: Optional[int] = None
+    parent_content: Optional[str] = None
+    parent_username: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     user: Optional[CommentUserResponse] = None

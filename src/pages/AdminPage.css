@@ -254,7 +254,7 @@
 
 .btn-danger {
   background: #e74c3c;
-  color: #1a1a2e;
+  color: #fff;
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -563,4 +563,17 @@
   display: flex;
   gap: 8px;
   flex-wrap: nowrap;
+}
+
+/* 父评论引用 */
+.admin-comment-parent {
+  font-size: 12px;
+  color: var(--text-secondary, #3a3a4e);
+  background: rgba(255, 255, 255, 0.04);
+  border-left: 3px solid var(--accent-1, #6c5ce7);
+  padding: 4px 10px;
+  margin-bottom: 6px;
+  border-radius: 0 6px 6px 0;
+  white-space: pre-wrap;
+  word-break: break-word;
 }

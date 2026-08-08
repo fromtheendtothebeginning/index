@@ -349,6 +349,9 @@ function AdminPage() {
                         </span>
                         <span className="admin-cell-time">{fmtTime(c.created_at)}</span>
                       </div>
+                      {c.parent_id && (
+                        <div className="admin-comment-parent">回复 @{c.parent_username || '匿名'}：{c.parent_content}</div>
+                      )}
                       <div className="admin-comment-content">{c.content}</div>
                     </div>
                     <button

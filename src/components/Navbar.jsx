@@ -5,6 +5,7 @@ import NavItem from './NavItem'
 function Navbar({ activePage }) {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
+  const [unread, setUnread] = useState(0)
 
   useEffect(() => {
     const raw = localStorage.getItem('user')
@@ -56,6 +57,26 @@ function Navbar({ activePage }) {
     return () => { cancelled = true }
   }, [])
 
+  // 拉取未读通知数，登录时在「我的」栏目显示徽标（路由变化重新挂载即自动刷新）
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (!user || !token) {
+      setUnread(0)
+      return
+    }
+    let cancelled = false
+    fetch('/api/notifications', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => {
+        if (cancelled || !data) return
+        setUnread(data.unread_count || 0)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [user])
+
   const scrollToSection = (id) => {
     if (window.location.pathname !== '/') {
       navigate('/')
@@ -87,6 +108,13 @@ function Navbar({ activePage }) {
               <Link to="/blogs?category=娱乐论坛">娱乐论坛</Link>
             </NavItem>
             <NavItem label="项目" to="/projects" active={activePage === 'project'} />
+            {user && (
+              <NavItem
+                label={<span>我的{unread > 0 && <span className="nav-badge">{unread}</span>}</span>}
+                to="/my"
+                active={activePage === 'my'}
+              />
+            )}
             <NavItem label="首页" to="/" active={activePage === 'home'}>
               <Link to="/" onClick={() => setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50)}>开始</Link>
               <Link to="/" onClick={() => scrollToSection('projects')}>项目</Link>

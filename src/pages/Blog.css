@@ -698,12 +698,12 @@
 
 /* ---- 分类选择按钮（与发布按钮统一） ---- */
 .category-btn {
-  font-size: 14px;
-  padding: 9px 16px;
+  font-size: 15px;
+  padding: 9px 20px;
   border: 1px solid var(--border-color, #333);
-  border-radius: 6px;
+  border-radius: 12px;
   background: transparent;
-  color: var(--text-muted, #4a4a5e);
+  color: var(--text-secondary, #3a3a4e);
   cursor: pointer;
   margin-right: 10px;
   height: 40px;
@@ -711,8 +711,8 @@
   white-space: nowrap;
 }
 .category-btn:hover {
-  border-color: var(--accent-2, #00cec9);
-  color: var(--accent-2, #00cec9);
+  border-color: var(--accent-1);
+  color: var(--accent-1);
 }
 .category-btn .arrow-down {
   font-size: 10px;
@@ -1049,4 +1049,199 @@
 
 .blog-project-link:hover .blog-project-arrow {
   transform: translateX(4px);
+}
+
+/* ---------- 评论树 / 点赞 / 回复 / 回复链 ---------- */
+.comment-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.comment-replies {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.comment-reply {
+  margin-left: 24px;
+  padding-left: 16px;
+  border-left: 2px solid var(--border-color);
+}
+
+.comment-action-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 10px;
+}
+
+.comment-action-row button {
+  border: none;
+  background: transparent;
+  padding: 2px 4px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.comment-like-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-muted);
+}
+
+.comment-like-btn:hover:not(:disabled) {
+  color: #e74c3c;
+}
+
+.comment-like-btn.liked {
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+.comment-like-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.comment-like-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.comment-like-count {
+  min-width: 12px;
+  text-align: center;
+}
+
+.comment-reply-btn {
+  color: var(--text-muted);
+}
+
+.comment-reply-btn:hover {
+  color: var(--accent-1);
+}
+
+.comment-chain-link {
+  color: var(--text-muted);
+}
+
+.comment-chain-link:hover {
+  color: var(--accent-1);
+}
+
+.comment-view-all {
+  align-self: flex-start;
+  margin-left: 4px;
+  border: none;
+  background: transparent;
+  padding: 6px 10px;
+  font-size: 13px;
+  color: var(--accent-1);
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.2s;
+  font-family: inherit;
+}
+
+.comment-view-all:hover {
+  background: rgba(108, 92, 231, 0.08);
+}
+
+.comment-inline-reply {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border-color);
+}
+
+.comment-inline-reply .comment-input {
+  min-height: 60px;
+}
+
+.comment-inline-reply .comment-form-actions {
+  gap: 10px;
+}
+
+.comment-inline-reply .comment-form-actions .btn {
+  min-width: 72px;
+}
+
+/* 回复框内取消按钮尺寸覆盖 */
+.comment-inline-reply .btn-secondary {
+  padding: 8px 18px;
+  font-size: 14px;
+}
+
+/* 回复链面板（复用 .modal-overlay / .modal-sheet，复合选择器保证覆盖全局样式） */
+.modal-overlay.comment-chain-overlay {
+  align-items: center;
+  padding: 16px;
+}
+
+.modal-sheet.comment-chain-panel {
+  max-width: 640px;
+  width: 92%;
+  max-height: 75vh;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 24px 24px;
+}
+
+.comment-chain-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal-sheet .comment-chain-header h3 {
+  margin: 0;
+  font-size: 17px;
+  color: var(--text-primary);
+}
+
+.comment-chain-close {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.comment-chain-close:hover {
+  background: rgba(231, 76, 60, 0.1);
+  color: #e74c3c;
+}
+
+.comment-chain-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.comment-chain-item {
+  border-left: 3px solid var(--accent-1);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.comment-chain-children {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
 }

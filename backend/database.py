@@ -98,6 +98,16 @@ def run_migrations():
                     "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL"
                 ))
                 conn.commit()
+        # comments 表新增 parent_id 列（评论回复）
+        if insp.has_table("comments"):
+            columns = {c["name"] for c in insp.get_columns("comments")}
+            if "parent_id" not in columns:
+                conn.execute(text("ALTER TABLE comments ADD COLUMN parent_id INT NULL"))
+                conn.execute(text(
+                    "ALTER TABLE comments ADD CONSTRAINT fk_comment_parent "
+                    "FOREIGN KEY (parent_id) REFERENCES comments(id) ON DELETE CASCADE"
+                ))
+                conn.commit()
         # projects 表兼容旧版遗留表（早期已删 Project 功能留下的表缺新列，create_all 不补已有表）
         if insp.has_table("projects"):
             pcolumns = {c["name"] for c in insp.get_columns("projects")}

@@ -1,0 +1,178 @@
+/* ============================================
+   我的 / 通知中心 — 样式
+   ============================================ */
+
+.my-page {
+  min-height: 100vh;
+  background: var(--bg-primary, #f8f9fa);
+  color: var(--text-primary, #1a1a2e);
+  padding-bottom: 60px;
+}
+
+/* 导航栏固定顶部（覆盖 App.css 中 .mounted .navbar 未触发的默认 opacity: 0） */
+.my-page .navbar {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.my-container {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 100px 24px 60px;
+}
+
+.my-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.my-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, var(--accent-1, #6c5ce7), var(--accent-2, #00cec9));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.my-unread-count {
+  font-size: 13px;
+  color: #e74c3c;
+  background: rgba(231, 76, 60, 0.12);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.my-read-all {
+  margin-left: auto;
+}
+
+.my-error {
+  background: rgba(231, 76, 60, 0.15);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  color: #e74c3c;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.my-loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-muted, #4a4a5e);
+  font-size: 14px;
+}
+
+.my-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted, #4a4a5e);
+  font-size: 14px;
+  background: rgba(108, 92, 231, 0.05);
+  border: 1px dashed var(--border-color, #e2e2ef);
+  border-radius: 12px;
+}
+
+.my-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.my-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #fff;
+  border: 1px solid var(--border-color, #e2e2ef);
+  border-radius: 12px;
+  cursor: default;
+  transition: transform 0.15s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.my-item-link {
+  cursor: pointer;
+}
+
+.my-item-link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(108, 92, 231, 0.12);
+  border-color: var(--accent-1, #6c5ce7);
+}
+
+.my-item-unread {
+  background: rgba(108, 92, 231, 0.07);
+  border-color: rgba(108, 92, 231, 0.35);
+}
+
+.my-item-icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  border-radius: 10px;
+  background: rgba(108, 92, 231, 0.1);
+}
+
+.my-item-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.my-item-content {
+  margin: 0 0 6px;
+  font-size: 14px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.my-item-meta {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+
+.my-item-actor {
+  color: var(--accent-1, #6c5ce7);
+  font-weight: 600;
+}
+
+.my-item-time {
+  color: var(--text-muted, #4a4a5e);
+}
+
+.my-item-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e74c3c;
+  margin-top: 6px;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .my-container {
+    padding: 84px 14px 40px;
+  }
+
+  .my-title {
+    font-size: 22px;
+  }
+}
