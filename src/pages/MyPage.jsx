@@ -8,6 +8,8 @@ const TYPE_META = {
   comment_like: { icon: '♥', label: '点赞' },
   blog_comment_like: { icon: '👍', label: '评论获赞' },
   project_new_blog: { icon: '📌', label: '项目新博客' },
+  blog_like: { icon: '♥', label: '博客点赞' },
+  blog_new_comment: { icon: '💬', label: '博客新评论' },
 }
 
 function MyPage() {

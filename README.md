@@ -279,16 +279,52 @@ anticraft/
 - **入场动画** — 模块依次淡入上移
 - **全响应式** — 适配手机 / 平板 / 桌面
 
-### 快速换肤
+### 快速换肤（DIY）
 
-编辑 `src/index.css` 中的 CSS 变量：
+所有颜色已抽象为 `src/index.css` 的 `:root` CSS 变量（全站统一引用，无硬编码颜色），改一处即全局生效：
 
 ```css
---bg-primary: #f8f9fa;      /* 背景色 */
---text-primary: #1a1a2e;    /* 主文字色 */
---accent-1: #6c5ce7;        /* 主色调（紫色） */
---accent-2: #00cec9;        /* 辅色调（青色） */
+/* 背景 / 文字 */
+--bg-primary: #f8f9fa;         /* 页面背景 */
+--bg-card: #ffffff;            /* 卡片/面板背景 */
+--bg-elevated: #f5f5f8;        /* 悬浮/次级底 */
+--text-primary: #1a1a2e;       /* 主文字 */
+--text-secondary: #3a3a4e;     /* 次要文字 */
+--text-muted: #4a4a5e;         /* 弱化文字 */
+
+/* 主色调（紫） */
+--accent-1: #6c5ce7;           /* 主色 */
+--accent-1-light: #8b7cf7;     /* 渐变亮端 */
+--accent-1-hover: #5a4bd6;     /* 加深 */
+--accent-1-soft: rgba(108,92,231,0.1);          /* 浅底 */
+--accent-1-soft-strong: rgba(108,92,231,0.15);  /* 略深底 */
+--accent-1-border: rgba(108,92,231,0.3);        /* 描边 */
+
+/* 辅色调（青） */
+--accent-2: #00cec9;
+--accent-2-hover: #00b894;
+--accent-2-soft: rgba(0,206,201,0.15);
+
+/* 危险色（红） */
+--danger: #e74c3c;
+--danger-hover: #c0392b;
+--danger-soft: rgba(231,76,60,0.1);
+--danger-soft-strong: rgba(231,76,60,0.15);
+--danger-border: rgba(231,76,60,0.3);
+
+/* 中性 / 其它 */
+--white: #ffffff;
+--border-color: #e2e2ef;
+--neutral-soft: #e8e8e8;       /* 次级按钮底 */
+--neutral-soft-hover: #d0d0d0;
+--overlay: rgba(0,0,0,0.5);    /* 弹窗遮罩 */
+--glow-accent: rgba(108,92,231,0.08);
+--glow-accent-strong: rgba(108,92,231,0.4);
+--glow-cyan: rgba(0,206,201,0.06);
+--glow-cyan-strong: rgba(0,206,201,0.4);
 ```
+
+新增颜色一律使用变量，禁止硬编码（相近色统一收敛为上述档位）。
 
 ---
 

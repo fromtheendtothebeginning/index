@@ -154,10 +154,6 @@ function BlogListPage() {
                         <span className="blog-card-date">
                           {new Date(blog.created_at).toLocaleDateString('zh-CN')}
                         </span>
-                        <span className="blog-card-stats">
-                          <span className="blog-card-stat" title="点赞数">♥ {blog.like_count || 0}</span>
-                          <span className="blog-card-stat" title="评论数">💬 {blog.comment_count || 0}</span>
-                        </span>
                       </div>
                     </div>
                   </Link>

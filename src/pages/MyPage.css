@@ -4,8 +4,8 @@
 
 .my-page {
   min-height: 100vh;
-  background: var(--bg-primary, #f8f9fa);
-  color: var(--text-primary, #1a1a2e);
+  background: var(--bg-primary);
+  color: var(--text-primary);
   padding-bottom: 60px;
 }
 
@@ -33,7 +33,7 @@
   font-size: 28px;
   font-weight: 700;
   margin: 0;
-  background: linear-gradient(135deg, var(--accent-1, #6c5ce7), var(--accent-2, #00cec9));
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -41,8 +41,8 @@
 
 .my-unread-count {
   font-size: 13px;
-  color: #e74c3c;
-  background: rgba(231, 76, 60, 0.12);
+  color: var(--danger);
+  background: var(--danger-soft);
   padding: 4px 12px;
   border-radius: 12px;
   font-weight: 600;
@@ -53,32 +53,33 @@
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: var(--text-muted, #4a4a5e);
+  color: var(--text-muted);
   cursor: pointer;
   user-select: none;
   padding: 4px 12px;
   border-radius: 12px;
-  background: rgba(108, 92, 231, 0.08);
+  background: var(--accent-1-soft);
   transition: background 0.2s;
 }
 
 .my-badge-toggle:hover {
-  background: rgba(108, 92, 231, 0.16);
+  background: var(--accent-1-soft-strong);
 }
 
 .my-badge-toggle input {
   cursor: pointer;
-  accent-color: var(--accent-1, #6c5ce7);
+  accent-color: var(--accent-1);
 }
 
 .my-read-all {
   margin-left: auto;
+  border: none;
 }
 
 .my-error {
-  background: rgba(231, 76, 60, 0.15);
-  border: 1px solid rgba(231, 76, 60, 0.3);
-  color: #e74c3c;
+  background: var(--danger-soft-strong);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
   padding: 12px 16px;
   border-radius: 8px;
   margin-bottom: 16px;
@@ -88,17 +89,17 @@
 .my-loading {
   text-align: center;
   padding: 40px;
-  color: var(--text-muted, #4a4a5e);
+  color: var(--text-muted);
   font-size: 14px;
 }
 
 .my-empty {
   text-align: center;
   padding: 60px 20px;
-  color: var(--text-muted, #4a4a5e);
+  color: var(--text-muted);
   font-size: 14px;
-  background: rgba(108, 92, 231, 0.05);
-  border: 1px dashed var(--border-color, #e2e2ef);
+  background: var(--accent-1-soft);
+  border: 1px dashed var(--border-color);
   border-radius: 12px;
 }
 
@@ -116,8 +117,8 @@
   align-items: flex-start;
   gap: 12px;
   padding: 14px 16px;
-  background: #fff;
-  border: 1px solid var(--border-color, #e2e2ef);
+  background: var(--white);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   cursor: default;
   transition: transform 0.15s, box-shadow 0.2s, border-color 0.2s;
@@ -129,13 +130,13 @@
 
 .my-item-link:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(108, 92, 231, 0.12);
-  border-color: var(--accent-1, #6c5ce7);
+  box-shadow: 0 4px 16px var(--accent-1-soft);
+  border-color: var(--accent-1);
 }
 
 .my-item-unread {
-  background: rgba(108, 92, 231, 0.07);
-  border-color: rgba(108, 92, 231, 0.35);
+  background: var(--accent-1-soft);
+  border-color: var(--glow-accent-strong);
 }
 
 .my-item-icon {
@@ -147,7 +148,7 @@
   justify-content: center;
   font-size: 16px;
   border-radius: 10px;
-  background: rgba(108, 92, 231, 0.1);
+  background: var(--accent-1-soft);
 }
 
 .my-item-main {
@@ -172,12 +173,12 @@
 }
 
 .my-item-actor {
-  color: var(--accent-1, #6c5ce7);
+  color: var(--accent-1);
   font-weight: 600;
 }
 
 .my-item-time {
-  color: var(--text-muted, #4a4a5e);
+  color: var(--text-muted);
 }
 
 .my-item-dot {
@@ -185,7 +186,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #e74c3c;
+  background: var(--danger);
   margin-top: 6px;
 }
 

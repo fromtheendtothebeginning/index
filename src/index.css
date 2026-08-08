@@ -1,16 +1,49 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
 
 :root {
+  /* ── 背景 ── */
   --bg-primary: #f8f9fa;
   --bg-card: #ffffff;
+  --bg-elevated: #f5f5f8; /* 悬浮/次级卡片底 */
+
+  /* ── 文字 ── */
   --text-primary: #1a1a2e;
   --text-secondary: #3a3a4e;
   --text-muted: #4a4a5e;
+
+  /* ── 主色调（紫） ── */
   --accent-1: #6c5ce7;
+  --accent-1-light: #8b7cf7;       /* 渐变亮端 */
+  --accent-1-hover: #5a4bd6;       /* 加深 */
+  --accent-1-soft: rgba(108, 92, 231, 0.1);        /* 浅紫底 */
+  --accent-1-soft-strong: rgba(108, 92, 231, 0.15); /* 略深紫底 */
+  --accent-1-border: rgba(108, 92, 231, 0.3);       /* 紫描边 */
+
+  /* ── 辅色调（青） ── */
   --accent-2: #00cec9;
+  --accent-2-hover: #00b894;       /* 加深 */
+  --accent-2-soft: rgba(0, 206, 201, 0.15); /* 浅青底 */
+
+  /* ── 危险色（红） ── */
+  --danger: #e74c3c;
+  --danger-hover: #c0392b;
+  --danger-soft: rgba(231, 76, 60, 0.1);        /* 浅红底 */
+  --danger-soft-strong: rgba(231, 76, 60, 0.15); /* 略深红底 */
+  --danger-border: rgba(231, 76, 60, 0.3);       /* 红描边 */
+
+  /* ── 中性色 ── */
+  --white: #ffffff;
   --border-color: #e2e2ef;
+  --neutral-soft: #e8e8e8;        /* 次级按钮底 */
+  --neutral-soft-hover: #d0d0d0;  /* 次级按钮 hover */
+  --overlay: rgba(0, 0, 0, 0.5);  /* 弹窗遮罩 */
+
+  /* ── 光晕 ── */
   --glow-accent: rgba(108, 92, 231, 0.08);
+  --glow-accent-strong: rgba(108, 92, 231, 0.4);
   --glow-cyan: rgba(0, 206, 201, 0.06);
+  --glow-cyan-strong: rgba(0, 206, 201, 0.4);
+
   --max-width: 1200px;
 }
 
@@ -36,7 +69,7 @@ body {
 
 ::selection {
   background: var(--accent-1);
-  color: #fff;
+  color: var(--white);
 }
 
 a {

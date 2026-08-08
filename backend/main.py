@@ -727,6 +727,12 @@ def toggle_like(
         db.add(BlogLike(blog_id=blog_id, user_id=current_user.id))
         db.commit()
         liked = True
+        # 博客被点赞：通知博客作者（自己赞自己的博客不通知）
+        if blog.author_id != current_user.id:
+            _notify(
+                db, blog.author_id, "blog_like", current_user.id,
+                blog.id, None, f"「{current_user.username}」赞了你的博客《{blog.title}》",
+            )
 
     like_count = db.query(BlogLike).filter(BlogLike.blog_id == blog_id).count()
     return LikeToggleResponse(liked=liked, like_count=like_count)
@@ -938,6 +944,12 @@ def create_comment(
         _notify(
             db, parent.user_id, "comment_reply", current_user.id,
             blog_id, comment.id, f"「{current_user.username}」回复了你的评论",
+        )
+    # 博客被发表新评论（顶级评论）：通知博客作者（自己评论自己的博客不通知）
+    elif req.parent_id is None and blog.author_id != current_user.id:
+        _notify(
+            db, blog.author_id, "blog_new_comment", current_user.id,
+            blog_id, comment.id, f"「{current_user.username}」评论了你的博客《{blog.title}》",
         )
 
     # 重新查询以加载 user 关系

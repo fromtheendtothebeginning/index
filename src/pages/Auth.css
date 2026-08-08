@@ -17,8 +17,8 @@
   position: fixed;
   inset: 0;
   background-image:
-    linear-gradient(rgba(108, 92, 231, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(108, 92, 231, 0.04) 1px, transparent 1px);
+    linear-gradient(var(--accent-1-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--accent-1-soft) 1px, transparent 1px);
   background-size: 60px 60px;
   pointer-events: none;
   z-index: 0;
@@ -38,7 +38,7 @@
   height: 500px;
   top: -150px;
   left: -100px;
-  background: radial-gradient(circle, rgba(108, 92, 231, 0.12), transparent 70%);
+  background: radial-gradient(circle, var(--accent-1-soft), transparent 70%);
 }
 
 .ag-2 {
@@ -46,7 +46,7 @@
   height: 450px;
   bottom: -100px;
   right: -80px;
-  background: radial-gradient(circle, rgba(0, 206, 201, 0.08), transparent 70%);
+  background: radial-gradient(circle, var(--glow-cyan), transparent 70%);
   animation-delay: -3s;
 }
 
@@ -67,7 +67,7 @@
   margin: 40px 24px 24px;
   border-radius: 24px;
   border: 1px solid var(--border-color);
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--bg-card);
   backdrop-filter: blur(40px);
   -webkit-backdrop-filter: blur(40px);
   overflow: hidden;
@@ -93,7 +93,7 @@
   align-items: center;
   justify-content: center;
   padding: 28px 32px;
-  background: linear-gradient(160deg, rgba(108, 92, 231, 0.08) 0%, rgba(108, 92, 231, 0.02) 40%, rgba(0, 206, 201, 0.04) 100%);
+  background: linear-gradient(160deg, var(--accent-1-soft) 0%, var(--accent-1-soft) 40%, var(--glow-cyan) 100%);
   position: relative;
   overflow: hidden;
 }
@@ -106,7 +106,7 @@
   left: -20%;
   width: 70%;
   height: 70%;
-  background: radial-gradient(circle, rgba(108, 92, 231, 0.1), transparent 70%);
+  background: radial-gradient(circle, var(--accent-1-soft), transparent 70%);
   pointer-events: none;
   animation: auth-brand-glow 6s ease-in-out infinite alternate;
 }
@@ -118,7 +118,7 @@
   right: -15%;
   width: 50%;
   height: 50%;
-  background: radial-gradient(circle, rgba(0, 206, 201, 0.08), transparent 70%);
+  background: radial-gradient(circle, var(--glow-cyan), transparent 70%);
   pointer-events: none;
   animation: auth-brand-glow 8s ease-in-out infinite alternate-reverse;
 }
@@ -159,7 +159,7 @@
   width: 52px;
   height: 52px;
   border-radius: 14px;
-  box-shadow: 0 8px 32px rgba(108, 92, 231, 0.3);
+  box-shadow: 0 8px 32px var(--accent-1-border);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   display: block;
   flex-shrink: 0;
@@ -167,14 +167,14 @@
 
 .auth-brand-header:hover .brand-logo-img {
   transform: scale(1.08);
-  box-shadow: 0 12px 40px rgba(108, 92, 231, 0.45);
+  box-shadow: 0 12px 40px var(--glow-accent-strong);
 }
 
 .brand-title-en {
   font-size: 28px;
   font-weight: 800;
   letter-spacing: -0.02em;
-  background: linear-gradient(135deg, var(--accent-1) 0%, #8b7cf7 40%, var(--accent-2) 100%);
+  background: linear-gradient(135deg, var(--accent-1) 0%, var(--accent-1-light) 40%, var(--accent-2) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -203,8 +203,8 @@
   font-style: italic;
   line-height: 1.7;
   padding: 10px 0;
-  border-top: 1px solid rgba(108, 92, 231, 0.15);
-  border-bottom: 1px solid rgba(108, 92, 231, 0.15);
+  border-top: 1px solid var(--accent-1-soft-strong);
+  border-bottom: 1px solid var(--accent-1-soft-strong);
   margin-bottom: 12px;
 }
 
@@ -265,8 +265,8 @@
 
 .auth-tab.active {
   background: var(--accent-1);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3);
+  color: var(--white);
+  box-shadow: 0 4px 12px var(--accent-1-border);
 }
 
 .auth-tab:disabled {
@@ -302,9 +302,9 @@
 .form-server-error {
   padding: 10px 14px;
   border-radius: 10px;
-  background: rgba(231, 76, 60, 0.1);
-  border: 1px solid rgba(231, 76, 60, 0.3);
-  color: #e74c3c;
+  background: var(--danger-soft);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -357,13 +357,13 @@
 
 .form-input:focus {
   border-color: var(--accent-1);
-  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.12);
-  background: rgba(108, 92, 231, 0.04);
+  box-shadow: 0 0 0 3px var(--accent-1-soft);
+  background: var(--accent-1-soft);
 }
 
 .form-input.error {
-  border-color: #e74c3c;
-  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px var(--danger-soft);
 }
 
 /* ---------- 密码可见性切换 ---------- */
@@ -397,7 +397,7 @@
 
 .form-error {
   font-size: 12px;
-  color: #e74c3c;
+  color: var(--danger);
   padding-left: 4px;
 }
 
@@ -466,10 +466,10 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent-2), #00b894);
+  background: linear-gradient(135deg, var(--accent-2), var(--accent-2-hover));
   font-size: 28px;
-  color: #fff;
-  box-shadow: 0 8px 24px rgba(0, 206, 201, 0.3);
+  color: var(--white);
+  box-shadow: 0 8px 24px var(--glow-cyan-strong);
 }
 
 .auth-success h3 {

@@ -97,7 +97,7 @@
 .blog-card {
   display: flex;
   flex-direction: column;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 16px;
   padding: 24px;
@@ -134,8 +134,8 @@
   padding: 4px 10px;
   border-radius: 6px;
   font-size: 12px;
-  background: rgba(108, 92, 231, 0.08);
-  border: 1px solid rgba(108, 92, 231, 0.25);
+  background: var(--accent-1-soft);
+  border: 1px solid var(--accent-1-border);
   color: var(--text-primary);
   cursor: pointer;
   transition: all 0.2s;
@@ -151,24 +151,24 @@
 }
 
 .blog-card-category-select:hover {
-  border-color: var(--accent-1, #6c5ce7);
-  background: rgba(108, 92, 231, 0.15);
+  border-color: var(--accent-1);
+  background: var(--accent-1-soft-strong);
 }
 
 .blog-card-withdraw {
   padding: 4px 12px;
   border-radius: 6px;
   font-size: 12px;
-  background: rgba(231, 76, 60, 0.08);
-  border: 1px solid rgba(231, 76, 60, 0.3);
-  color: #e74c3c;
+  background: var(--danger-soft);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .blog-card-withdraw:hover {
-  background: rgba(231, 76, 60, 0.15);
-  border-color: #e74c3c;
+  background: var(--danger-soft-strong);
+  border-color: var(--danger);
 }
 
 .blog-card-body {
@@ -224,7 +224,7 @@
 .pagination-btn {
   padding: 8px 20px;
   border: 1px solid var(--border-color);
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--bg-card);
   border-radius: 8px;
   font-size: 14px;
   cursor: pointer;
@@ -322,14 +322,14 @@
 }
 
 .btn-delete {
-  border: 1px solid rgba(231, 76, 60, 0.3);
+  border: 1px solid var(--danger-border);
   background: transparent;
-  color: #e74c3c;
+  color: var(--danger);
 }
 
 .btn-delete:hover:not(:disabled) {
-  background: rgba(231, 76, 60, 0.06);
-  border-color: #e74c3c;
+  background: var(--danger-soft);
+  border-color: var(--danger);
 }
 
 .btn-delete:disabled {
@@ -393,7 +393,7 @@
 }
 
 .markdown-body code {
-  background: rgba(108, 92, 231, 0.08);
+  background: var(--accent-1-soft);
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 14px;
@@ -401,7 +401,7 @@
 }
 
 .markdown-body pre {
-  background: #f5f5f8;
+  background: var(--bg-elevated);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 20px;
@@ -489,7 +489,7 @@
 }
 
 .markdown-body table th {
-  background: rgba(108, 92, 231, 0.06);
+  background: var(--accent-1-soft);
   font-weight: 600;
 }
 
@@ -526,7 +526,7 @@
   font-weight: 600;
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--bg-card);
   color: var(--text-primary);
   outline: none;
   transition: border-color 0.2s;
@@ -535,7 +535,7 @@
 
 .editor-title-input:focus {
   border-color: var(--accent-1);
-  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+  box-shadow: 0 0 0 3px var(--accent-1-soft);
 }
 
 .editor-title-input::placeholder {
@@ -555,7 +555,7 @@
   padding: 6px 14px;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--bg-card);
   font-size: 13px;
   cursor: pointer;
   transition: all 0.2s;
@@ -591,7 +591,7 @@
   padding: 16px;
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--bg-card);
   color: var(--text-primary);
   font-size: 14px;
   font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
@@ -604,7 +604,7 @@
 
 .editor-textarea:focus {
   border-color: var(--accent-1);
-  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+  box-shadow: 0 0 0 3px var(--accent-1-soft);
 }
 
 .editor-textarea::placeholder {
@@ -617,7 +617,7 @@
   padding: 16px;
   overflow-y: auto;
   max-height: 500px;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--bg-card);
 }
 
 .preview-label {
@@ -673,8 +673,8 @@
 }
 .blog-filter-btn {
   background: transparent;
-  border: 1px solid var(--border-color, #333);
-  color: var(--text-muted, #4a4a5e);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
   padding: 6px 18px;
   border-radius: 20px;
   cursor: pointer;
@@ -682,13 +682,13 @@
   transition: all 0.2s;
 }
 .blog-filter-btn:hover {
-  border-color: var(--accent-1, #6c5ce7);
-  color: var(--accent-1, #6c5ce7);
+  border-color: var(--accent-1);
+  color: var(--accent-1);
 }
 .blog-filter-btn.active {
-  background: var(--accent-1, #6c5ce7);
-  border-color: var(--accent-1, #6c5ce7);
-  color: #fff;
+  background: var(--accent-1);
+  border-color: var(--accent-1);
+  color: var(--white);
 }
 
 /* ---- 分类标签 ---- */
@@ -696,8 +696,8 @@
   display: inline-block;
   font-size: 11px;
   font-weight: 600;
-  background: var(--accent-2, #00cec9);
-  color: #fff;
+  background: var(--accent-2);
+  color: var(--white);
   padding: 2px 8px;
   border-radius: 10px;
   margin-right: 6px;
@@ -710,10 +710,10 @@
 .category-btn {
   font-size: 13px;
   padding: 6px 16px;
-  border: 1px solid var(--border-color, #333);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   background: transparent;
-  color: var(--text-secondary, #3a3a4e);
+  color: var(--text-secondary);
   cursor: pointer;
   margin-right: 10px;
   height: auto;
@@ -741,7 +741,7 @@
 .editor-actions .nav-dropdown-menu::after {
   top: 100%;
   bottom: auto;
-  border-color: var(--bg-elevated, #1a1a2e) transparent transparent transparent;
+  border-color: var(--bg-elevated) transparent transparent transparent;
 }
 .editor-actions .nav-dropdown-menu::before {
   top: 100%;
@@ -778,14 +778,14 @@
 }
 
 .like-btn:hover:not(:disabled) {
-  border-color: #e74c3c;
-  color: #e74c3c;
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .like-btn.liked {
-  background: rgba(231, 76, 60, 0.08);
-  border-color: rgba(231, 76, 60, 0.4);
-  color: #e74c3c;
+  background: var(--danger-soft);
+  border-color: var(--danger-border);
+  color: var(--danger);
 }
 
 .like-btn .like-icon {
@@ -845,7 +845,7 @@
   padding: 12px 14px;
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--bg-card);
   color: var(--text-primary);
   font-size: 14px;
   font-family: inherit;
@@ -859,7 +859,7 @@
 
 .comment-input:focus {
   border-color: var(--accent-1);
-  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+  box-shadow: 0 0 0 3px var(--accent-1-soft);
 }
 
 .comment-input::placeholder {
@@ -874,7 +874,7 @@
 
 .comment-login-hint {
   padding: 16px 20px;
-  background: rgba(108, 92, 231, 0.04);
+  background: var(--accent-1-soft);
   border: 1px dashed var(--border-color);
   border-radius: 12px;
   text-align: center;
@@ -906,7 +906,7 @@
   display: flex;
   gap: 12px;
   padding: 16px;
-  background: rgba(255, 255, 255, 0.6);
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   position: relative;
@@ -914,7 +914,7 @@
 }
 
 .comment-item:hover {
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--bg-card);
 }
 
 .comment-avatar {
@@ -923,7 +923,7 @@
   height: 36px;
   border-radius: 50%;
   overflow: hidden;
-  background: rgba(108, 92, 231, 0.1);
+  background: var(--accent-1-soft);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -997,8 +997,8 @@
 }
 
 .comment-delete-btn:hover {
-  background: rgba(231, 76, 60, 0.1);
-  color: #e74c3c;
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 @media (max-width: 768px) {
@@ -1020,14 +1020,14 @@
   padding: 14px 20px;
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--bg-card);
   text-decoration: none;
   transition: all 0.2s;
 }
 
 .blog-project-link:hover {
   border-color: var(--accent-1);
-  box-shadow: 0 4px 16px rgba(108, 92, 231, 0.1);
+  box-shadow: 0 4px 16px var(--accent-1-soft);
 }
 
 .blog-project-label {
@@ -1035,7 +1035,7 @@
   color: var(--text-muted);
   padding: 2px 8px;
   border-radius: 10px;
-  background: rgba(108, 92, 231, 0.08);
+  background: var(--accent-1-soft);
   flex-shrink: 0;
 }
 
@@ -1105,11 +1105,11 @@
 }
 
 .comment-like-btn:hover:not(:disabled) {
-  color: #e74c3c;
+  color: var(--danger);
 }
 
 .comment-like-btn.liked {
-  color: #e74c3c;
+  color: var(--danger);
   font-weight: 600;
 }
 
@@ -1159,7 +1159,7 @@
 }
 
 .comment-view-all:hover {
-  background: rgba(108, 92, 231, 0.08);
+  background: var(--accent-1-soft);
 }
 
 .comment-inline-reply {
@@ -1233,8 +1233,8 @@
 }
 
 .comment-chain-close:hover {
-  background: rgba(231, 76, 60, 0.1);
-  color: #e74c3c;
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 .comment-chain-list {
@@ -1246,7 +1246,7 @@
 
 .comment-chain-item {
   border-left: 3px solid var(--accent-1);
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--bg-card);
 }
 
 .comment-chain-children {

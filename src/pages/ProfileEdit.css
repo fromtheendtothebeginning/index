@@ -15,8 +15,8 @@
   position: fixed;
   inset: 0;
   background-image:
-    linear-gradient(rgba(108, 92, 231, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(108, 92, 231, 0.04) 1px, transparent 1px);
+    linear-gradient(var(--accent-1-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--accent-1-soft) 1px, transparent 1px);
   background-size: 60px 60px;
   pointer-events: none;
   z-index: 0;
@@ -35,7 +35,7 @@
   height: 400px;
   top: -100px;
   right: -80px;
-  background: radial-gradient(circle, rgba(108, 92, 231, 0.1), transparent 70%);
+  background: radial-gradient(circle, var(--accent-1-soft), transparent 70%);
 }
 
 .pg-2 {
@@ -43,7 +43,7 @@
   height: 350px;
   bottom: -80px;
   left: -60px;
-  background: radial-gradient(circle, rgba(0, 206, 201, 0.08), transparent 70%);
+  background: radial-gradient(circle, var(--glow-cyan), transparent 70%);
 }
 
 /* ── 容器 ── */
@@ -56,7 +56,7 @@
   padding: 40px;
   border-radius: 24px;
   border: 1px solid var(--border-color);
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--bg-card);
   backdrop-filter: blur(40px);
   -webkit-backdrop-filter: blur(40px);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
@@ -126,7 +126,7 @@
 .avatar-letter {
   font-size: 30px;
   font-weight: 700;
-  color: #fff;
+  color: var(--white);
 }
 
 .profile-avatar-info {
@@ -155,17 +155,17 @@
 .profile-error {
   padding: 10px 14px;
   border-radius: 10px;
-  background: rgba(231, 76, 60, 0.1);
-  border: 1px solid rgba(231, 76, 60, 0.3);
-  color: #e74c3c;
+  background: var(--danger-soft);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
   font-size: 13px;
 }
 
 .profile-success {
   padding: 10px 14px;
   border-radius: 10px;
-  background: rgba(0, 206, 201, 0.1);
-  border: 1px solid rgba(0, 206, 201, 0.3);
+  background: var(--glow-cyan);
+  border: 1px solid var(--glow-cyan-strong);
   color: var(--accent-2);
   font-size: 14px;
   text-align: center;
@@ -204,8 +204,8 @@
 
 .profile-input:focus {
   border-color: var(--accent-1);
-  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.12);
-  background: rgba(108, 92, 231, 0.04);
+  box-shadow: 0 0 0 3px var(--accent-1-soft);
+  background: var(--accent-1-soft);
 }
 
 .profile-field-hint {
@@ -243,7 +243,7 @@
 /* ---- 退出按钮 ---- */
 .profile-divider {
   border: none;
-  border-top: 1px solid var(--border-color, #333);
+  border-top: 1px solid var(--border-color);
   margin: 28px 0 20px;
 }
 .profile-logout-btn {
@@ -253,12 +253,12 @@
   font-size: 14px;
   border-radius: 8px;
   cursor: pointer;
-  border: 1px solid #e74c3c;
+  border: 1px solid var(--danger);
   background: transparent;
-  color: #e74c3c;
+  color: var(--danger);
   transition: all 0.2s;
 }
 .profile-logout-btn:hover {
-  background: #e74c3c;
-  color: #fff;
+  background: var(--danger);
+  color: var(--white);
 }

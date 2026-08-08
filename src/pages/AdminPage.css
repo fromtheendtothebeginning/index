@@ -1,7 +1,7 @@
 .admin-page {
   min-height: 100vh;
-  background: var(--bg-primary, #0a0a0f);
-  color: #1a1a2e;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   padding-bottom: 60px;
 }
 
@@ -19,7 +19,7 @@
 }
 
 .admin-back {
-  color: var(--accent-2, #00cec9);
+  color: var(--accent-2);
   text-decoration: none;
   font-size: 14px;
   white-space: nowrap;
@@ -33,7 +33,7 @@
   font-size: 28px;
   font-weight: 700;
   margin: 0;
-  background: linear-gradient(135deg, var(--accent-1, #6c5ce7), var(--accent-2, #00cec9));
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -44,7 +44,7 @@
   gap: 4px;
   margin-bottom: 28px;
   flex-wrap: wrap;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 2px solid var(--border-color);
   padding-bottom: 0;
   position: relative;
 }
@@ -52,7 +52,7 @@
 .admin-tab {
   background: transparent;
   border: none;
-  color: #1a1a2e;
+  color: var(--text-primary);
   padding: 12px 22px;
   font-size: 14px;
   font-weight: 500;
@@ -65,8 +65,8 @@
 }
 
 .admin-tab:hover {
-  color: #1a1a2e;
-  background: rgba(108, 92, 231, 0.12);
+  color: var(--text-primary);
+  background: var(--accent-1-soft);
   transform: translateY(-1px);
 }
 
@@ -76,9 +76,9 @@
 }
 
 .admin-tab.active {
-  color: #1a1a2e;
-  background: rgba(108, 92, 231, 0.15);
-  border-bottom-color: var(--accent-1, #6c5ce7);
+  color: var(--text-primary);
+  background: var(--accent-1-soft-strong);
+  border-bottom-color: var(--accent-1);
   font-weight: 600;
   text-shadow: none;
 }
@@ -90,7 +90,7 @@
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, transparent, var(--accent-2, #00cec9), transparent);
+  background: linear-gradient(90deg, transparent, var(--accent-2), transparent);
   animation: tabUnderline 0.4s ease;
 }
 
@@ -110,8 +110,8 @@
 }
 
 .admin-section {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 24px;
 }
@@ -132,9 +132,9 @@
 }
 
 .admin-error {
-  background: rgba(231, 76, 60, 0.15);
-  border: 1px solid rgba(231, 76, 60, 0.3);
-  color: #e74c3c;
+  background: var(--danger-soft-strong);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
   padding: 12px 16px;
   border-radius: 8px;
   margin-bottom: 16px;
@@ -144,13 +144,13 @@
 .admin-loading {
   text-align: center;
   padding: 40px;
-  color: #3a3a4e;
+  color: var(--text-secondary);
 }
 
 .admin-empty {
   text-align: center;
   padding: 40px;
-  color: #3a3a4e;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -169,7 +169,7 @@
   padding: 12px 8px;
   align-items: center;
   font-size: 13px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--border-color);
   min-width: 700px;
   position: relative;
 }
@@ -184,15 +184,15 @@
 
 .admin-row-head {
   font-weight: 600;
-  color: #3a3a4e;
+  color: var(--text-secondary);
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .admin-cell-time {
-  color: #3a3a4e;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
@@ -201,7 +201,7 @@
 }
 
 .admin-cell-title a {
-  color: var(--accent-2, #00cec9);
+  color: var(--accent-2);
   text-decoration: none;
 }
 
@@ -219,21 +219,21 @@
 }
 
 .role-badge.admin {
-  background: rgba(108, 92, 231, 0.2);
-  color: var(--accent-1, #6c5ce7);
-  border: 1px solid rgba(108, 92, 231, 0.4);
+  background: var(--accent-1-soft-strong);
+  color: var(--accent-1);
+  border: 1px solid var(--glow-accent-strong);
 }
 
 .role-badge.user {
-  background: rgba(255, 255, 255, 0.06);
-  color: #4a4a5e;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
 }
 
 .btn-role-toggle {
   background: transparent;
-  border: 1px solid rgba(108, 92, 231, 0.4);
-  color: var(--accent-1, #6c5ce7);
+  border: 1px solid var(--glow-accent-strong);
+  color: var(--accent-1);
   padding: 5px 12px;
   border-radius: 6px;
   font-size: 12px;
@@ -243,11 +243,11 @@
 }
 
 .btn-role-toggle:hover {
-  background: rgba(108, 92, 231, 0.15);
+  background: var(--accent-1-soft-strong);
 }
 
 .admin-self {
-  color: #3a3a4e;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
@@ -258,8 +258,8 @@
 }
 
 .btn-danger {
-  background: #e74c3c;
-  color: #fff;
+  background: var(--danger);
+  color: var(--white);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -267,7 +267,7 @@
 }
 
 .btn-danger:hover {
-  background: #c0392b;
+  background: var(--danger-hover);
 }
 
 /* 评论列表 */
@@ -278,8 +278,8 @@
 }
 
 .admin-comment-item {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 14px 16px;
   display: flex;
@@ -298,11 +298,11 @@
 
 .admin-comment-author {
   font-weight: 600;
-  color: #1a1a2e;
+  color: var(--text-primary);
 }
 
 .admin-comment-blog a {
-  color: var(--accent-2, #00cec9);
+  color: var(--accent-2);
   text-decoration: none;
 }
 
@@ -311,7 +311,7 @@
 }
 
 .admin-comment-content {
-  color: #2a2a3e;
+  color: var(--text-secondary);
   font-size: 14px;
   white-space: pre-wrap;
   word-break: break-word;
@@ -320,9 +320,9 @@
 
 /* 分类下拉 */
 .admin-category-select {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #1a1a2e;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
   padding: 5px 8px;
   border-radius: 6px;
   font-size: 12px;
@@ -331,14 +331,14 @@
 
 .admin-category-select:focus {
   outline: none;
-  border-color: var(--accent-1, #6c5ce7);
+  border-color: var(--accent-1);
 }
 
 /* 邀请码 */
 .admin-code {
   font-family: 'Courier New', monospace;
-  background: rgba(108, 92, 231, 0.15);
-  color: var(--accent-1, #6c5ce7);
+  background: var(--accent-1-soft-strong);
+  color: var(--accent-1);
   padding: 2px 8px;
   border-radius: 4px;
   font-size: 13px;
@@ -347,8 +347,8 @@
 
 .admin-code-highlight {
   font-family: 'Courier New', monospace;
-  background: rgba(0, 206, 201, 0.15);
-  color: var(--accent-2, #00cec9);
+  background: var(--accent-2-soft);
+  color: var(--accent-2);
   padding: 6px 14px;
   border-radius: 6px;
   font-size: 16px;
@@ -360,8 +360,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(0, 206, 201, 0.08);
-  border: 1px solid rgba(0, 206, 201, 0.2);
+  background: var(--glow-cyan);
+  border: 1px solid var(--accent-2-soft);
   border-radius: 8px;
   padding: 14px 18px;
   margin-bottom: 20px;
@@ -377,21 +377,21 @@
 }
 
 .status-badge.unused {
-  background: rgba(0, 206, 201, 0.15);
-  color: var(--accent-2, #00cec9);
-  border: 1px solid rgba(0, 206, 201, 0.3);
+  background: var(--accent-2-soft);
+  color: var(--accent-2);
+  border: 1px solid var(--glow-cyan-strong);
 }
 
 .status-badge.used {
-  background: rgba(255, 255, 255, 0.06);
-  color: #3a3a4e;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
 }
 
 .btn-copy {
   background: transparent;
-  border: 1px solid rgba(0, 206, 201, 0.4);
-  color: var(--accent-2, #00cec9);
+  border: 1px solid var(--glow-cyan-strong);
+  color: var(--accent-2);
   padding: 4px 12px;
   border-radius: 6px;
   font-size: 12px;
@@ -400,7 +400,7 @@
 }
 
 .btn-copy:hover {
-  background: rgba(0, 206, 201, 0.15);
+  background: var(--accent-2-soft);
 }
 
 /* 邀请码表格 7 列 */
@@ -411,13 +411,13 @@
 
 /* 已使用打钩 */
 .check-used {
-  color: var(--accent-2, #00cec9);
+  color: var(--accent-2);
   font-size: 18px;
   font-weight: 700;
 }
 
 .check-unused {
-  color: #4a4a5e;
+  color: var(--text-muted);
   font-size: 16px;
 }
 
@@ -442,7 +442,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--border-color);
   border-radius: 20px;
   transition: 0.3s;
 }
@@ -454,13 +454,13 @@
   height: 14px;
   left: 3px;
   bottom: 3px;
-  background: #fff;
+  background: var(--white);
   border-radius: 50%;
   transition: 0.3s;
 }
 
 .reusable-toggle input:checked + .reusable-slider {
-  background: var(--accent-1, #6c5ce7);
+  background: var(--accent-1);
 }
 
 .reusable-toggle input:checked + .reusable-slider::before {
@@ -517,20 +517,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #e74c3c;
+  background: var(--danger);
   border: none;
   border-radius: 8px;
-  color: #fff;
+  color: var(--white);
   font-size: 18px;
   font-weight: 700;
   line-height: 1;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.35);
+  box-shadow: 0 2px 8px var(--danger-border);
   transition: all 0.2s;
 }
 
 .admin-comment-delete-btn:hover {
-  background: #c0392b;
+  background: var(--danger-hover);
   transform: scale(1.08);
 }
 
@@ -546,17 +546,17 @@
   flex: 1;
   min-width: 160px;
   padding: 8px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.06);
-  color: #1a1a2e;
+  background: var(--bg-card);
+  color: var(--text-primary);
   font-size: 13px;
   outline: none;
   transition: border-color 0.2s;
 }
 
 .admin-link-input:focus {
-  border-color: var(--accent-1, #6c5ce7);
+  border-color: var(--accent-1);
 }
 
 .admin-row-links {
@@ -573,9 +573,9 @@
 /* 父评论引用 */
 .admin-comment-parent {
   font-size: 12px;
-  color: var(--text-secondary, #3a3a4e);
-  background: rgba(255, 255, 255, 0.04);
-  border-left: 3px solid var(--accent-1, #6c5ce7);
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  border-left: 3px solid var(--accent-1);
   padding: 4px 10px;
   margin-bottom: 6px;
   border-radius: 0 6px 6px 0;

@@ -81,7 +81,7 @@
   justify-content: center;
   font-size: 56px;
   font-weight: 800;
-  color: #fff;
+  color: var(--white);
   background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
 }
 
@@ -203,7 +203,7 @@
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
-  background: rgba(255, 255, 255, 0.6);
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   text-decoration: none;
@@ -212,7 +212,7 @@
 }
 
 .project-blog-item:hover {
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--bg-card);
   border-color: var(--accent-1);
 }
 
@@ -232,7 +232,7 @@
   font-size: 11px;
   font-weight: 600;
   background: var(--accent-2);
-  color: #fff;
+  color: var(--white);
   padding: 2px 8px;
   border-radius: 10px;
   letter-spacing: 0.5px;
@@ -293,7 +293,7 @@
   padding: 14px 16px;
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--bg-card);
   color: var(--text-primary);
   font-size: 14px;
   font-family: inherit;
@@ -306,7 +306,7 @@
 
 .project-desc-input:focus {
   border-color: var(--accent-1);
-  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+  box-shadow: 0 0 0 3px var(--accent-1-soft);
 }
 
 .project-desc-input::placeholder {
@@ -338,7 +338,7 @@
   font-weight: 600;
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--bg-card);
   color: var(--text-primary);
   outline: none;
   transition: border-color 0.2s;
@@ -347,7 +347,7 @@
 
 .editor-title-input:focus {
   border-color: var(--accent-1);
-  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+  box-shadow: 0 0 0 3px var(--accent-1-soft);
 }
 
 .editor-title-input::placeholder {
@@ -447,14 +447,14 @@
 }
 
 .btn-delete {
-  border: 1px solid rgba(231, 76, 60, 0.3);
+  border: 1px solid var(--danger-border);
   background: transparent;
-  color: #e74c3c;
+  color: var(--danger);
 }
 
 .btn-delete:hover:not(:disabled) {
-  background: rgba(231, 76, 60, 0.06);
-  border-color: #e74c3c;
+  background: var(--danger-soft);
+  border-color: var(--danger);
 }
 
 .btn-delete:disabled {
@@ -496,7 +496,7 @@
 }
 
 .markdown-body code {
-  background: rgba(108, 92, 231, 0.08);
+  background: var(--accent-1-soft);
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 14px;
@@ -504,7 +504,7 @@
 }
 
 .markdown-body pre {
-  background: #f5f5f8;
+  background: var(--bg-elevated);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 20px;
@@ -592,7 +592,7 @@
 }
 
 .markdown-body table th {
-  background: rgba(108, 92, 231, 0.06);
+  background: var(--accent-1-soft);
   font-weight: 600;
 }
 
@@ -604,9 +604,9 @@
 .form-server-error {
   padding: 10px 14px;
   border-radius: 10px;
-  background: rgba(231, 76, 60, 0.1);
-  border: 1px solid rgba(231, 76, 60, 0.3);
-  color: #e74c3c;
+  background: var(--danger-soft);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
   font-size: 13px;
   line-height: 1.5;
   margin-bottom: 16px;
@@ -648,7 +648,7 @@
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 4px 12px;
-  background: rgba(255, 255, 255, 0.6);
+  background: var(--bg-card);
 }
 
 .project-blog-row {
@@ -662,7 +662,7 @@
 }
 
 .project-blog-row:hover {
-  background: rgba(108, 92, 231, 0.05);
+  background: var(--accent-1-soft);
 }
 
 .project-blog-row label {
@@ -684,7 +684,7 @@
   font-size: 11px;
   font-weight: 600;
   background: var(--accent-2);
-  color: #fff;
+  color: var(--white);
   padding: 2px 8px;
   border-radius: 10px;
   letter-spacing: 0.5px;
@@ -703,7 +703,7 @@
   display: inline-block;
   padding: 4px 12px;
   border-radius: 6px;
-  background: rgba(108, 92, 231, 0.1);
+  background: var(--accent-1-soft);
   color: var(--accent-1);
   font-size: 12px;
   font-weight: 500;
@@ -734,8 +734,8 @@
   display: inline-block;
   padding: 8px 20px;
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--accent-1), #8b7cf7);
-  color: #fff;
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-1-light));
+  color: var(--white);
   font-size: 13px;
   font-weight: 600;
   text-decoration: none;
@@ -785,8 +785,8 @@
   height: 28px;
   border: none;
   border-radius: 50%;
-  background: rgba(231, 76, 60, 0.08);
-  color: #e74c3c;
+  background: var(--danger-soft);
+  color: var(--danger);
   font-size: 16px;
   line-height: 1;
   cursor: pointer;
@@ -794,7 +794,7 @@
 }
 
 .project-link-del:hover {
-  background: rgba(231, 76, 60, 0.15);
+  background: var(--danger-soft-strong);
 }
 
 .project-link-add {
@@ -838,7 +838,7 @@
 
 .project-like-btn.liked {
   border-color: var(--accent-1);
-  background: rgba(108, 92, 231, 0.08);
+  background: var(--accent-1-soft);
   color: var(--accent-1);
 }
 
@@ -863,19 +863,19 @@
 }
 
 .project-follow-btn:hover:not(:disabled) {
-  background: rgba(108, 92, 231, 0.08);
+  background: var(--accent-1-soft);
 }
 
 .project-follow-btn.followed {
-  background: linear-gradient(135deg, var(--accent-1), #8b7cf7);
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-1-light));
   border-color: transparent;
-  color: #fff;
+  color: var(--white);
 }
 
 /* 已关注悬停：颜色加深（覆盖默认 hover 的浅色） */
 .project-follow-btn.followed:hover:not(:disabled) {
-  background: linear-gradient(135deg, #5a4bd6, #6c5ce7);
-  box-shadow: 0 4px 14px rgba(108, 92, 231, 0.4);
+  background: linear-gradient(135deg, var(--accent-1-hover), var(--accent-1));
+  box-shadow: 0 4px 14px var(--glow-accent-strong);
 }
 
 .project-follow-btn:disabled {
