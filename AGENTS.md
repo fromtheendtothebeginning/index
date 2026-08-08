@@ -14,6 +14,12 @@
   - 前端 http://localhost:3000（`/api` 经 Vite 代理到后端）
   - 后端 http://127.0.0.1:8000（本机若 8000 被 Windows/Hyper-V 排除区间占用，改用 18000 并同步 `vite.config.js` 代理；端口说明见 `log/acceptance-2026-08-06.md`）
 - 启动方式：用 WMI/CIM（`Invoke-CimMethod Win32_Process Create`）脱离会话启动，日志写 `log/back.out.log` / `log/fe.out.log`，PID 存 `log/run.pids`。
+- **部署红线：未经用户明确同意，禁止运行 deploy.bat / 发布到服务器**。完成功能后只启动本地服务供验收，等用户指示「发布到服务器并git」再部署。
+
+## 协作与流程规则
+- **Todo 管理**：每个 todo 完成并验证后立即在 todo 列表打钩（`todowrite` 更新状态）；**全部完成后归档清理**，不要遗留已完成的旧 todo 一直挂在右侧，进入下一任务前清空/替换列表。
+- **读图**：需要读图/截图/分析图片时，**先判断当前模型是否能直接读图**——用 read 工具读取图片，若返回的图片可解析（模型支持图像输入）则直接读，**不用 skill**；若返回「模型不支持图像输入」（本仓库当前模型 deepseek-v4-flash 即如此），再走 `vision-reader` skill。**本机该 skill 的脚本缺 PIL/torch 等重型依赖未安装——优先用零依赖现成方案**：Windows 自带 OCR（WinRT，PowerShell 调用）+ System.Drawing 像素采样（`GetPixel` 验证颜色），实测可读截图文字与按钮颜色；避免为一次性读图安装 GB 级依赖。
+- **分工**：主代理负责分发任务（派子代理）、定接口契约与验收总结，保持上下文清洁；具体实现由子代理（general/explore）完成。
 
 ## 后端
 - 虚拟环境 `backend/.venv`（Python 3.14）。入口是根目录的 `python backend/main.py`，main.py 内部用同目录相对导入（`from database import ...`）。

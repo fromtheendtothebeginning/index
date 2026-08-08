@@ -352,7 +352,7 @@ function AdminPage() {
                       <div className="admin-comment-content">{c.content}</div>
                     </div>
                     <button
-                      className="comment-delete-btn"
+                      className="admin-comment-delete-btn"
                       title="删除评论"
                       onClick={() => setModal({
                         id: c.id,
