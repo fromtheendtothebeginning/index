@@ -444,3 +444,25 @@ class FriendLinkResponse(BaseModel):
 class FriendLinkListResponse(BaseModel):
     total: int
     links: list[FriendLinkResponse]
+
+
+# ── 站点设置 ──
+
+class ContactItem(BaseModel):
+    """自定义联系项（与邮箱/GitHub 并列展示在首页"保持联系"）"""
+    label: str = Field(..., min_length=1, max_length=50, description="显示名称，如 合作邮箱 / 知乎")
+    value: str = Field(..., min_length=1, max_length=500, description="链接或文本")
+
+
+class SiteSettingResponse(BaseModel):
+    email: str
+    github_url: str
+    contact_items: list[ContactItem] = []
+
+    model_config = {"from_attributes": True}
+
+
+class UpdateSiteSettingRequest(BaseModel):
+    email: Optional[str] = Field(None, max_length=200, description="联系邮箱")
+    github_url: Optional[str] = Field(None, max_length=500, description="GitHub 链接")
+    contact_items: Optional[list[ContactItem]] = Field(None, description="自定义联系项（与邮箱/GitHub 并列）")

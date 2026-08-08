@@ -162,6 +162,12 @@ def run_migrations():
                     "FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE CASCADE"
                 ))
                 conn.commit()
+        # site_settings 表补 contact_items 列（旧库，须在后续查询 SiteSetting 之前）
+        if insp.has_table("site_settings"):
+            scols = {c["name"] for c in insp.get_columns("site_settings")}
+            if "contact_items" not in scols:
+                conn.execute(text("ALTER TABLE site_settings ADD COLUMN contact_items JSON NULL"))
+                conn.commit()
 
     # 为所有没有专属邀请码的已存在用户分配一个邀请码
     from sqlalchemy.orm import Session
@@ -197,4 +203,25 @@ def run_migrations():
             end_user.role = "admin"
             db.commit()
             print("[migrations] user 'end' promoted to admin")
+
+    # 站点设置默认行（首次初始化）/ 旧数据补默认联系项
+    from models import SiteSetting
+    with Session(engine) as db:
+        setting = db.query(SiteSetting).first()
+        if not setting:
+            db.add(SiteSetting(
+                email="jianghuxingxzhe@icloud.com",
+                github_url="https://github.com/fromtheendtothebeginning",
+                contact_items=[
+                    {"label": "邮箱", "value": "jianghuxingxzhe@icloud.com"},
+                    {"label": "GitHub", "value": "https://github.com/fromtheendtothebeginning"},
+                ],
+            ))
+            db.commit()
+        elif not setting.contact_items:
+            setting.contact_items = [
+                {"label": "邮箱", "value": setting.email or "jianghuxingxzhe@icloud.com"},
+                {"label": "GitHub", "value": setting.github_url or "https://github.com/fromtheendtothebeginning"},
+            ]
+            db.commit()
 

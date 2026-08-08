@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
 
 from database import get_db, init_db, run_migrations
-from models import User, Blog, BlogLike, Comment, CommentLike, Notification, InviteCode, Project, FriendLink, ProjectLike, ProjectFollow
+from models import User, Blog, BlogLike, Comment, CommentLike, Notification, InviteCode, Project, FriendLink, SiteSetting, ProjectLike, ProjectFollow
 from schemas import (
     RegisterRequest, LoginRequest, ResetPasswordRequest, UpdateProfileRequest,
     CreateBlogRequest, UpdateBlogRequest, TokenResponse, UserResponse,
@@ -27,6 +27,7 @@ from schemas import (
     ProjectLinkItem, ProjectFollowToggleResponse,
     FriendLinkRequest, FriendLinkResponse, FriendLinkListResponse,
     UpdateFriendLinkRequest,
+    SiteSettingResponse, UpdateSiteSettingRequest, ContactItem,
 )
 from auth import hash_password, verify_password, create_access_token, decode_access_token
 
@@ -300,7 +301,7 @@ def list_blogs(
     blogs = (
         query
         .options(joinedload(Blog.author), joinedload(Blog.project))
-        .order_by(Blog.updated_at.desc())
+        .order_by(Blog.created_at.desc())
         .offset(skip)
         .limit(limit)
         .all()
@@ -1357,6 +1358,60 @@ def delete_friend_link(
     db.delete(link)
     db.commit()
     return MessageResponse(message="友情链接已删除")
+
+
+# ============================================
+# 站点设置 API
+# ============================================
+
+_DEFAULT_CONTACT_ITEMS = [
+    {"label": "邮箱", "value": "jianghuxingxzhe@icloud.com"},
+    {"label": "GitHub", "value": "https://github.com/fromtheendtothebeginning"},
+]
+
+
+@app.get("/api/site-settings", response_model=SiteSettingResponse, tags=["站点设置"])
+def get_site_settings(db: Session = Depends(get_db)):
+    """获取站点联系设置（首页"保持联系"区块，公开，无配置时返回默认项）"""
+    setting = db.query(SiteSetting).first()
+    if not setting:
+        return SiteSettingResponse(email="", github_url="", contact_items=list(_DEFAULT_CONTACT_ITEMS))
+    items = setting.contact_items or []
+    if not items:
+        # 旧数据兼容：由 email/github_url 生成默认两项
+        items = [
+            {"label": "邮箱", "value": setting.email or _DEFAULT_CONTACT_ITEMS[0]["value"]},
+            {"label": "GitHub", "value": setting.github_url or _DEFAULT_CONTACT_ITEMS[1]["value"]},
+        ]
+    return SiteSettingResponse(email=setting.email or "", github_url=setting.github_url or "", contact_items=items)
+
+
+@app.put("/api/admin/site-settings", response_model=SiteSettingResponse, tags=["站点设置"])
+def update_site_settings(
+    req: UpdateSiteSettingRequest,
+    _admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """更新站点联系设置（仅管理员，联系项为唯一数据源，邮箱/GitHub 兼容同步）"""
+    setting = db.query(SiteSetting).first()
+    if not setting:
+        setting = SiteSetting(email="", github_url="", contact_items=list(_DEFAULT_CONTACT_ITEMS))
+        db.add(setting)
+    if "email" in req.model_fields_set:
+        setting.email = req.email or ""
+    if "github_url" in req.model_fields_set:
+        setting.github_url = req.github_url or ""
+    if "contact_items" in req.model_fields_set:
+        setting.contact_items = [item.model_dump() for item in req.contact_items] if req.contact_items else []
+        # 兼容同步：从联系项回写 email/github_url（label 匹配）
+        for it in setting.contact_items:
+            if it["label"] == "邮箱":
+                setting.email = it["value"].replace("mailto:", "").strip()
+            elif it["label"] == "GitHub":
+                setting.github_url = it["value"].strip()
+    db.commit()
+    db.refresh(setting)
+    return setting
 
 
 # ============================================

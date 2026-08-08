@@ -205,3 +205,19 @@ class FriendLink(Base):
 
     def __repr__(self):
         return f"<FriendLink(id={self.id}, name='{self.name}')>"
+
+
+class SiteSetting(Base):
+    """站点设置（单行配置：首页"保持联系"区块）"""
+    __tablename__ = "site_settings"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    email = Column(String(200), nullable=False, default="", comment="联系邮箱")
+    github_url = Column(String(500), nullable=False, default="", comment="GitHub 链接")
+    contact_items = Column(JSON, nullable=True, comment="自定义联系项 [{label,value}]，与邮箱/GitHub 并列")
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), comment="更新时间"
+    )
+
+    def __repr__(self):
+        return f"<SiteSetting(id={self.id}, email='{self.email}')>"

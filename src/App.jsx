@@ -22,6 +22,12 @@ function HomePage() {
   const [recentProjects, setRecentProjects] = useState([])
   const [projectsLoading, setProjectsLoading] = useState(true)
   const [friendLinks, setFriendLinks] = useState([])
+  const [contactSettings, setContactSettings] = useState({
+    contact_items: [
+      { label: '邮箱', value: 'jianghuxingxzhe@icloud.com' },
+      { label: 'GitHub', value: 'https://github.com/fromtheendtothebeginning' },
+    ],
+  })
 
   useEffect(() => {
     setMounted(true)
@@ -38,6 +44,13 @@ function HomePage() {
     fetch('/api/friend-links')
       .then(r => r.json())
       .then(d => setFriendLinks(d.links || []))
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    fetch('/api/site-settings')
+      .then(r => r.json())
+      .then(d => d && setContactSettings({ ...contactSettings, ...d }))
       .catch(() => {})
   }, [])
 
@@ -164,20 +177,24 @@ function HomePage() {
             <p className="section-desc">无论你是想合作、交流想法，还是单纯打个招呼——我们都在。</p>
           </Reveal>
           <Reveal className="contact-links">
-            <a href="mailto:jianghuxingxzhe@icloud.com" className="contact-item">
-              <span className="contact-icon">✉</span>
-              <div>
-                <span className="contact-label">邮件</span>
-                <span className="contact-value">jianghuxingxzhe@icloud.com</span>
-              </div>
-            </a>
-            <a href="https://github.com/fromtheendtothebeginning" target="_blank" rel="noopener noreferrer" className="contact-item">
-              <span className="contact-icon">⌘</span>
-              <div>
-                <span className="contact-label">GitHub</span>
-                <span className="contact-value">@fromtheendtothebeginning</span>
-              </div>
-            </a>
+            {(contactSettings.contact_items || []).map((item, i) => {
+              const isMail = /^mailto:/i.test(item.value) || /@/.test(item.value) && !/^https?:/i.test(item.value)
+              return (
+                <a
+                  key={i}
+                  href={isMail ? `mailto:${item.value.replace(/^mailto:/i, '')}` : item.value}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="contact-item"
+                >
+                  <span className="contact-icon">{item.label === '邮箱' || isMail ? '✉' : '🔗'}</span>
+                  <div>
+                    <span className="contact-label">{item.label}</span>
+                    <span className="contact-value">{item.value.replace(/^mailto:/i, '').replace(/^https?:\/\/(www\.)?/, '')}</span>
+                  </div>
+                </a>
+              )
+            })}
           </Reveal>
         </div>
       </section>

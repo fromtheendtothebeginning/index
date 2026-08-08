@@ -7,8 +7,7 @@ import './AdminPage.css'
 
 const CATEGORIES = ['技术讨论', '更新日志', '娱乐论坛']
 
-function AdminPage() {
-  const navigate = useNavigate()
+function AdminPage() {  const navigate = useNavigate()
   const [user, setUser] = useState(null)
   const [tab, setTab] = useState('users')
   const [authChecked, setAuthChecked] = useState(false)
@@ -21,6 +20,8 @@ function AdminPage() {
   const [links, setLinks] = useState([])
   const [linkForm, setLinkForm] = useState({ name: '', url: '', description: '' })
   const [linkEditingId, setLinkEditingId] = useState(null)
+  const [settings, setSettings] = useState({ email: '', github_url: '', contact_items: [] })
+  const [settingsSaving, setSettingsSaving] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -107,6 +108,21 @@ function AdminPage() {
     finally { setLoading(false) }
   }, [])
 
+  const loadSettings = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await fetch('/api/site-settings')
+      const data = await res.json()
+      setSettings({
+        email: data.email || '',
+        github_url: data.github_url || '',
+        contact_items: data.contact_items || [],
+      })
+    } catch { setError('网络错误') }
+    finally { setLoading(false) }
+  }, [])
+
   useEffect(() => {
     if (!authChecked) return
     if (tab === 'users') loadUsers()
@@ -114,7 +130,8 @@ function AdminPage() {
     else if (tab === 'blogs') loadBlogs()
     else if (tab === 'codes') loadCodes()
     else if (tab === 'links') loadLinks()
-  }, [authChecked, tab, loadUsers, loadComments, loadBlogs, loadCodes, loadLinks])
+    else if (tab === 'settings') loadSettings()
+  }, [authChecked, tab, loadUsers, loadComments, loadBlogs, loadCodes, loadLinks, loadSettings])
 
   // 设置角色
   const handleSetRole = async (userId, role) => {
@@ -263,6 +280,44 @@ function AdminPage() {
     })
   }
 
+  // 自定义联系项（与邮箱/GitHub 并列展示在首页"保持联系"）
+  const updateContactItem = (idx, patch) => {
+    setSettings(prev => {
+      const items = [...(prev.contact_items || [])]
+      items[idx] = { ...items[idx], ...patch }
+      return { ...prev, contact_items: items }
+    })
+  }
+
+  const removeContactItem = (idx) => {
+    setSettings(prev => ({
+      ...prev,
+      contact_items: (prev.contact_items || []).filter((_, i) => i !== idx),
+    }))
+  }
+
+  // 保存站点设置
+  const handleSaveSettings = async () => {
+    setSettingsSaving(true)
+    try {
+      const res = await fetch('/api/admin/site-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({
+          email: settings.email.trim() || null,
+          github_url: settings.github_url.trim() || null,
+          contact_items: (settings.contact_items || [])
+            .map(it => ({ label: (it.label || '').trim(), value: (it.value || '').trim() }))
+            .filter(it => it.label && it.value),
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) { alert(data.detail || '保存失败'); return }
+      alert('已保存')
+    } catch { alert('网络错误') }
+    finally { setSettingsSaving(false) }
+  }
+
   if (!authChecked) return null
 
   const fmtTime = (t) => new Date(t).toLocaleString('zh-CN', {
@@ -284,6 +339,7 @@ function AdminPage() {
           <button className={`admin-tab ${tab === 'blogs' ? 'active' : ''}`} onClick={() => setTab('blogs')}>博客管理</button>
           <button className={`admin-tab ${tab === 'codes' ? 'active' : ''}`} onClick={() => setTab('codes')}>邀请码</button>
           <button className={`admin-tab ${tab === 'links' ? 'active' : ''}`} onClick={() => setTab('links')}>友情链接</button>
+          <button className={`admin-tab ${tab === 'settings' ? 'active' : ''}`} onClick={() => setTab('settings')}>站点设置</button>
         </div>
 
         {error && <div className="admin-error">{error}</div>}
@@ -579,6 +635,65 @@ function AdminPage() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* 站点设置 */}
+        {tab === 'settings' && !loading && (
+          <div className="admin-section">
+            <div className="admin-section-head">
+              <h2>站点设置（首页"保持联系"区块）</h2>
+            </div>
+            <div className="admin-settings-form">
+              <div className="admin-sections-head">
+                <h3 className="admin-sub-title">联系项（邮箱 / GitHub / 自定义，首页"保持联系"区块并列展示）</h3>
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={() => setSettings(prev => ({
+                    ...prev,
+                    contact_items: [...(prev.contact_items || []), { label: '', value: '' }],
+                  }))}
+                >+ 添加联系项</button>
+              </div>
+              {!settings.contact_items || settings.contact_items.length === 0 ? (
+                <div className="admin-empty">暂无联系项，点击上方按钮添加</div>
+              ) : (
+                <div className="admin-sections-list">
+                  {settings.contact_items.map((item, i) => (
+                    <div key={i} className="admin-section-row">
+                      <div className="admin-section-row-fields">
+                        <input
+                          className="admin-link-input"
+                          placeholder="名称，如 邮箱 / GitHub / 合作邮箱"
+                          value={item.label}
+                          onChange={e => updateContactItem(i, { label: e.target.value })}
+                        />
+                        <input
+                          className="admin-link-input"
+                          placeholder="链接或文本"
+                          value={item.value}
+                          onChange={e => updateContactItem(i, { value: e.target.value })}
+                        />
+                      </div>
+                      <div className="admin-section-row-actions">
+                        <button
+                          className="btn btn-danger btn-sm"
+                          onClick={() => removeContactItem(i)}
+                        >
+                          删除
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div>
+                <button className="btn btn-primary btn-sm" onClick={handleSaveSettings} disabled={settingsSaving}>
+                  {settingsSaving ? '保存中...' : '保存'}
+                </button>
+              </div>
+              <p className="admin-settings-hint">修改后首页"保持联系"区块即时生效</p>
+            </div>
           </div>
         )}
       </div>

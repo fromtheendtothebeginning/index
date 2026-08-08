@@ -145,6 +145,7 @@
 .category-btn.category-btn-sm {
   font-size: 12px;
   padding: 4px 12px;
+  min-width: 84px;
   border-radius: 6px;
   margin-right: 0;
   height: auto;
@@ -710,6 +711,8 @@
 .category-btn {
   font-size: 13px;
   padding: 6px 16px;
+  min-width: 96px; /* 固定最小宽度，切换选项不改变按钮大小 */
+  justify-content: center;
   border: 1px solid var(--border-color);
   border-radius: 8px;
   background: transparent;
