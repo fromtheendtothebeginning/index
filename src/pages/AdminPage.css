@@ -159,7 +159,7 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  overflow-x: auto;
+  overflow-x: visible; /* 不裁剪，分类下拉菜单可溢出显示（不再被下方遮挡） */
 }
 
 .admin-row {
@@ -171,6 +171,11 @@
   font-size: 13px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   min-width: 700px;
+  position: relative;
+}
+
+.admin-row:hover {
+  z-index: 10; /* hover 行浮起，分类下拉菜单不被下方行/空白遮挡 */
 }
 
 .admin-row:last-child {

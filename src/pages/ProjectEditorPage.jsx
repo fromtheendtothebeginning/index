@@ -14,7 +14,7 @@ function ProjectEditorPage() {
   const [description, setDescription] = useState('')
   const [tags, setTags] = useState('')
   const [bgColor, setBgColor] = useState('')
-  const [linkUrl, setLinkUrl] = useState('')
+  const [links, setLinks] = useState([])
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -50,7 +50,9 @@ function ProjectEditorPage() {
         setDescription(data.description || '')
         setTags((data.tags || []).join(', '))
         setBgColor(data.bg_color || '')
-        setLinkUrl(data.link_url || '')
+        setLinks(data.links && data.links.length
+          ? data.links
+          : (data.link_url ? [{ name: '项目链接', url: data.link_url }] : []))
         setSelectedBlogIds((data.blogs || []).map(b => b.id))
       })
       .catch(() => setError('加载失败'))
@@ -68,6 +70,16 @@ function ProjectEditorPage() {
     setSelectedBlogIds(prev =>
       prev.includes(blogId) ? prev.filter(x => x !== blogId) : [...prev, blogId]
     )
+  }
+
+  const updateLink = (i, field, value) => {
+    setLinks(prev => prev.map((l, idx) => (idx === i ? { ...l, [field]: value } : l)))
+  }
+
+  const addLink = () => setLinks(prev => [...prev, { name: '', url: '' }])
+
+  const removeLink = (i) => {
+    setLinks(prev => prev.filter((_, idx) => idx !== i))
   }
 
   const handleSave = async () => {
@@ -91,7 +103,9 @@ function ProjectEditorPage() {
           cover_url: coverUrl || null,
           tags: tags.split(/[,，]/).map(s => s.trim()).filter(Boolean),
           bg_color: bgColor || null,
-          link_url: linkUrl || null,
+          links: links
+            .map(l => ({ name: (l.name || '').trim() || '链接', url: (l.url || '').trim() }))
+            .filter(l => l.url),
         }),
       })
       const data = await res.json()
@@ -198,20 +212,38 @@ function ProjectEditorPage() {
                 value={bgColor || '#6c5ce7'}
                 onChange={e => setBgColor(e.target.value)}
               />
-              <button type="button" className="btn" onClick={() => setBgColor('')}>自动</button>
-              <span className="editor-hint">{bgColor ? '已自定义' : '自动（跟随图片主色）'}</span>
             </div>
           </div>
 
           <div className="editor-field">
-            <label className="editor-label">项目链接（GitHub / 下载 URL，可选）</label>
-            <input
-              type="text"
-              className="editor-title-input"
-              placeholder="输入项目主页 / GitHub / 下载地址"
-              value={linkUrl}
-              onChange={e => setLinkUrl(e.target.value)}
-            />
+            <label className="editor-label">项目链接（GitHub / 下载 / 官网，可选）</label>
+            <div className="project-links-editor">
+              {links.map((l, i) => (
+                <div className="project-link-row" key={i}>
+                  <input
+                    type="text"
+                    className="editor-title-input project-link-name"
+                    placeholder="GitHub / 下载 / 官网"
+                    value={l.name}
+                    onChange={e => updateLink(i, 'name', e.target.value)}
+                  />
+                  <input
+                    type="text"
+                    className="editor-title-input project-link-url"
+                    placeholder="https://..."
+                    value={l.url}
+                    onChange={e => updateLink(i, 'url', e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="project-link-del"
+                    onClick={() => removeLink(i)}
+                    title="删除链接"
+                  >×</button>
+                </div>
+              ))}
+            </div>
+            <button type="button" className="project-link-add" onClick={addLink}>+ 添加链接</button>
           </div>
 
           {isEdit ? (

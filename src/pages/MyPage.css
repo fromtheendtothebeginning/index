@@ -48,6 +48,29 @@
   font-weight: 600;
 }
 
+.my-badge-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-muted, #4a4a5e);
+  cursor: pointer;
+  user-select: none;
+  padding: 4px 12px;
+  border-radius: 12px;
+  background: rgba(108, 92, 231, 0.08);
+  transition: background 0.2s;
+}
+
+.my-badge-toggle:hover {
+  background: rgba(108, 92, 231, 0.16);
+}
+
+.my-badge-toggle input {
+  cursor: pointer;
+  accent-color: var(--accent-1, #6c5ce7);
+}
+
 .my-read-all {
   margin-left: auto;
 }

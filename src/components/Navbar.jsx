@@ -6,6 +6,7 @@ function Navbar({ activePage }) {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
   const [unread, setUnread] = useState(0)
+  const [badgeOn, setBadgeOn] = useState(localStorage.getItem('notify_badge_enabled') !== '0')
 
   useEffect(() => {
     const raw = localStorage.getItem('user')
@@ -18,8 +19,17 @@ function Navbar({ activePage }) {
         try { setUser(JSON.parse(raw)) } catch { setUser(null) }
       } else { setUser(null) }
     }
+    const syncBadge = (e) => {
+      if (e.key === 'notify_badge_enabled') {
+        setBadgeOn(e.newValue !== '0')
+      }
+    }
     window.addEventListener('storage', sync)
-    return () => window.removeEventListener('storage', sync)
+    window.addEventListener('storage', syncBadge)
+    return () => {
+      window.removeEventListener('storage', sync)
+      window.removeEventListener('storage', syncBadge)
+    }
   }, [])
 
   // 校验当前登录用户的账户是否仍在数据库中存在
@@ -110,7 +120,7 @@ function Navbar({ activePage }) {
             <NavItem label="项目" to="/projects" active={activePage === 'project'} />
             {user && (
               <NavItem
-                label={<span>我的{unread > 0 && <span className="nav-badge">{unread}</span>}</span>}
+                label={<span>我的{unread > 0 && badgeOn && <span className="nav-badge">{unread}</span>}</span>}
                 to="/my"
                 active={activePage === 'my'}
               />

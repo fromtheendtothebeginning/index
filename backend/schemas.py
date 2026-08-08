@@ -71,6 +71,11 @@ class UpdateBlogRequest(BaseModel):
 
 # ── 项目请求 ──
 
+class ProjectLinkItem(BaseModel):
+    name: str = Field(..., min_length=1, max_length=50, description="链接名称，如 GitHub/下载")
+    url: str = Field(..., min_length=1, max_length=500, description="链接地址")
+
+
 class CreateProjectRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=200, description="项目名")
     description: Optional[str] = Field(None, max_length=65535, description="项目简介")
@@ -78,6 +83,7 @@ class CreateProjectRequest(BaseModel):
     tags: Optional[list[str]] = Field(None, description="项目标签列表")
     bg_color: Optional[str] = Field(None, max_length=9, description="自定义封面背景色，如 #6c5ce7")
     link_url: Optional[str] = Field(None, max_length=500, description="项目链接（GitHub/下载，可自定义）")
+    links: Optional[list[ProjectLinkItem]] = None
 
 
 class UpdateProjectRequest(BaseModel):
@@ -87,6 +93,7 @@ class UpdateProjectRequest(BaseModel):
     tags: Optional[list[str]] = Field(None, description="项目标签列表")
     bg_color: Optional[str] = Field(None, max_length=9, description="自定义封面背景色，如 #6c5ce7")
     link_url: Optional[str] = Field(None, max_length=500, description="项目链接（GitHub/下载，可自定义）")
+    links: Optional[list[ProjectLinkItem]] = None
 
 
 class UpdateProjectBlogsRequest(BaseModel):
@@ -160,6 +167,11 @@ class ProjectResponse(BaseModel):
     tags: list[str] = []
     bg_color: Optional[str] = None
     link_url: Optional[str] = None
+    links: list[ProjectLinkItem] = []
+    like_count: int = 0
+    liked_by_me: bool = False
+    follow_count: int = 0
+    followed_by_me: bool = False
     author_id: int
     author: Optional[BlogAuthorResponse] = None
     blog_count: int = 0
@@ -173,6 +185,13 @@ class ProjectResponse(BaseModel):
     def _parse_tags(cls, v):
         if isinstance(v, str):
             return [t.strip() for t in v.split(",") if t.strip()]
+        if v is None:
+            return []
+        return v
+
+    @field_validator("links", mode="before")
+    @classmethod
+    def _parse_links(cls, v):
         if v is None:
             return []
         return v
@@ -191,6 +210,11 @@ class ProjectDetailResponse(BaseModel):
     tags: list[str] = []
     bg_color: Optional[str] = None
     link_url: Optional[str] = None
+    links: list[ProjectLinkItem] = []
+    like_count: int = 0
+    liked_by_me: bool = False
+    follow_count: int = 0
+    followed_by_me: bool = False
     author_id: int
     author: Optional[BlogAuthorResponse] = None
     created_at: datetime
@@ -207,6 +231,18 @@ class ProjectDetailResponse(BaseModel):
         if v is None:
             return []
         return v
+
+    @field_validator("links", mode="before")
+    @classmethod
+    def _parse_links(cls, v):
+        if v is None:
+            return []
+        return v
+
+
+class ProjectFollowToggleResponse(BaseModel):
+    followed: bool
+    follow_count: int
 
 
 # ── 点赞 ──
@@ -234,7 +270,7 @@ class CommentUserResponse(BaseModel):
 
 class CommentResponse(BaseModel):
     id: int
-    blog_id: int
+    blog_id: Optional[int] = None
     user_id: int
     parent_id: Optional[int] = None
     content: str
@@ -311,7 +347,7 @@ class UpdateUserRoleRequest(BaseModel):
 class AdminCommentResponse(BaseModel):
     """管理员视角的评论（含博客标题、用户名与父评论）"""
     id: int
-    blog_id: int
+    blog_id: Optional[int] = None
     user_id: int
     content: str
     parent_id: Optional[int] = None

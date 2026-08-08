@@ -7,6 +7,7 @@ const TYPE_META = {
   comment_reply: { icon: '💬', label: '回复' },
   comment_like: { icon: '♥', label: '点赞' },
   blog_comment_like: { icon: '👍', label: '评论获赞' },
+  project_new_blog: { icon: '📌', label: '项目新博客' },
 }
 
 function MyPage() {
@@ -15,6 +16,14 @@ function MyPage() {
   const [unread, setUnread] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [badgeOn, setBadgeOn] = useState(localStorage.getItem('notify_badge_enabled') !== '0')
+
+  const handleToggleBadge = () => {
+    const next = !badgeOn
+    localStorage.setItem('notify_badge_enabled', next ? '1' : '0')
+    window.dispatchEvent(new StorageEvent('storage', { key: 'notify_badge_enabled' }))
+    setBadgeOn(next)
+  }
 
   const authHeaders = () => ({
     Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -83,6 +92,10 @@ function MyPage() {
       <div className="my-container">
         <div className="my-header">
           <h1 className="my-title">我的通知</h1>
+          <label className="my-badge-toggle">
+            <input type="checkbox" checked={badgeOn} onChange={handleToggleBadge} />
+            <span>未读红点</span>
+          </label>
           {unread > 0 && <span className="my-unread-count">{unread} 条未读</span>}
           <button className="btn btn-sm my-read-all" onClick={handleReadAll}>全部已读</button>
         </div>

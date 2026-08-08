@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Modal from '../components/Modal'
 import Reveal from '../components/Reveal'
+import CategoryDropdown from '../components/CategoryDropdown'
 import './Blog.css'
 
 const API_BASE = '/api'
@@ -162,17 +163,13 @@ function BlogListPage() {
                   </Link>
                   {isAdmin && (
                     <div className="blog-card-admin" onClick={e => e.preventDefault()}>
-                      <select
-                        className="blog-card-category-select"
+                      <CategoryDropdown
                         value={blog.category || ''}
-                        onChange={(e) => handleSetCategory(blog.id, e.target.value)}
-                        title="设置分类"
-                      >
-                        <option value="">未分类</option>
-                        {CATEGORIES.map(cat => (
-                          <option key={cat} value={cat}>{cat}</option>
-                        ))}
-                      </select>
+                        onChange={(v) => handleSetCategory(blog.id, v)}
+                        options={CATEGORIES.map(c => ({ value: c, label: c }))}
+                        placeholder="未分类"
+                        size="sm"
+                      />
                       <button
                         className="blog-card-withdraw"
                         onClick={(e) => {

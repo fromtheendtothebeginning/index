@@ -1,6 +1,6 @@
 # models.py — SQLAlchemy 数据模型
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey, UniqueConstraint, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
@@ -61,6 +61,7 @@ class Project(Base):
     tags = Column(Text, nullable=True, comment="标签，逗号分隔")
     bg_color = Column(String(9), nullable=True, comment="自定义封面背景色，如 #6c5ce7")
     link_url = Column(String(500), nullable=True, comment="项目链接（GitHub/下载，可自定义）")
+    links = Column(JSON, nullable=True, comment="多个项目链接 [{name,url}]")
     author_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), comment="创建时间")
     updated_at = Column(
@@ -85,12 +86,42 @@ class BlogLike(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), comment="点赞时间")
 
 
+class ProjectLike(Base):
+    """项目点赞记录 —— 同一用户对同一项目只能点赞一次"""
+    __tablename__ = "project_likes"
+    __table_args__ = (UniqueConstraint("project_id", "user_id", name="uq_project_user_like"),)
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), comment="点赞时间")
+
+    user = relationship("User")
+
+
+class ProjectFollow(Base):
+    """项目关注记录 —— 同一用户对同一项目只能关注一次"""
+    __tablename__ = "project_follows"
+    __table_args__ = (UniqueConstraint("project_id", "user_id", name="uq_project_user_follow"),)
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), comment="关注时间")
+
+    user = relationship("User")
+
+    def __repr__(self):
+        return f"<ProjectFollow(id={self.id}, project_id={self.project_id}, user_id={self.user_id})>"
+
+
 class Comment(Base):
     """博客评论"""
     __tablename__ = "comments"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    blog_id = Column(Integer, ForeignKey("blogs.id", ondelete="CASCADE"), nullable=False, index=True)
+    blog_id = Column(Integer, ForeignKey("blogs.id", ondelete="CASCADE"), nullable=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=True, index=True, comment="所属项目 ID（项目评论时非空，与 blog_id 二选一）")
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     parent_id = Column(Integer, ForeignKey("comments.id", ondelete="CASCADE"), nullable=True, index=True, comment="父评论 ID（回复时非空）")
     content = Column(Text, nullable=False, comment="评论内容")

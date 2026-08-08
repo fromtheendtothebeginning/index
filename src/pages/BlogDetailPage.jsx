@@ -2,8 +2,11 @@ import { useState, useEffect, useMemo } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Modal from '../components/Modal'
+import CategoryDropdown from '../components/CategoryDropdown'
 import { renderMd } from '../utils/markdown'
 import './Blog.css'
+
+const CATEGORIES = ['技术讨论', '更新日志', '娱乐论坛']
 
 // 单条评论卡片（主列表 / 回复链面板共用）
 function CommentCard({
@@ -498,18 +501,14 @@ function BlogDetailPage() {
             <div className="blog-detail-actions">
               {(isAuthor || isAdmin) && <Link to={`/blogs/${blog.id}/edit`} className="btn-edit">编辑</Link>}
               {isAdmin && (
-                <select
-                  className="admin-category-inline"
-                  value={adminCategory}
-                  onChange={(e) => handleAdminCategory(e.target.value)}
-                  disabled={categorySaving}
-                  title="管理员设置分类"
-                >
-                  <option value="">未分类</option>
-                  <option value="技术讨论">技术讨论</option>
-                  <option value="更新日志">更新日志</option>
-                  <option value="娱乐论坛">娱乐论坛</option>
-                </select>
+                <div title="管理员设置分类">
+                  <CategoryDropdown
+                    value={adminCategory}
+                    onChange={handleAdminCategory}
+                    options={CATEGORIES.map(c => ({ value: c, label: c }))}
+                    placeholder="未分类"
+                  />
+                </div>
               )}
               <button className="btn-delete" onClick={() => setShowDeleteModal(true)} disabled={deleting}>
                 {deleting ? '删除中...' : (isAdmin && !isAuthor ? '撤回' : '删除')}

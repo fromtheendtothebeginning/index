@@ -109,6 +109,7 @@
   transform: translateY(-4px);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
   border-color: var(--accent-1);
+  z-index: 5; /* hover 卡片浮起，避免下拉菜单被相邻卡片遮挡 */
 }
 
 .blog-card-link {
@@ -138,6 +139,15 @@
   color: var(--text-primary);
   cursor: pointer;
   transition: all 0.2s;
+}
+
+/* 卡片内小号分类下拉按钮（与 .category-btn 同控件，与「撤回」按钮同尺寸；提高特异性防止被 .category-btn 覆盖） */
+.category-btn.category-btn-sm {
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  margin-right: 0;
+  height: auto;
 }
 
 .blog-card-category-select:hover {
@@ -329,19 +339,19 @@
 
 /* 管理员内联分类选择器 */
 .admin-category-inline {
-  padding: 5px 12px;
+  padding: 6px 16px;
   border-radius: 8px;
   font-size: 13px;
-  background: rgba(108, 92, 231, 0.1);
-  border: 1px solid rgba(108, 92, 231, 0.3);
-  color: var(--text-primary);
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .admin-category-inline:hover {
-  border-color: var(--accent-1, #6c5ce7);
-  background: rgba(108, 92, 231, 0.18);
+  border-color: var(--accent-1);
+  color: var(--accent-1);
 }
 
 .admin-category-inline:disabled {
@@ -696,17 +706,17 @@
   letter-spacing: 0.5px;
 }
 
-/* ---- 分类选择按钮（与发布按钮统一） ---- */
+/* ---- 分类选择按钮（与周围按钮统一尺寸） ---- */
 .category-btn {
-  font-size: 15px;
-  padding: 9px 20px;
+  font-size: 13px;
+  padding: 6px 16px;
   border: 1px solid var(--border-color, #333);
-  border-radius: 12px;
+  border-radius: 8px;
   background: transparent;
   color: var(--text-secondary, #3a3a4e);
   cursor: pointer;
   margin-right: 10px;
-  height: 40px;
+  height: auto;
   transition: all 0.2s;
   white-space: nowrap;
 }

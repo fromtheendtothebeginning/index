@@ -747,3 +747,153 @@
   transform: translateY(-2px);
 }
 
+.project-link-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ---------- 编辑器多链接 ---------- */
+.project-links-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.project-link-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.project-link-row .editor-title-input {
+  font-size: 14px;
+  font-weight: 400;
+  padding: 10px 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.project-link-row .project-link-name {
+  flex: 0 0 42%;
+}
+
+.project-link-del {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(231, 76, 60, 0.08);
+  color: #e74c3c;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.project-link-del:hover {
+  background: rgba(231, 76, 60, 0.15);
+}
+
+.project-link-add {
+  display: inline-block;
+  padding: 8px 16px;
+  border: 1px dashed var(--border-color);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.project-link-add:hover {
+  border-color: var(--accent-1);
+  color: var(--accent-1);
+}
+
+/* ---------- 项目点赞 / 关注 ---------- */
+.project-like-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.project-like-btn:hover:not(:disabled) {
+  border-color: var(--accent-1);
+  color: var(--accent-1);
+}
+
+.project-like-btn.liked {
+  border-color: var(--accent-1);
+  background: rgba(108, 92, 231, 0.08);
+  color: var(--accent-1);
+}
+
+.project-like-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.project-follow-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  border-radius: 8px;
+  border: 1px solid var(--accent-1);
+  background: transparent;
+  color: var(--accent-1);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.project-follow-btn:hover:not(:disabled) {
+  background: rgba(108, 92, 231, 0.08);
+}
+
+.project-follow-btn.followed {
+  background: linear-gradient(135deg, var(--accent-1), #8b7cf7);
+  border-color: transparent;
+  color: #fff;
+}
+
+/* 已关注悬停：颜色加深（覆盖默认 hover 的浅色） */
+.project-follow-btn.followed:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5a4bd6, #6c5ce7);
+  box-shadow: 0 4px 14px rgba(108, 92, 231, 0.4);
+}
+
+.project-follow-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ---------- 项目评论区（复用 Blog.css 的 .comment-* 类） ---------- */
+.project-comments {
+  margin-top: 48px;
+}
+
+/* 点赞/关注与上方相关博客保持间隔 */
+.project-blogs + .project-actions {
+  margin-top: 32px;
+}
+
+.project-actions + .project-actions {
+  margin-top: -20px;
+}
+

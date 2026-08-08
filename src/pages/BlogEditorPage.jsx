@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import CategoryDropdown from '../components/CategoryDropdown'
 import { renderMd } from '../utils/markdown'
 import './Blog.css'
 
@@ -159,26 +160,18 @@ function BlogEditorPage() {
           </div>
 
           <div className="editor-actions">
-            <div className="nav-dropdown">
-              <button className="category-btn">{category || '无'} <span className="arrow-down">▾</span></button>
-              <div className="nav-dropdown-menu">
-                <a href="#" onClick={e => { e.preventDefault(); setCategory(''); }}>无</a>
-                <a href="#" onClick={e => { e.preventDefault(); setCategory('技术讨论'); }}>技术讨论</a>
-                <a href="#" onClick={e => { e.preventDefault(); setCategory('更新日志'); }}>更新日志</a>
-                <a href="#" onClick={e => { e.preventDefault(); setCategory('娱乐论坛'); }}>娱乐论坛</a>
-              </div>
-            </div>
-            <div className="nav-dropdown">
-              <button className="category-btn">
-                {projects.find(p => p.id === projectId)?.name || '不关联'} <span className="arrow-down">▾</span>
-              </button>
-              <div className="nav-dropdown-menu">
-                <a href="#" onClick={e => { e.preventDefault(); setProjectId(''); }}>不关联</a>
-                {projects.map(p => (
-                  <a key={p.id} href="#" onClick={e => { e.preventDefault(); setProjectId(p.id); }}>{p.name}</a>
-                ))}
-              </div>
-            </div>
+            <CategoryDropdown
+              value={category}
+              onChange={setCategory}
+              options={[{value:'技术讨论',label:'技术讨论'},{value:'更新日志',label:'更新日志'},{value:'娱乐论坛',label:'娱乐论坛'}]}
+              placeholder="无"
+            />
+            <CategoryDropdown
+              value={projects.find(p => p.id === projectId)?.name || ''}
+              onChange={(v) => setProjectId(v === '' ? '' : Number(v))}
+              options={projects.map(p => ({ value: String(p.id), label: p.name }))}
+              placeholder="不关联"
+            />
             <button
               className="btn btn-primary"
               onClick={handleSave}

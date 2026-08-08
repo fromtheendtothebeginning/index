@@ -7,9 +7,10 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import or_
 
 from database import get_db, init_db, run_migrations
-from models import User, Blog, BlogLike, Comment, CommentLike, Notification, InviteCode, Project, FriendLink
+from models import User, Blog, BlogLike, Comment, CommentLike, Notification, InviteCode, Project, FriendLink, ProjectLike, ProjectFollow
 from schemas import (
     RegisterRequest, LoginRequest, ResetPasswordRequest, UpdateProfileRequest,
     CreateBlogRequest, UpdateBlogRequest, TokenResponse, UserResponse,
@@ -23,6 +24,7 @@ from schemas import (
     UpdateInviteCodeReusableRequest,
     CreateProjectRequest, UpdateProjectRequest, ProjectResponse,
     ProjectListResponse, ProjectDetailResponse, UpdateProjectBlogsRequest,
+    ProjectLinkItem, ProjectFollowToggleResponse,
     FriendLinkRequest, FriendLinkResponse, FriendLinkListResponse,
     UpdateFriendLinkRequest,
 )
@@ -273,6 +275,14 @@ def _attach_blog_stats(blog: Blog, db: Session, current_user: Optional[User]) ->
         blog.liked_by_me = False
 
 
+def _attach_project_stats(project: Project, db: Session, current_user: Optional[User]) -> None:
+    """为项目对象附加点赞数、关注数、当前用户是否点赞/关注"""
+    project.like_count = db.query(ProjectLike).filter(ProjectLike.project_id == project.id).count()
+    project.follow_count = db.query(ProjectFollow).filter(ProjectFollow.project_id == project.id).count()
+    project.liked_by_me = current_user is not None and db.query(ProjectLike).filter(ProjectLike.project_id == project.id, ProjectLike.user_id == current_user.id).first() is not None
+    project.followed_by_me = current_user is not None and db.query(ProjectFollow).filter(ProjectFollow.project_id == project.id, ProjectFollow.user_id == current_user.id).first() is not None
+
+
 @app.get("/api/blogs", response_model=BlogListResponse, tags=["博客"])
 def list_blogs(
     skip: int = 0,
@@ -405,9 +415,11 @@ def delete_blog(
 def list_projects(
     skip: int = 0,
     limit: int = 50,
+    token: Optional[str] = Depends(oauth2_scheme_optional),
     db: Session = Depends(get_db),
 ):
     """获取项目列表（按创建时间倒序，附带每个项目的博客数）"""
+    current_user = get_optional_user(token, db)
     total = db.query(Project).count()
     projects = (
         db.query(Project)
@@ -419,11 +431,16 @@ def list_projects(
     )
     for p in projects:
         p.blog_count = db.query(Blog).filter(Blog.project_id == p.id).count()
+        _attach_project_stats(p, db, current_user)
     return ProjectListResponse(total=total, projects=projects)
 
 
 @app.get("/api/projects/{project_id}", response_model=ProjectDetailResponse, tags=["项目"])
-def get_project(project_id: int, db: Session = Depends(get_db)):
+def get_project(
+    project_id: int,
+    token: Optional[str] = Depends(oauth2_scheme_optional),
+    db: Session = Depends(get_db),
+):
     """获取项目详情（含项目下的博客列表，按发布时间从新到旧）"""
     project = (
         db.query(Project)
@@ -434,6 +451,7 @@ def get_project(project_id: int, db: Session = Depends(get_db)):
     if not project:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="项目不存在")
 
+    current_user = get_optional_user(token, db)
     blogs = (
         db.query(Blog)
         .options(joinedload(Blog.author), joinedload(Blog.project))
@@ -442,8 +460,9 @@ def get_project(project_id: int, db: Session = Depends(get_db)):
         .all()
     )
     for b in blogs:
-        _attach_blog_stats(b, db, None)
+        _attach_blog_stats(b, db, current_user)
     project.blogs = blogs
+    _attach_project_stats(project, db, current_user)
     return project
 
 
@@ -466,6 +485,8 @@ def create_project(
         project.bg_color = req.bg_color or None
     if req.link_url is not None:
         project.link_url = req.link_url or None
+    if req.links is not None:
+        project.links = [l.model_dump() for l in req.links]
     db.add(project)
     db.commit()
     db.refresh(project)
@@ -509,6 +530,8 @@ def update_project(
         project.bg_color = req.bg_color or None
     if "link_url" in req.model_fields_set:
         project.link_url = req.link_url or None
+    if "links" in req.model_fields_set:
+        project.links = [l.model_dump() for l in req.links] if req.links is not None else None
     if req.tags is not None:
         project.tags = ",".join(t.strip() for t in req.tags if t.strip())
 
@@ -542,6 +565,19 @@ def update_project_blogs(
         if existing != wanted:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="包含不存在的博客")
 
+    # 找出本次将新关联到本项目的博客（原 project_id 不是本项目），用于通知关注者
+    # 注意：NULL 用 is_(None) 单独匹配，`!=` 不会命中 NULL 行
+    old_blog_ids = set()
+    if wanted:
+        old_blog_ids = {
+            b[0] for b in db.query(Blog.id)
+            .filter(
+                Blog.id.in_(wanted),
+                or_(Blog.project_id != project_id, Blog.project_id.is_(None)),
+            )
+            .all()
+        }
+
     # 解除本项目中不在列表内的博客
     q = db.query(Blog).filter(Blog.project_id == project_id)
     if wanted:
@@ -553,6 +589,19 @@ def update_project_blogs(
             {"project_id": project_id}, synchronize_session=False
         )
     db.commit()
+
+    # 关联了新博客时，通知所有关注者（作者本人除外）
+    if old_blog_ids:
+        followers = db.query(ProjectFollow.user_id).filter(ProjectFollow.project_id == project_id).all()
+        new_blogs = {b.id: b.title for b in db.query(Blog).filter(Blog.id.in_(old_blog_ids)).all()}
+        for fid, in followers:
+            if fid == project.author_id:
+                continue
+            for bid, btitle in new_blogs.items():
+                _notify(
+                    db, fid, "project_new_blog", project.author_id, bid, None,
+                    f"项目「{project.name}」关联了新博客《{btitle}》",
+                )
 
     project = (
         db.query(Project)
@@ -570,6 +619,7 @@ def update_project_blogs(
     for b in blogs:
         _attach_blog_stats(b, db, None)
     project.blogs = blogs
+    _attach_project_stats(project, db, None)
     return project
 
 
@@ -593,6 +643,35 @@ def delete_project(
     return MessageResponse(message="项目已删除")
 
 
+@app.post("/api/projects/{project_id}/follow", response_model=ProjectFollowToggleResponse, tags=["项目"])
+def toggle_project_follow(
+    project_id: int,
+    current_user: User = Depends(get_current_user_obj),
+    db: Session = Depends(get_db),
+):
+    """切换项目关注状态（已关注则取消，未关注则关注）"""
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="项目不存在")
+
+    existing = (
+        db.query(ProjectFollow)
+        .filter(ProjectFollow.project_id == project_id, ProjectFollow.user_id == current_user.id)
+        .first()
+    )
+    if existing:
+        db.delete(existing)
+        db.commit()
+        followed = False
+    else:
+        db.add(ProjectFollow(project_id=project_id, user_id=current_user.id))
+        db.commit()
+        followed = True
+
+    follow_count = db.query(ProjectFollow).filter(ProjectFollow.project_id == project_id).count()
+    return ProjectFollowToggleResponse(followed=followed, follow_count=follow_count)
+
+
 # ============================================
 # 点赞 API
 # ============================================
@@ -606,6 +685,7 @@ def _notify(db, user_id, type_, actor_id, blog_id, comment_id, content):
             Notification.type == type_,
             Notification.actor_id == actor_id,
             Notification.comment_id == comment_id,
+            Notification.blog_id == blog_id,
             Notification.is_read.is_(False),
         )
         .first()
@@ -649,6 +729,35 @@ def toggle_like(
         liked = True
 
     like_count = db.query(BlogLike).filter(BlogLike.blog_id == blog_id).count()
+    return LikeToggleResponse(liked=liked, like_count=like_count)
+
+
+@app.post("/api/projects/{project_id}/like", response_model=LikeToggleResponse, tags=["点赞"])
+def toggle_project_like(
+    project_id: int,
+    current_user: User = Depends(get_current_user_obj),
+    db: Session = Depends(get_db),
+):
+    """切换项目点赞状态（已点赞则取消，未点赞则点赞）"""
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="项目不存在")
+
+    existing = (
+        db.query(ProjectLike)
+        .filter(ProjectLike.project_id == project_id, ProjectLike.user_id == current_user.id)
+        .first()
+    )
+    if existing:
+        db.delete(existing)
+        db.commit()
+        liked = False
+    else:
+        db.add(ProjectLike(project_id=project_id, user_id=current_user.id))
+        db.commit()
+        liked = True
+
+    like_count = db.query(ProjectLike).filter(ProjectLike.project_id == project_id).count()
     return LikeToggleResponse(liked=liked, like_count=like_count)
 
 
@@ -699,6 +808,54 @@ def toggle_comment_like(
 # 评论 API
 # ============================================
 
+def _comment_reply_counts(comments):
+    """递归统计每条评论的后代回复总数（O(n)，带缓存避免重复遍历），返回 {id: 子树回复数}"""
+    children = {}
+    for c in comments:
+        if c.parent_id is not None:
+            children.setdefault(c.parent_id, []).append(c.id)
+    reply_counts = {}
+
+    def count_descendants(cid):
+        if cid in reply_counts:
+            return reply_counts[cid]
+        total = 0
+        for child_id in children.get(cid, []):
+            total += 1 + count_descendants(child_id)
+        reply_counts[cid] = total
+        return total
+
+    for c in comments:
+        c.reply_count = count_descendants(c.id)
+    return reply_counts
+
+
+def _attach_comment_stats(comments, db: Session, current_user: Optional[User]) -> None:
+    """为评论列表附加点赞数、当前用户是否点赞、后代回复数（博客/项目评论共用）"""
+    comment_ids = [c.id for c in comments]
+    like_counts = {}
+    if comment_ids:
+        for (cid,) in (
+            db.query(CommentLike.comment_id)
+            .filter(CommentLike.comment_id.in_(comment_ids))
+            .all()
+        ):
+            like_counts[cid] = like_counts.get(cid, 0) + 1
+    liked_by_me_ids = set()
+    if comment_ids and current_user:
+        liked_by_me_ids = {
+            cid for (cid,) in (
+                db.query(CommentLike.comment_id)
+                .filter(CommentLike.comment_id.in_(comment_ids), CommentLike.user_id == current_user.id)
+                .all()
+            )
+        }
+    for c in comments:
+        c.like_count = like_counts.get(c.id, 0)
+        c.liked_by_me = c.id in liked_by_me_ids
+    _comment_reply_counts(comments)
+
+
 @app.get("/api/blogs/{blog_id}/comments", response_model=CommentListResponse, tags=["评论"])
 def list_comments(
     blog_id: int,
@@ -718,45 +875,30 @@ def list_comments(
         .order_by(Comment.created_at.asc())
         .all()
     )
-    # 批量统计点赞数与当前用户是否点赞
-    comment_ids = [c.id for c in comments]
-    like_counts = {}
-    if comment_ids:
-        for (cid,) in (
-            db.query(CommentLike.comment_id)
-            .filter(CommentLike.comment_id.in_(comment_ids))
-            .all()
-        ):
-            like_counts[cid] = like_counts.get(cid, 0) + 1
-    liked_by_me_ids = set()
-    if comment_ids and current_user:
-        liked_by_me_ids = {
-            cid for (cid,) in (
-                db.query(CommentLike.comment_id)
-                .filter(CommentLike.comment_id.in_(comment_ids), CommentLike.user_id == current_user.id)
-                .all()
-            )
-        }
-    # 递归统计每个评论的后代回复总数（O(n)，带缓存避免重复遍历）
-    children = {}
-    for c in comments:
-        if c.parent_id is not None:
-            children.setdefault(c.parent_id, []).append(c.id)
-    reply_counts = {}
+    _attach_comment_stats(comments, db, current_user)
+    return CommentListResponse(total=len(comments), comments=comments)
 
-    def count_descendants(cid):
-        if cid in reply_counts:
-            return reply_counts[cid]
-        total = 0
-        for child_id in children.get(cid, []):
-            total += 1 + count_descendants(child_id)
-        reply_counts[cid] = total
-        return total
 
-    for c in comments:
-        c.like_count = like_counts.get(c.id, 0)
-        c.liked_by_me = c.id in liked_by_me_ids
-        c.reply_count = count_descendants(c.id)
+@app.get("/api/projects/{project_id}/comments", response_model=CommentListResponse, tags=["评论"])
+def list_project_comments(
+    project_id: int,
+    token: Optional[str] = Depends(oauth2_scheme_optional),
+    db: Session = Depends(get_db),
+):
+    """获取某项目的评论列表（按时间正序，父评论在回复之前）"""
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="项目不存在")
+
+    current_user = get_optional_user(token, db)
+    comments = (
+        db.query(Comment)
+        .options(joinedload(Comment.user))
+        .filter(Comment.project_id == project_id)
+        .order_by(Comment.created_at.asc())
+        .all()
+    )
+    _attach_comment_stats(comments, db, current_user)
     return CommentListResponse(total=len(comments), comments=comments)
 
 
@@ -796,6 +938,57 @@ def create_comment(
         _notify(
             db, parent.user_id, "comment_reply", current_user.id,
             blog_id, comment.id, f"「{current_user.username}」回复了你的评论",
+        )
+
+    # 重新查询以加载 user 关系
+    comment = (
+        db.query(Comment)
+        .options(joinedload(Comment.user))
+        .filter(Comment.id == comment.id)
+        .first()
+    )
+    comment.like_count = 0
+    comment.liked_by_me = False
+    comment.reply_count = 0
+    return comment
+
+
+@app.post("/api/projects/{project_id}/comments", response_model=CommentResponse, status_code=status.HTTP_201_CREATED, tags=["评论"])
+def create_project_comment(
+    project_id: int,
+    req: CreateCommentRequest,
+    current_user: User = Depends(get_current_user_obj),
+    db: Session = Depends(get_db),
+):
+    """发表项目评论（需登录，parent_id 非空时为回复）"""
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="项目不存在")
+
+    parent = None
+    if req.parent_id is not None:
+        parent = db.query(Comment).filter(Comment.id == req.parent_id).first()
+        if not parent or parent.project_id != project_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="父评论不存在或不属于该项目",
+            )
+
+    comment = Comment(
+        project_id=project_id,
+        user_id=current_user.id,
+        parent_id=req.parent_id,
+        content=req.content,
+    )
+    db.add(comment)
+    db.commit()
+    db.refresh(comment)
+
+    # 回复通知：父评论作者（非本人）收到 comment_reply 通知（_notify 内部去重）
+    if parent and parent.user_id != current_user.id:
+        _notify(
+            db, parent.user_id, "comment_reply", current_user.id,
+            None, comment.id, f"「{current_user.username}」回复了你的评论",
         )
 
     # 重新查询以加载 user 关系

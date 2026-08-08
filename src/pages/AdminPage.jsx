@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Modal from '../components/Modal'
+import CategoryDropdown from '../components/CategoryDropdown'
 import './AdminPage.css'
 
 const CATEGORIES = ['技术讨论', '更新日志', '娱乐论坛']
@@ -400,16 +401,13 @@ function AdminPage() {
                     </span>
                     <span>{b.author?.nickname || b.author?.username || '-'}</span>
                     <span>
-                      <select
-                        className="admin-category-select"
+                      <CategoryDropdown
                         value={b.category || ''}
-                        onChange={(e) => handleSetCategory(b.id, e.target.value)}
-                      >
-                        <option value="">未分类</option>
-                        {CATEGORIES.map(cat => (
-                          <option key={cat} value={cat}>{cat}</option>
-                        ))}
-                      </select>
+                        onChange={(v) => handleSetCategory(b.id, v)}
+                        options={CATEGORIES.map(c => ({ value: c, label: c }))}
+                        placeholder="未分类"
+                        size="sm"
+                      />
                     </span>
                     <span className="admin-cell-time">{fmtTime(b.created_at)}</span>
                     <span>

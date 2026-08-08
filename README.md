@@ -259,6 +259,16 @@ anticraft/
 | **新建/编辑项目** | `/projects/new`、`/projects/{id}/edit` | 项目名 + 封面图床 URL + 简介 |
 | **管理员后台** | `/admin` | 用户/评论/博客/邀请码四 Tab |
 
+## 可复用组件（src/components/）
+
+| 组件 | 用途 |
+|------|------|
+| `NavItem` | 导航栏栏目（支持下拉），新增栏目用 `<NavItem label="xxx" to="/路径" active={...}>{下拉链接}</NavItem>` |
+| `Reveal` | 入场动画（滚动进入视口上移淡入），任意元素包一层 `<Reveal className="...">` |
+| `Modal` | 统一确认弹窗（勿用 window.confirm） |
+| `CategoryDropdown` | 统一分类/选项下拉选择器（悬停展开 + 动画），`size="sm"` 适配紧凑场景 |
+| `ProjectCover` | 项目封面（自动提取图片主色作背景，支持自定义 bgColor） |
+
 ---
 
 ## 设计要点

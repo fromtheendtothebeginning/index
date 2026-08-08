@@ -98,14 +98,24 @@ def run_migrations():
                     "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL"
                 ))
                 conn.commit()
-        # comments 表新增 parent_id 列（评论回复）
+        # comments 表新增 parent_id / project_id 列（评论回复 / 项目评论）
         if insp.has_table("comments"):
             columns = {c["name"] for c in insp.get_columns("comments")}
+            # 项目评论：blog_id 允许为空（与 project_id 二选一）
+            conn.execute(text("ALTER TABLE comments MODIFY blog_id INT NULL"))
+            conn.commit()
             if "parent_id" not in columns:
                 conn.execute(text("ALTER TABLE comments ADD COLUMN parent_id INT NULL"))
                 conn.execute(text(
                     "ALTER TABLE comments ADD CONSTRAINT fk_comment_parent "
                     "FOREIGN KEY (parent_id) REFERENCES comments(id) ON DELETE CASCADE"
+                ))
+                conn.commit()
+            if "project_id" not in columns:
+                conn.execute(text("ALTER TABLE comments ADD COLUMN project_id INT NULL"))
+                conn.execute(text(
+                    "ALTER TABLE comments ADD CONSTRAINT fk_comment_project "
+                    "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE"
                 ))
                 conn.commit()
         # projects 表兼容旧版遗留表（早期已删 Project 功能留下的表缺新列，create_all 不补已有表）
@@ -122,6 +132,9 @@ def run_migrations():
                 conn.commit()
             if "link_url" not in pcolumns:
                 conn.execute(text("ALTER TABLE projects ADD COLUMN link_url VARCHAR(500) NULL"))
+                conn.commit()
+            if "links" not in pcolumns:
+                conn.execute(text("ALTER TABLE projects ADD COLUMN links JSON NULL"))
                 conn.commit()
             if "owner_id" in pcolumns:
                 # 旧版遗留列：回填 author_id（继承 owner_id），并把 owner_id 置为可空，
