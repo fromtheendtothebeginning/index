@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { changeThemeWithTransition } from '../utils/themeTransition'
 import './ProfileEdit.css'
 
 function ProfileEdit() {
@@ -10,6 +11,7 @@ function ProfileEdit() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'system')
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -90,6 +92,27 @@ function ProfileEdit() {
 
   if (!user) return null
 
+  // 返回来源页面（点击头像进入时由 Navbar 记录）；无记录则回首页
+  const backTarget = sessionStorage.getItem('profile_redirect') || '/'
+  const backLabel = backTarget.startsWith('/blogs')
+    ? '返回博客'
+    : backTarget.startsWith('/projects')
+      ? '返回项目'
+      : backTarget !== '/'
+        ? '返回'
+        : '返回首页'
+  const handleBack = () => {
+    sessionStorage.removeItem('profile_redirect')
+  }
+
+  // 主题模式切换（浅色 ↔ 深色 渐变）
+  const handleChangeTheme = (next) => {
+    localStorage.setItem('theme', next)
+    changeThemeWithTransition(next)
+    window.dispatchEvent(new StorageEvent('storage', { key: 'theme' }))
+    setTheme(next)
+  }
+
   return (
     <div className="profile-page">
       <div className="profile-grid" />
@@ -99,8 +122,25 @@ function ProfileEdit() {
       <div className="profile-container">
         {/* 头部 */}
         <div className="profile-header">
-          <Link to="/" className="profile-back">&larr; 返回首页</Link>
           <h1 className="profile-title">编辑个人资料</h1>
+          <Link to={backTarget} className="profile-back" onClick={handleBack}>&larr; {backLabel}</Link>
+        </div>
+
+        {/* 主题模式（浅色 / 深色 / 跟随系统，渐变切换） */}
+        <div className="profile-theme">
+          <span className="profile-theme-label">主题模式</span>
+          <div className="profile-theme-toggle">
+            {[['system', '跟随系统'], ['light', '浅色'], ['dark', '深色']].map(([v, label]) => (
+              <button
+                key={v}
+                type="button"
+                className={`profile-theme-option ${theme === v ? 'active' : ''}`}
+                onClick={() => handleChangeTheme(v)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* 头像预览 */}

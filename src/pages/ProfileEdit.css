@@ -68,11 +68,12 @@
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* ── 头部 ── */
+/* ── 头部（标题在上，返回链接在下方） ── */
 .profile-header {
   display: flex;
-  align-items: center;
-  gap: 16px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
   margin-bottom: 32px;
 }
 
@@ -225,6 +226,54 @@
 .profile-admin-btn {
   width: 100%;
   justify-content: center;
+}
+
+/* ── 主题模式切换（浅色 / 深色 / 跟随系统） ── */
+.profile-theme {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding: 12px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-card);
+  flex-wrap: wrap;
+}
+
+.profile-theme-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.profile-theme-toggle {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--bg-elevated);
+}
+
+.profile-theme-option {
+  padding: 5px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.profile-theme-option:hover {
+  color: var(--text-primary);
+}
+
+.profile-theme-option.active {
+  background: var(--accent-1);
+  color: var(--white);
 }
 
 /* ── 响应式 ── */

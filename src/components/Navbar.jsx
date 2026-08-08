@@ -133,7 +133,12 @@ function Navbar({ activePage }) {
           </div>
           {user ? (
             <div className="nav-user">
-              <Link to="/profile" className="nav-user-avatar" title="编辑资料">
+              <Link
+                to="/profile"
+                className="nav-user-avatar"
+                title="编辑资料"
+                onClick={() => sessionStorage.setItem('profile_redirect', window.location.pathname + window.location.search)}
+              >
                 {user.avatar_url ? (
                   <img src={user.avatar_url} alt="" className="nav-avatar-img" />
                 ) : (
