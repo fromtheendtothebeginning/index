@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Modal from '../components/Modal'
+import Reveal from '../components/Reveal'
 import './Blog.css'
 
 const API_BASE = '/api'
@@ -47,24 +48,6 @@ function BlogListPage() {
     setFilterCategory(cat)
     setPage(0)
   }, [searchParams])
-
-  useEffect(() => {
-    const els = document.querySelectorAll('.scroll-reveal')
-    if (!els.length) return
-    const obs = new IntersectionObserver(
-      (entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('revealed')
-            obs.unobserve(entry.target)
-          }
-        })
-      },
-      { threshold: 0.15 }
-    )
-    els.forEach(el => obs.observe(el))
-    return () => obs.disconnect()
-  }, [blogs])
 
   const isAdmin = user && user.role === 'admin'
 
@@ -121,7 +104,7 @@ function BlogListPage() {
       <Navbar activePage="blog" />
 
       <div className="blog-main">
-        <div className="blog-header scroll-reveal">
+        <Reveal className="blog-header">
           <div className="blog-header-content">
             <h1 className="blog-title">博客</h1>
             <p className="blog-subtitle">记录思考，分享创造</p>
@@ -131,7 +114,7 @@ function BlogListPage() {
               写文章
             </Link>
           )}
-        </div>
+        </Reveal>
 
         <div className="blog-filters">
           {['', '技术讨论', '更新日志', '娱乐论坛'].map(cat => (
@@ -156,7 +139,7 @@ function BlogListPage() {
           <>
             <div className="blog-grid">
               {blogs.map(blog => (
-                <div key={blog.id} className="blog-card scroll-reveal">
+                <Reveal key={blog.id} className="blog-card">
                   <Link to={`/blogs/${blog.id}`} className="blog-card-link">
                     <div className="blog-card-body">
                       <h2 className="blog-card-title">
@@ -203,7 +186,7 @@ function BlogListPage() {
                       </button>
                     </div>
                   )}
-                </div>
+                </Reveal>
               ))}
             </div>
 

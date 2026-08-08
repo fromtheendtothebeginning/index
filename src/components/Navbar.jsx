@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import NavItem from './NavItem'
 
 function Navbar({ activePage }) {
   const navigate = useNavigate()
@@ -79,37 +80,18 @@ function Navbar({ activePage }) {
         </Link>
         <div className="nav-right">
           <div className="nav-links">
-            {/* 博客下拉 */}
-            <div className="nav-dropdown">
-              <Link
-                to="/blogs"
-                className={`nav-dropdown-trigger ${activePage === 'blog' ? 'nav-item-active' : ''}`}
-              >
-                博客<span className="arrow-down">▾</span>
-              </Link>
-              <div className="nav-dropdown-menu">
-                <Link to="/blogs">全部</Link>
-                <Link to="/blogs?category=技术讨论">技术讨论</Link>
-                <Link to="/blogs?category=更新日志">更新日志</Link>
-                <Link to="/blogs?category=娱乐论坛">娱乐论坛</Link>
-              </div>
-            </div>
-            {/* 项目入口 */}
-            <Link to="/projects" className={`nav-dropdown-trigger ${activePage === 'project' ? 'nav-item-active' : ''}`}>项目</Link>
-            {/* 首页下拉 */}
-            <div className="nav-dropdown">
-              <Link
-                to="/"
-                className={`nav-dropdown-trigger ${activePage === 'home' ? 'nav-item-active' : ''}`}
-              >
-                首页<span className="arrow-down">▾</span>
-              </Link>
-              <div className="nav-dropdown-menu">
-                <Link to="/" onClick={() => setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50)}>开始</Link>
-                <Link to="/" onClick={() => scrollToSection('projects')}>项目</Link>
-                <Link to="/" onClick={() => scrollToSection('contact')}>联系</Link>
-              </div>
-            </div>
+            <NavItem label="博客" to="/blogs" active={activePage === 'blog'}>
+              <Link to="/blogs">全部</Link>
+              <Link to="/blogs?category=技术讨论">技术讨论</Link>
+              <Link to="/blogs?category=更新日志">更新日志</Link>
+              <Link to="/blogs?category=娱乐论坛">娱乐论坛</Link>
+            </NavItem>
+            <NavItem label="项目" to="/projects" active={activePage === 'project'} />
+            <NavItem label="首页" to="/" active={activePage === 'home'}>
+              <Link to="/" onClick={() => setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50)}>开始</Link>
+              <Link to="/" onClick={() => scrollToSection('projects')}>项目</Link>
+              <Link to="/" onClick={() => scrollToSection('contact')}>联系</Link>
+            </NavItem>
           </div>
           {user ? (
             <div className="nav-user">

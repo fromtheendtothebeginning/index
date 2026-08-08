@@ -278,8 +278,9 @@
   border-radius: 8px;
   padding: 14px 16px;
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
 }
 
 .admin-comment-meta {
@@ -498,13 +499,7 @@
   }
 }
 
-/* 评论项：内容左 + 删除按钮右侧 */
-.admin-comment-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-}
-
+/* 评论项：内容左 + 删除按钮右侧（布局规则已合并到上方 .admin-comment-item） */
 .admin-comment-main {
   flex: 1;
   min-width: 0;

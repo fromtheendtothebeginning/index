@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Modal from '../components/Modal'
 import ProjectCover from '../components/ProjectCover'
+import Reveal from '../components/Reveal'
 import { renderMd } from '../utils/markdown'
 import './Project.css'
 
@@ -93,21 +94,23 @@ function ProjectDetailPage() {
             <Link to="/projects" className="blog-back-link">&larr; 返回项目列表</Link>
           </div>
 
-          {project.cover_url ? (
-            <ProjectCover src={project.cover_url} alt={project.name} className="project-detail-cover" bgColor={project.bg_color} />
-          ) : (
-            <div className="project-detail-cover project-cover-placeholder">
-              {project.name.charAt(0)}
-            </div>
-          )}
+          <Reveal>
+            {project.cover_url ? (
+              <ProjectCover src={project.cover_url} alt={project.name} className="project-detail-cover" bgColor={project.bg_color} />
+            ) : (
+              <div className="project-detail-cover project-cover-placeholder">
+                {project.name.charAt(0)}
+              </div>
+            )}
+          </Reveal>
 
-          <h1 className="project-detail-title">{project.name}</h1>
+          <Reveal as="h1" className="project-detail-title">{project.name}</Reveal>
           {project.tags && project.tags.length > 0 && (
-            <div className="project-detail-tags">
+            <Reveal className="project-detail-tags">
               {project.tags.map(t => <span key={t} className="tag">{t}</span>)}
-            </div>
+            </Reveal>
           )}
-          <div className="blog-detail-meta">
+          <Reveal className="blog-detail-meta">
             <span className="blog-detail-author">
               作者：{project.author?.nickname || project.author?.username || '匿名'}
             </span>
@@ -116,7 +119,7 @@ function ProjectDetailPage() {
                 year: 'numeric', month: 'long', day: 'numeric'
               })}
             </span>
-          </div>
+          </Reveal>
 
           {project.link_url && (
             <div className="project-actions">

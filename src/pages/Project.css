@@ -58,9 +58,6 @@
   text-decoration: none;
   color: inherit;
   transition: all 0.3s ease;
-  opacity: 1;
-  transform: none;
-  animation: none;
 }
 
 .project-page .project-card:hover {

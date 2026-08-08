@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import ProjectCover from '../components/ProjectCover'
+import Reveal from '../components/Reveal'
 import './Project.css'
 
 function ProjectEditorPage() {
@@ -131,10 +132,10 @@ function ProjectEditorPage() {
 
       <div className="project-main">
         <div className="project-editor">
-          <div className="editor-header">
+          <Reveal className="editor-header">
             <Link to={isEdit ? `/projects/${id}` : '/projects'} className="blog-back-link">&larr; 返回项目</Link>
-          </div>
-          <h1 className="editor-title">{isEdit ? '编辑项目' : '新建项目'}</h1>
+          </Reveal>
+          <Reveal as="h1" className="editor-title">{isEdit ? '编辑项目' : '新建项目'}</Reveal>
 
           {error && <div className="form-server-error">{error}</div>}
 

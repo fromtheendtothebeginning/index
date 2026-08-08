@@ -664,21 +664,6 @@
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   transition: all 0.3s ease;
-  opacity: 0;
-  transform: translateY(30px);
-  animation: fade-up 0.6s ease forwards;
-}
-
-.project-card:nth-child(1) { animation-delay: 0.2s; }
-.project-card:nth-child(2) { animation-delay: 0.35s; }
-
-.mounted .project-card {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-@keyframes fade-up {
-  to { opacity: 1; transform: translateY(0); }
 }
 
 .project-card:hover {

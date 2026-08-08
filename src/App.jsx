@@ -13,6 +13,7 @@ import ProfileEdit from './pages/ProfileEdit'
 import AdminPage from './pages/AdminPage'
 import { renderMd } from './utils/markdown'
 import ProjectCover from './components/ProjectCover'
+import Reveal from './components/Reveal'
 import './App.css'
 
 function HomePage() {
@@ -50,27 +51,6 @@ function HomePage() {
     }
   }, [mounted])
 
-  // 滚动到视口时触发卡片滑入动画
-  useEffect(() => {
-    const els = document.querySelectorAll('.scroll-reveal')
-    if (!els.length) return
-
-    const obs = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('revealed')
-            obs.unobserve(entry.target)
-          }
-        })
-      },
-      { threshold: 0.15, rootMargin: '0px 0px -40px 0px' }
-    )
-
-    els.forEach((el) => obs.observe(el))
-    return () => obs.disconnect()
-  }, [mounted, recentProjects, friendLinks])
-
   return (
     <div className={`app ${mounted ? 'mounted' : ''}`}>
       <div className="bg-grid" />
@@ -107,30 +87,30 @@ function HomePage() {
 
       <section id="projects" className="section projects-section">
         <div className="section-inner">
-          <div className="section-header scroll-reveal">
+          <Reveal className="section-header">
             <span className="section-tag">PROJECTS</span>
             <h2 className="section-title">近期项目</h2>
             <p className="section-desc">每一个项目都是一次对边界的试探。</p>
-          </div>
+          </Reveal>
           <div className="project-grid">
             {projectsLoading ? (
-              <div className="project-card scroll-reveal">
+              <Reveal className="project-card">
                 <div className="project-card-bg" />
                 <div className="project-card-content">
                   <p>加载中...</p>
                 </div>
-              </div>
+              </Reveal>
             ) : recentProjects.length === 0 ? (
-              <div className="project-card scroll-reveal">
+              <Reveal className="project-card">
                 <div className="project-card-bg" />
                 <div className="project-card-content">
                   <h3>暂无项目</h3>
                   <p>敬请期待</p>
                 </div>
-              </div>
+              </Reveal>
             ) : (
               recentProjects.map(p => (
-                <Link to={`/projects/${p.id}`} key={p.id} className="project-card scroll-reveal">
+                <Reveal as={Link} to={`/projects/${p.id}`} key={p.id} className="project-card">
                   {p.cover_url ? (
                     <ProjectCover src={p.cover_url} alt={p.name} className="project-cover" bgColor={p.bg_color} />
                   ) : (
@@ -148,7 +128,7 @@ function HomePage() {
                       dangerouslySetInnerHTML={{ __html: renderMd(p.description || '') }}
                     />
                   </div>
-                </Link>
+                </Reveal>
               ))
             )}
           </div>
@@ -158,31 +138,31 @@ function HomePage() {
       {friendLinks.length > 0 && (
         <section id="friends" className="section friends-section">
           <div className="section-inner">
-            <div className="section-header scroll-reveal">
+            <Reveal className="section-header">
               <span className="section-tag">LINKS</span>
               <h2 className="section-title">友情链接</h2>
               <p className="section-desc">值得推荐的伙伴站点</p>
-            </div>
-            <div className="friend-links-grid scroll-reveal">
+            </Reveal>
+            <Reveal className="friend-links-grid">
               {friendLinks.map(f => (
                 <a key={f.id} href={f.url} target="_blank" rel="noopener noreferrer" className="friend-link-card">
                   <span className="friend-link-name">{f.name}</span>
                   {f.description && <span className="friend-link-desc">{f.description}</span>}
                 </a>
               ))}
-            </div>
+            </Reveal>
           </div>
         </section>
       )}
 
       <section id="contact" className="section contact-section">
         <div className="section-inner">
-          <div className="section-header scroll-reveal">
+          <Reveal className="section-header">
             <span className="section-tag">CONTACT</span>
             <h2 className="section-title">保持连接</h2>
             <p className="section-desc">无论你是想合作、交流想法，还是单纯打个招呼——我们都在。</p>
-          </div>
-          <div className="contact-links scroll-reveal">
+          </Reveal>
+          <Reveal className="contact-links">
             <a href="mailto:jianghuxingxzhe@icloud.com" className="contact-item">
               <span className="contact-icon">✉</span>
               <div>
@@ -197,7 +177,7 @@ function HomePage() {
                 <span className="contact-value">@fromtheendtothebeginning</span>
               </div>
             </a>
-          </div>
+          </Reveal>
         </div>
       </section>
 

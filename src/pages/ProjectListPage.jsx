@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import ProjectCover from '../components/ProjectCover'
+import Reveal from '../components/Reveal'
 import './Project.css'
 
 const API_BASE = '/api'
@@ -31,7 +32,7 @@ function ProjectListPage() {
       <Navbar activePage="project" />
 
       <div className="project-main">
-        <div className="project-header">
+        <Reveal className="project-header">
           <div className="project-header-content">
             <h1 className="project-title">项目</h1>
             <p className="project-subtitle">每一个项目都是一次对边界的试探</p>
@@ -39,7 +40,7 @@ function ProjectListPage() {
           {user && user.role === 'admin' && (
             <Link to="/projects/new" className="btn btn-primary">新建项目</Link>
           )}
-        </div>
+        </Reveal>
 
         {loading ? (
           <div className="blog-loading">加载中...</div>
@@ -51,7 +52,7 @@ function ProjectListPage() {
         ) : (
           <div className="project-grid">
             {projects.map(project => (
-              <Link key={project.id} to={`/projects/${project.id}`} className="project-card">
+              <Reveal as={Link} key={project.id} to={`/projects/${project.id}`} className="project-card">
                 {project.cover_url ? (
                   <ProjectCover src={project.cover_url} alt={project.name} className="project-cover" bgColor={project.bg_color} />
                 ) : (
@@ -74,7 +75,7 @@ function ProjectListPage() {
                     <span className="project-card-blogs">{project.blog_count || 0} 篇文章</span>
                   </div>
                 </div>
-              </Link>
+              </Reveal>
             ))}
           </div>
         )}
