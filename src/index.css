@@ -65,8 +65,8 @@
   --accent-2: #2ee6e0;
   --accent-2-hover: #3af0c0;
   --accent-2-soft: rgba(46, 230, 224, 0.22);
-  --danger: #f06a58;
-  --danger-hover: #ff8370;
+  --danger: #e0503f;
+  --danger-hover: #ef6a55;
   --danger-soft: rgba(240, 106, 88, 0.18);
   --danger-soft-strong: rgba(240, 106, 88, 0.26);
   --danger-border: rgba(240, 106, 88, 0.45);
@@ -100,8 +100,8 @@
     --accent-2: #2ee6e0;
     --accent-2-hover: #3af0c0;
     --accent-2-soft: rgba(46, 230, 224, 0.22);
-    --danger: #f06a58;
-    --danger-hover: #ff8370;
+    --danger: #e0503f;
+    --danger-hover: #ef6a55;
     --danger-soft: rgba(240, 106, 88, 0.18);
     --danger-soft-strong: rgba(240, 106, 88, 0.26);
     --danger-border: rgba(240, 106, 88, 0.45);

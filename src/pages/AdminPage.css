@@ -748,3 +748,14 @@
   height: 22px;
   color: var(--accent-1);
 }
+
+.profile-success {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--glow-cyan);
+  border: 1px solid var(--glow-cyan-strong);
+  color: var(--accent-2);
+  font-size: 14px;
+  text-align: center;
+  font-weight: 500;
+}

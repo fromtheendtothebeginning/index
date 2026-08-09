@@ -128,6 +128,7 @@ function Navbar({ activePage }) {
             <NavItem label="首页" to="/" active={activePage === 'home'}>
               <Link to="/" onClick={() => setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50)}>开始</Link>
               <Link to="/" onClick={() => scrollToSection('projects')}>项目</Link>
+              <Link to="/" onClick={() => scrollToSection('friends')}>友情链接</Link>
               <Link to="/" onClick={() => scrollToSection('contact')}>联系</Link>
             </NavItem>
           </div>

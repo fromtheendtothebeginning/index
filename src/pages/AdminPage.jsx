@@ -24,6 +24,7 @@ function AdminPage() {
   const [linkEditingId, setLinkEditingId] = useState(null)
   const [settings, setSettings] = useState({ email: '', github_url: '', contact_items: [] })
   const [settingsSaving, setSettingsSaving] = useState(false)
+  const [settingsSaved, setSettingsSaved] = useState(false)
   const [editingUserId, setEditingUserId] = useState(null)
   const [editForm, setEditForm] = useState({ nickname: '', avatar_url: '', password: '' })
   const [loading, setLoading] = useState(false)
@@ -374,7 +375,8 @@ function AdminPage() {
       })
       const data = await res.json()
       if (!res.ok) { alert(data.detail || '保存失败'); return }
-      alert('已保存')
+      setSettingsSaved(true)
+      setTimeout(() => setSettingsSaved(false), 2500)
     } catch { alert('网络错误') }
     finally { setSettingsSaving(false) }
   }
@@ -823,6 +825,7 @@ function AdminPage() {
                 <button className="btn btn-primary btn-sm" onClick={handleSaveSettings} disabled={settingsSaving}>
                   {settingsSaving ? '保存中...' : '保存'}
                 </button>
+                {settingsSaved && <div className="profile-success">&#10003; 保存成功</div>}
               </div>
               <p className="admin-settings-hint">保存后首页"保持连接"区块即时生效；卡片显示「图标 + 标题 + 简介」，链接不显示在卡片上，点击卡片跳转</p>
             </div>

@@ -954,7 +954,7 @@
   animation: fadeIn 0.2s ease;
 }
 .modal-sheet {
-  background: var(--white);
+  background: var(--bg-card);
   border-radius: 16px;
   padding: 24px 28px 28px;
   max-width: 400px;
@@ -989,7 +989,7 @@
 }
 .modal-actions .btn-secondary {
   background: var(--neutral-soft);
-  color: var(--border-color);
+  color: var(--text-secondary);
 }
 .modal-actions .btn-secondary:hover {
   background: var(--neutral-soft-hover);
