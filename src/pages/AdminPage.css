@@ -737,3 +737,14 @@
 .admin-contact-type:focus {
   border-color: var(--accent-1);
 }
+
+.admin-icon-preview {
+  display: flex;
+  align-items: center;
+  flex: none;
+}
+.admin-icon-preview .contact-icon-svg {
+  width: 22px;
+  height: 22px;
+  color: var(--accent-1);
+}

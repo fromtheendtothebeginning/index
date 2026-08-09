@@ -1475,8 +1475,8 @@ def delete_friend_link(
 # ============================================
 
 _DEFAULT_CONTACT_ITEMS = [
-    {"label": "邮箱", "value": "jianghuxingxzhe@icloud.com"},
-    {"label": "GitHub", "value": "https://github.com/fromtheendtothebeginning"},
+    {"label": "邮箱", "value": "jianghuxingxzhe@icloud.com", "description": "有任何问题，欢迎邮件联系"},
+    {"label": "GitHub", "value": "https://github.com/fromtheendtothebeginning", "description": "从尽头到开始，Github 主页"},
 ]
 
 
@@ -1497,6 +1497,7 @@ def get_site_settings(db: Session = Depends(get_db)):
     for it in items:
         it.setdefault("type", "link")
         it.setdefault("icon", "")
+        it.setdefault("description", "")
     return SiteSettingResponse(email=setting.email or "", github_url=setting.github_url or "", contact_items=items)
 
 

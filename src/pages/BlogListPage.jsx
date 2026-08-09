@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Modal from '../components/Modal'
@@ -9,22 +9,32 @@ import './Blog.css'
 const API_BASE = '/api'
 const CATEGORIES = ['技术讨论', '更新日志', '娱乐论坛']
 
+const readSavedState = () => {
+  try {
+    const raw = sessionStorage.getItem('blog_list_state')
+    return raw ? JSON.parse(raw) : null
+  } catch {
+    return null
+  }
+}
+
 function BlogListPage() {
+  const saved = readSavedState()
   const [blogs, setBlogs] = useState([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [page, setPage] = useState(0)
+  const [page, setPage] = useState(saved?.page ?? 0)
   const [searchParams] = useSearchParams()
-  const [filterCategory, setFilterCategory] = useState(searchParams.get('category') || '')
+  const [filterCategory, setFilterCategory] = useState(searchParams.get('category') || saved?.category || '')
   const limit = 12
   const [user, setUser] = useState(null)
   const navigate = useNavigate()
 
   // 搜索 / 时间 / 排序 / 视图
-  const [q, setQ] = useState('')
-  const [debouncedQ, setDebouncedQ] = useState('')
-  const [timeRange, setTimeRange] = useState('')
-  const [sort, setSort] = useState('comprehensive')
+  const [q, setQ] = useState(saved?.q || '')
+  const [debouncedQ, setDebouncedQ] = useState(() => saved?.q || '')
+  const [timeRange, setTimeRange] = useState(saved?.timeRange || '')
+  const [sort, setSort] = useState(saved?.sort || 'comprehensive')
   const [view, setView] = useState(() => localStorage.getItem('blog_view') || 'grid')
 
   // 管理员操作
@@ -38,7 +48,10 @@ function BlogListPage() {
   }, [])
 
   // 搜索防抖 400ms，防抖结束后重置到第一页并触发请求
+  const prevQ = useRef(q)
   useEffect(() => {
+    if (q === prevQ.current) return
+    prevQ.current = q
     const t = setTimeout(() => {
       setDebouncedQ(q)
       setPage(0)
@@ -72,11 +85,36 @@ function BlogListPage() {
   }, [page, filterCategory, debouncedQ, sort, timeRange])
 
   // 从 URL searchParams 同步分类（导航栏下拉点击时触发）
+  const prevURLCategory = useRef(searchParams.get('category') || '')
   useEffect(() => {
     const cat = searchParams.get('category') || ''
+    if (cat === prevURLCategory.current) return
+    prevURLCategory.current = cat
     setFilterCategory(cat)
     setPage(0)
   }, [searchParams])
+
+  const latestState = useRef({})
+  latestState.current = { sort, q, timeRange, page, category: filterCategory, scrollY: window.scrollY }
+
+  useEffect(() => {
+    return () => {
+      sessionStorage.setItem('blog_list_state', JSON.stringify(latestState.current))
+    }
+  }, [])
+
+  const pendingScroll = useRef(saved?.scrollY)
+  useEffect(() => {
+    if (loading || blogs.length === 0) return
+    if (pendingScroll.current == null) return
+    window.scrollTo(0, pendingScroll.current)
+    pendingScroll.current = null
+    const st = readSavedState()
+    if (st) {
+      const { scrollY, ...rest } = st
+      sessionStorage.setItem('blog_list_state', JSON.stringify(rest))
+    }
+  }, [blogs, loading])
 
   const isAdmin = user && user.role === 'admin'
 

@@ -1,15 +1,17 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Modal from '../components/Modal'
 import CategoryDropdown from '../components/CategoryDropdown'
+import { CONTACT_ICON_OPTIONS, ContactIcon } from '../components/Icons'
 import './AdminPage.css'
 
 const CATEGORIES = ['技术讨论', '更新日志', '娱乐论坛']
-
-function AdminPage() {  const navigate = useNavigate()
+function AdminPage() {
+  const navigate = useNavigate()
   const [user, setUser] = useState(null)
   const [tab, setTab] = useState('users')
+  const settingsLoaded = useRef(false)
   const [authChecked, setAuthChecked] = useState(false)
 
   // 各 tab 数据
@@ -111,6 +113,8 @@ function AdminPage() {  const navigate = useNavigate()
   }, [])
 
   const loadSettings = useCallback(async () => {
+    if (settingsLoaded.current) return
+    settingsLoaded.current = true
     setLoading(true)
     setError('')
     try {
@@ -124,6 +128,7 @@ function AdminPage() {  const navigate = useNavigate()
           value: it.value || '',
           type: it.type || 'link',
           icon: it.icon || '',
+          description: it.description || '',
         })),
       })
     } catch { setError('网络错误') }
@@ -362,6 +367,7 @@ function AdminPage() {  const navigate = useNavigate()
               value: (it.value || '').trim(),
               type: it.type === 'text' ? 'text' : 'link',
               icon: it.icon || '',
+              description: it.description || '',
             }))
             .filter(it => it.label && it.value),
         }),
@@ -743,12 +749,12 @@ function AdminPage() {  const navigate = useNavigate()
             </div>
             <div className="admin-settings-form">
               <div className="admin-sections-head">
-                <h3 className="admin-sub-title">联系项（邮箱 / GitHub / 自定义，首页"保持联系"区块并列展示）</h3>
+                <h3 className="admin-sub-title">联系项卡片：显示「图标 + 标题 + 简介」，链接不显示在卡片上，点击卡片跳转</h3>
                 <button
                   className="btn btn-primary btn-sm"
                   onClick={() => setSettings(prev => ({
                     ...prev,
-                    contact_items: [...(prev.contact_items || []), { label: '', value: '', type: 'link', icon: '' }],
+                    contact_items: [...(prev.contact_items || []), { label: '', value: '', type: 'link', icon: '', description: '' }],
                   }))}
                 >+ 添加联系项</button>
               </div>
@@ -761,25 +767,38 @@ function AdminPage() {  const navigate = useNavigate()
                       <div className="admin-section-row-fields">
                         <div className="admin-contact-row">
                           <select
-                            className="admin-contact-type"
-                            value={item.type || 'link'}
-                            onChange={e => updateContactItem(i, { type: e.target.value })}
-                          >
-                            <option value="link">链接</option>
-                            <option value="text">文本介绍</option>
-                          </select>
-                          <input
                             className="admin-link-input"
-                            placeholder="图标：内置名或图床URL，可空"
-                            value={item.icon || ''}
-                            onChange={e => updateContactItem(i, { icon: e.target.value })}
-                          />
+                            value={CONTACT_ICON_OPTIONS.some(o => o.key === item.icon) ? item.icon : 'custom'}
+                            onChange={e => {
+                              const v = e.target.value
+                              updateContactItem(i, v === 'custom' ? { icon: '' } : { icon: v })
+                            }}
+                          >
+                            {CONTACT_ICON_OPTIONS.map(o => (
+                              <option key={o.key} value={o.key}>{o.label}</option>
+                            ))}
+                          </select>
+                          <span className="admin-icon-preview"><ContactIcon icon={item.icon} type={item.type} /></span>
+                          {!CONTACT_ICON_OPTIONS.some(o => o.key === item.icon) && (
+                            <input
+                              className="admin-link-input"
+                              placeholder="自定义图标图片 URL"
+                              value={item.icon || ''}
+                              onChange={e => updateContactItem(i, { icon: e.target.value })}
+                            />
+                          )}
                         </div>
                         <input
                           className="admin-link-input"
-                          placeholder="名称，如 邮箱 / GitHub / 合作邮箱"
+                          placeholder="标题，如 邮箱 / GitHub"
                           value={item.label}
                           onChange={e => updateContactItem(i, { label: e.target.value })}
+                        />
+                        <input
+                          className="admin-link-input"
+                          placeholder="简介，显示在卡片上（可空）"
+                          value={item.description || ''}
+                          onChange={e => updateContactItem(i, { description: e.target.value })}
                         />
                         <input
                           className="admin-link-input"
@@ -805,7 +824,7 @@ function AdminPage() {  const navigate = useNavigate()
                   {settingsSaving ? '保存中...' : '保存'}
                 </button>
               </div>
-              <p className="admin-settings-hint">修改后首页"保持联系"区块即时生效</p>
+              <p className="admin-settings-hint">保存后首页"保持连接"区块即时生效；卡片显示「图标 + 标题 + 简介」，链接不显示在卡片上，点击卡片跳转</p>
             </div>
           </div>
         )}

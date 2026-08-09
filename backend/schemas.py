@@ -472,6 +472,7 @@ class ContactItem(BaseModel):
     value: str = Field(..., min_length=1, max_length=500, description="链接或文本")
     type: Optional[str] = Field('link', description="link 链接 / text 文本介绍")
     icon: Optional[str] = Field('', description="内置图标名或图床 URL，可空")
+    description: Optional[str] = Field('', max_length=200, description="卡片简介")
 
 
 class SiteSettingResponse(BaseModel):

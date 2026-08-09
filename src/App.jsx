@@ -15,9 +15,8 @@ import MyPage from './pages/MyPage'
 import { renderMd } from './utils/markdown'
 import ProjectCover from './components/ProjectCover'
 import Reveal from './components/Reveal'
+import { ContactIcon } from './components/Icons'
 import './App.css'
-
-const ICON_MAP = { email: '✉', github: '⌘', phone: '📞', website: '🌐', wechat: '💬', qq: '🐧', weibo: '📣', zhihu: '知', bilibili: '📺', link: '🔗', text: '📄' }
 
 function HomePage() {
   const [mounted, setMounted] = useState(false)
@@ -181,17 +180,13 @@ function HomePage() {
           <Reveal className="contact-links">
             {(contactSettings.contact_items || []).map((item, i) => {
               const isMail = /^mailto:/i.test(item.value) || /@/.test(item.value) && !/^https?:/i.test(item.value)
-              const iconEl = item.icon
-                ? (/^https?:/i.test(item.icon)
-                    ? <img src={item.icon} alt="" className="contact-custom-icon" />
-                    : <span className="contact-icon">{ICON_MAP[item.icon] || '🔗'}</span>)
-                : <span className="contact-icon">{item.type === 'text' ? '📄' : '🔗'}</span>
+              const iconEl = <span className="contact-icon"><ContactIcon icon={item.icon} type={item.type} /></span>
               const inner = (
                 <>
                   {iconEl}
                   <div>
                     <span className="contact-label">{item.label}</span>
-                    <span className="contact-value">{item.value.replace(/^mailto:/i, '').replace(/^https?:\/\/(www\.)?/, '')}</span>
+                    {item.description && <span className="contact-desc">{item.description}</span>}
                   </div>
                 </>
               )
