@@ -29,6 +29,11 @@ class UpdateProfileRequest(BaseModel):
     avatar_url: Optional[str] = Field(None, max_length=500, description="头像 URL")
 
 
+class DeleteAccountRequest(BaseModel):
+    username: str = Field(..., min_length=1, max_length=50, description="账号（需与当前登录一致）")
+    password: str = Field(..., min_length=1, max_length=128, description="密码验证")
+
+
 # ── 响应 ──
 
 class UserResponse(BaseModel):
@@ -127,6 +132,7 @@ class BlogResponse(BaseModel):
     author: Optional[BlogAuthorResponse] = None
     project_id: Optional[int] = None
     project: Optional[ProjectSummaryResponse] = None
+    is_featured: bool = False
     like_count: int = 0
     comment_count: int = 0
     liked_by_me: bool = False
@@ -144,6 +150,7 @@ class BlogListItem(BaseModel):
     author: Optional[BlogAuthorResponse] = None
     project_id: Optional[int] = None
     project: Optional[ProjectSummaryResponse] = None
+    is_featured: bool = False
     like_count: int = 0
     comment_count: int = 0
     created_at: datetime
@@ -344,6 +351,12 @@ class UpdateUserRoleRequest(BaseModel):
     role: str = Field(..., pattern="^(user|admin)$", description="角色：user/admin")
 
 
+class UpdateAdminUserRequest(BaseModel):
+    nickname: Optional[str] = Field(None, max_length=50, description="昵称")
+    avatar_url: Optional[str] = Field(None, max_length=500, description="头像 URL")
+    password: Optional[str] = Field(None, min_length=6, max_length=128, description="新密码")
+
+
 class AdminCommentResponse(BaseModel):
     """管理员视角的评论（含博客标题、用户名与父评论）"""
     id: int
@@ -373,6 +386,7 @@ class AdminBlogListItem(BaseModel):
     category: Optional[str] = None
     author_id: int
     author: Optional[BlogAuthorResponse] = None
+    is_featured: bool = False
     created_at: datetime
     updated_at: datetime
 
@@ -386,6 +400,10 @@ class AdminBlogListResponse(BaseModel):
 
 class UpdateBlogCategoryRequest(BaseModel):
     category: Optional[str] = Field(None, max_length=50, description="分类：技术讨论/更新日志/娱乐论坛/空")
+
+
+class UpdateBlogFeaturedRequest(BaseModel):
+    is_featured: bool = Field(..., description="是否精选")
 
 
 class InviteCodeResponse(BaseModel):
@@ -452,6 +470,8 @@ class ContactItem(BaseModel):
     """自定义联系项（与邮箱/GitHub 并列展示在首页"保持联系"）"""
     label: str = Field(..., min_length=1, max_length=50, description="显示名称，如 合作邮箱 / 知乎")
     value: str = Field(..., min_length=1, max_length=500, description="链接或文本")
+    type: Optional[str] = Field('link', description="link 链接 / text 文本介绍")
+    icon: Optional[str] = Field('', description="内置图标名或图床 URL，可空")
 
 
 class SiteSettingResponse(BaseModel):

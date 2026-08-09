@@ -1,7 +1,7 @@
 # models.py — SQLAlchemy 数据模型
 
 from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey, UniqueConstraint, JSON
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import func
 from database import Base
 
@@ -33,6 +33,7 @@ class Blog(Base):
     title = Column(String(200), nullable=False, comment="文章标题")
     category = Column(String(50), nullable=True, comment="分类：技术讨论 / 更新日志 / 娱乐论坛")
     project_id = Column(Integer, ForeignKey("projects.id", ondelete="SET NULL"), nullable=True, index=True)
+    is_featured = Column(Boolean, default=False, nullable=False, server_default="0", comment="是否精选")
     content_md = Column(Text, nullable=False, comment="Markdown 内容")
     author_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), comment="发布时间")
@@ -40,7 +41,7 @@ class Blog(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), comment="更新时间"
     )
 
-    author = relationship("User", backref="blogs")
+    author = relationship("User", backref=backref("blogs", passive_deletes=True))
     project = relationship("Project", back_populates="blogs")
     likes = relationship("BlogLike", backref="blog", cascade="all, delete-orphan")
     comments = relationship("Comment", backref="blog", cascade="all, delete-orphan")
@@ -68,7 +69,7 @@ class Project(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), comment="更新时间"
     )
 
-    author = relationship("User", backref="projects")
+    author = relationship("User", backref=backref("projects", passive_deletes=True))
     blogs = relationship("Blog", back_populates="project")
 
     def __repr__(self):

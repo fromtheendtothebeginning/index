@@ -22,6 +22,8 @@ function AdminPage() {  const navigate = useNavigate()
   const [linkEditingId, setLinkEditingId] = useState(null)
   const [settings, setSettings] = useState({ email: '', github_url: '', contact_items: [] })
   const [settingsSaving, setSettingsSaving] = useState(false)
+  const [editingUserId, setEditingUserId] = useState(null)
+  const [editForm, setEditForm] = useState({ nickname: '', avatar_url: '', password: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -117,7 +119,12 @@ function AdminPage() {  const navigate = useNavigate()
       setSettings({
         email: data.email || '',
         github_url: data.github_url || '',
-        contact_items: data.contact_items || [],
+        contact_items: (data.contact_items || []).map(it => ({
+          label: it.label || '',
+          value: it.value || '',
+          type: it.type || 'link',
+          icon: it.icon || '',
+        })),
       })
     } catch { setError('网络错误') }
     finally { setLoading(false) }
@@ -145,6 +152,49 @@ function AdminPage() {  const navigate = useNavigate()
       if (!res.ok) { alert(data.detail || '操作失败'); return }
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, role } : u))
     } catch { alert('网络错误') }
+  }
+
+  // 编辑用户
+  const handleStartEditUser = (u) => {
+    setEditForm({ nickname: u.nickname || '', avatar_url: u.avatar_url || '', password: '' })
+    setEditingUserId(u.id)
+  }
+
+  const handleCancelEditUser = () => {
+    setEditingUserId(null)
+    setEditForm({ nickname: '', avatar_url: '', password: '' })
+  }
+
+  const handleSaveUser = async (userId) => {
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({
+          nickname: editForm.nickname.trim() || undefined,
+          avatar_url: editForm.avatar_url.trim() || undefined,
+          password: editForm.password || undefined,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) { alert(data.detail || '保存失败'); return }
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...data } : u))
+      handleCancelEditUser()
+    } catch { alert('网络错误') }
+  }
+
+  // 删除用户
+  const handleDeleteUser = async (userId) => {
+    if (!userId) return
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      })
+      if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.detail || '删除失败'); return }
+      setUsers(prev => prev.filter(u => u.id !== userId))
+    } catch { alert('网络错误') }
+    finally { setModal(null) }
   }
 
   // 删除评论
@@ -307,7 +357,12 @@ function AdminPage() {  const navigate = useNavigate()
           email: settings.email.trim() || null,
           github_url: settings.github_url.trim() || null,
           contact_items: (settings.contact_items || [])
-            .map(it => ({ label: (it.label || '').trim(), value: (it.value || '').trim() }))
+            .map(it => ({
+              label: (it.label || '').trim(),
+              value: (it.value || '').trim(),
+              type: it.type === 'text' ? 'text' : 'link',
+              icon: it.icon || '',
+            }))
             .filter(it => it.label && it.value),
         }),
       })
@@ -369,7 +424,7 @@ function AdminPage() {  const navigate = useNavigate()
                     <span className={`role-badge ${u.role}`}>{u.role === 'admin' ? '管理员' : '普通用户'}</span>
                   </span>
                   <span className="admin-cell-time">{fmtTime(u.created_at)}</span>
-                  <span>
+                  <span className="admin-user-actions">
                     {u.id !== user.id && (
                       <button
                         className="btn-role-toggle"
@@ -379,11 +434,53 @@ function AdminPage() {  const navigate = useNavigate()
                       </button>
                     )}
                     {u.id === user.id && <span className="admin-self">（当前账户）</span>}
-                  </span>
-                </div>
-              ))}
-            </div>
+                    <button className="btn-role-toggle" onClick={() => handleStartEditUser(u)}>编辑</button>
+                    {u.id !== user.id && (
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={() => setModal({
+                          id: u.id,
+                          title: '删除用户',
+                          message: `确认删除用户「${u.nickname || u.username}」？该用户的博客/评论/点赞/项目将一并删除，且无法恢复。`,
+                          confirmText: '确认删除',
+                          onConfirm: () => handleDeleteUser(u.id),
+                        })}
+                      >
+                        删除
+                      </button>
+                    )}
+                    </span>
+                  {editingUserId === u.id && (
+                  <div className="admin-user-edit">
+                    <input
+                      className="admin-link-input"
+                      placeholder="昵称"
+                      value={editForm.nickname}
+                      onChange={e => setEditForm({ ...editForm, nickname: e.target.value })}
+                      maxLength={50}
+                    />
+                    <input
+                      className="admin-link-input"
+                      placeholder="头像 URL（可空）"
+                      value={editForm.avatar_url}
+                      onChange={e => setEditForm({ ...editForm, avatar_url: e.target.value })}
+                      maxLength={500}
+                    />
+                    <input
+                      className="admin-link-input"
+                      type="password"
+                      placeholder="新密码（留空不改）"
+                      value={editForm.password}
+                      onChange={e => setEditForm({ ...editForm, password: e.target.value })}
+                    />
+                    <button className="btn btn-primary btn-sm" onClick={() => handleSaveUser(u.id)}>保存</button>
+                    <button className="btn btn-secondary btn-sm" onClick={handleCancelEditUser}>取消</button>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
+        </div>
         )}
 
         {/* 评论管理 */}
@@ -651,7 +748,7 @@ function AdminPage() {  const navigate = useNavigate()
                   className="btn btn-primary btn-sm"
                   onClick={() => setSettings(prev => ({
                     ...prev,
-                    contact_items: [...(prev.contact_items || []), { label: '', value: '' }],
+                    contact_items: [...(prev.contact_items || []), { label: '', value: '', type: 'link', icon: '' }],
                   }))}
                 >+ 添加联系项</button>
               </div>
@@ -662,6 +759,22 @@ function AdminPage() {  const navigate = useNavigate()
                   {settings.contact_items.map((item, i) => (
                     <div key={i} className="admin-section-row">
                       <div className="admin-section-row-fields">
+                        <div className="admin-contact-row">
+                          <select
+                            className="admin-contact-type"
+                            value={item.type || 'link'}
+                            onChange={e => updateContactItem(i, { type: e.target.value })}
+                          >
+                            <option value="link">链接</option>
+                            <option value="text">文本介绍</option>
+                          </select>
+                          <input
+                            className="admin-link-input"
+                            placeholder="图标：内置名或图床URL，可空"
+                            value={item.icon || ''}
+                            onChange={e => updateContactItem(i, { icon: e.target.value })}
+                          />
+                        </div>
                         <input
                           className="admin-link-input"
                           placeholder="名称，如 邮箱 / GitHub / 合作邮箱"

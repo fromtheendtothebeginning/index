@@ -98,6 +98,9 @@ def run_migrations():
                     "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL"
                 ))
                 conn.commit()
+            if "is_featured" not in columns:
+                conn.execute(text("ALTER TABLE blogs ADD COLUMN is_featured TINYINT(1) NOT NULL DEFAULT 0"))
+                conn.commit()
         # comments 表新增 parent_id / project_id 列（评论回复 / 项目评论）
         if insp.has_table("comments"):
             columns = {c["name"] for c in insp.get_columns("comments")}

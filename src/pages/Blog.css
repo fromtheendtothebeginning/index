@@ -1258,3 +1258,197 @@
   gap: 12px;
   margin-top: 4px;
 }
+
+/* ---------- 列表页工具栏（搜索 / 时间 / 排序 / 视图切换） ---------- */
+.blog-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.blog-search-input {
+  flex: 1;
+  min-width: 200px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.blog-search-input:focus {
+  border-color: var(--accent-1);
+  box-shadow: 0 0 0 3px var(--accent-1-soft);
+}
+
+.blog-search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.blog-filter-select {
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.blog-filter-select:hover,
+.blog-filter-select:focus {
+  border-color: var(--accent-1);
+  outline: none;
+}
+
+.blog-view-toggle {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.blog-view-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.blog-view-btn:hover {
+  border-color: var(--accent-1);
+  color: var(--accent-1);
+}
+
+.blog-view-btn.active {
+  background: var(--accent-1);
+  border-color: var(--accent-1);
+  color: var(--white);
+}
+
+/* ---------- 精选标记 / 精选按钮 ---------- */
+.blog-card-featured,
+.blog-list-featured {
+  color: #f5b301;
+  margin-right: 6px;
+  font-size: 14px;
+}
+
+.blog-card-featured-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: inherit;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.blog-card-featured-btn:hover {
+  border-color: #f5b301;
+  color: #f5b301;
+}
+
+.blog-card-featured-btn.active {
+  background: rgba(245, 179, 1, 0.15);
+  border-color: #f5b301;
+  color: #f5b301;
+}
+
+/* ---------- 列表视图 ---------- */
+.blog-list-view {
+  display: flex;
+  flex-direction: column;
+}
+
+.blog-list-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-color);
+  transition: background 0.2s;
+  animation: list-item-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes list-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.blog-list-item:hover {
+  background: var(--bg-card);
+}
+
+.blog-list-item-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.2s;
+}
+
+.blog-list-item-title:hover {
+  color: var(--accent-1);
+}
+
+.blog-list-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.blog-list-admin {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .blog-view-toggle {
+    margin-left: 0;
+  }
+
+  .blog-list-item {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .blog-list-item-title {
+    flex-basis: 100%;
+  }
+}

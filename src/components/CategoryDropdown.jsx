@@ -7,6 +7,7 @@
  * @param {Array<{value: string, label: string}>} options - 选项列表
  * @param {string} [placeholder='未分类'] - 未选中时按钮显示文案（也是菜单第一项「清除」的文案）
  * @param {'default'|'sm'} [size='default'] - 尺寸：default 常规 / sm 小号（卡片等紧凑场景）
+ * @param {boolean} [hideClear=false] - 为 true 时不显示菜单第一项「清除」入口（如必须选其一且不可清空的场景）
  *
  * 用法示例：
  *   <CategoryDropdown
@@ -16,7 +17,7 @@
  *     placeholder="无"
  *   />
  */
-function CategoryDropdown({ value, onChange, options = [], placeholder = '未分类', size = 'default' }) {
+function CategoryDropdown({ value, onChange, options = [], placeholder = '未分类', size = 'default', hideClear = false }) {
   const pick = (v) => (e) => {
     e.preventDefault()
     e.stopPropagation()
@@ -25,11 +26,11 @@ function CategoryDropdown({ value, onChange, options = [], placeholder = '未分
   return (
     <div className="nav-dropdown" onClick={e => e.stopPropagation()}>
       <button type="button" className={`category-btn${size === 'sm' ? ' category-btn-sm' : ''}`}>
-        {value || placeholder}
+        {options.find(o => o.value === value)?.label || value || placeholder}
         <span className="arrow-down">▾</span>
       </button>
       <div className="nav-dropdown-menu">
-        <a href="#" onClick={pick('')}>{placeholder}</a>
+        {!hideClear && <a href="#" onClick={pick('')}>{placeholder}</a>}
         {options.map(opt => (
           <a key={opt.value} href="#" onClick={pick(opt.value)}>{opt.label}</a>
         ))}

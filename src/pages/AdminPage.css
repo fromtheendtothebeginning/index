@@ -251,6 +251,31 @@
   font-size: 12px;
 }
 
+/* 用户行操作 + 行内编辑表单 */
+.admin-user-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.admin-user-edit {
+  grid-column: 1 / -1; /* 跨整行，避免被 grid 列布局挤压 */
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 12px 8px;
+  background: var(--accent-1-soft);
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.admin-user-edit .admin-link-input {
+  flex: 1;
+  min-width: 140px;
+}
+
 /* 通用小按钮 */
 .btn-sm {
   padding: 5px 14px !important;
@@ -687,4 +712,28 @@
 .admin-section-row-actions .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* 联系项：类型下拉 + icon 输入 */
+.admin-contact-row {
+  display: flex;
+  gap: 10px;
+}
+
+.admin-contact-type {
+  flex: none;
+  min-width: 110px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.admin-contact-type:focus {
+  border-color: var(--accent-1);
 }

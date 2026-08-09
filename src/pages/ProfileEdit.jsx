@@ -12,6 +12,9 @@ function ProfileEdit() {
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'system')
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleteForm, setDeleteForm] = useState({ username: '', password: '' })
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -87,6 +90,33 @@ function ProfileEdit() {
       setError('网络错误，请稍后重试')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    if (!deleteForm.username.trim() || !deleteForm.password) { alert('请输入账号和密码'); return }
+    setDeleting(true)
+    try {
+      const res = await fetch('/api/user/delete-account', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({
+          username: deleteForm.username.trim(),
+          password: deleteForm.password,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) { alert(data.detail || '注销失败'); return }
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      navigate('/')
+    } catch {
+      alert('网络错误，请稍后重试')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -218,6 +248,51 @@ function ProfileEdit() {
           >
             退出登录
           </button>
+
+          <button
+            className="btn btn-danger profile-delete-btn"
+            onClick={() => {
+              setDeleteOpen(prev => !prev)
+              setDeleteForm({ username: '', password: '' })
+            }}
+          >
+            注销账号
+          </button>
+
+          {deleteOpen && (
+            <div className="profile-delete-form">
+              <p className="profile-delete-tip">注销后账号与所有内容将被永久删除，且需输入账号和密码验证</p>
+              <input
+                type="text"
+                className="profile-input"
+                placeholder="用户名"
+                value={deleteForm.username}
+                onChange={e => setDeleteForm({ ...deleteForm, username: e.target.value })}
+                maxLength={50}
+              />
+              <input
+                type="password"
+                className="profile-input"
+                placeholder="密码"
+                value={deleteForm.password}
+                onChange={e => setDeleteForm({ ...deleteForm, password: e.target.value })}
+              />
+              <div className="profile-delete-actions">
+                <button className="btn btn-danger" onClick={handleDeleteAccount} disabled={deleting}>
+                  {deleting ? '注销中...' : '确认注销'}
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setDeleteOpen(false)
+                    setDeleteForm({ username: '', password: '' })
+                  }}
+                >
+                  取消
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -311,3 +311,53 @@
   background: var(--danger);
   color: var(--white);
 }
+
+/* ---- 注销账号 ---- */
+.profile-delete-btn {
+  width: 100%;
+  justify-content: center;
+  padding: 10px;
+  font-size: 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 2px solid var(--danger);
+  background: transparent;
+  color: var(--danger);
+  transition: all 0.2s;
+}
+.profile-delete-btn:hover {
+  background: var(--danger);
+  color: var(--white);
+}
+
+.profile-delete-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--danger-border);
+  border-radius: 12px;
+  background: var(--danger-soft);
+}
+
+.profile-delete-form input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.profile-delete-tip {
+  margin: 0;
+  font-size: 13px;
+  color: var(--danger);
+  line-height: 1.5;
+}
+
+.profile-delete-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.profile-delete-actions .btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

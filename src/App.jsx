@@ -17,6 +17,8 @@ import ProjectCover from './components/ProjectCover'
 import Reveal from './components/Reveal'
 import './App.css'
 
+const ICON_MAP = { email: '✉', github: '⌘', phone: '📞', website: '🌐', wechat: '💬', qq: '🐧', weibo: '📣', zhihu: '知', bilibili: '📺', link: '🔗', text: '📄' }
+
 function HomePage() {
   const [mounted, setMounted] = useState(false)
   const [recentProjects, setRecentProjects] = useState([])
@@ -24,8 +26,8 @@ function HomePage() {
   const [friendLinks, setFriendLinks] = useState([])
   const [contactSettings, setContactSettings] = useState({
     contact_items: [
-      { label: '邮箱', value: 'jianghuxingxzhe@icloud.com' },
-      { label: 'GitHub', value: 'https://github.com/fromtheendtothebeginning' },
+      { label: '邮箱', value: 'jianghuxingxzhe@icloud.com', type: 'link', icon: 'email' },
+      { label: 'GitHub', value: 'https://github.com/fromtheendtothebeginning', type: 'link', icon: 'github' },
     ],
   })
 
@@ -179,7 +181,23 @@ function HomePage() {
           <Reveal className="contact-links">
             {(contactSettings.contact_items || []).map((item, i) => {
               const isMail = /^mailto:/i.test(item.value) || /@/.test(item.value) && !/^https?:/i.test(item.value)
-              return (
+              const iconEl = item.icon
+                ? (/^https?:/i.test(item.icon)
+                    ? <img src={item.icon} alt="" className="contact-custom-icon" />
+                    : <span className="contact-icon">{ICON_MAP[item.icon] || '🔗'}</span>)
+                : <span className="contact-icon">{item.type === 'text' ? '📄' : '🔗'}</span>
+              const inner = (
+                <>
+                  {iconEl}
+                  <div>
+                    <span className="contact-label">{item.label}</span>
+                    <span className="contact-value">{item.value.replace(/^mailto:/i, '').replace(/^https?:\/\/(www\.)?/, '')}</span>
+                  </div>
+                </>
+              )
+              return item.type === 'text' ? (
+                <div key={i} className="contact-item contact-item-text">{inner}</div>
+              ) : (
                 <a
                   key={i}
                   href={isMail ? `mailto:${item.value.replace(/^mailto:/i, '')}` : item.value}
@@ -187,11 +205,7 @@ function HomePage() {
                   rel="noopener noreferrer"
                   className="contact-item"
                 >
-                  <span className="contact-icon">{item.label === '邮箱' || isMail ? '✉' : '🔗'}</span>
-                  <div>
-                    <span className="contact-label">{item.label}</span>
-                    <span className="contact-value">{item.value.replace(/^mailto:/i, '').replace(/^https?:\/\/(www\.)?/, '')}</span>
-                  </div>
+                  {inner}
                 </a>
               )
             })}

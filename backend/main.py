@@ -3,11 +3,11 @@
 import secrets
 from typing import Optional
 
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import or_
+from sqlalchemy import or_, select, func
 
 from database import get_db, init_db, run_migrations
 from models import User, Blog, BlogLike, Comment, CommentLike, Notification, InviteCode, Project, FriendLink, SiteSetting, ProjectLike, ProjectFollow
@@ -17,9 +17,9 @@ from schemas import (
     BlogResponse, BlogListItem, BlogListResponse, MessageResponse,
     LikeToggleResponse, CommentLikeToggleResponse, CommentResponse, CommentListResponse,
     CreateCommentRequest, NotificationResponse, NotificationListResponse, MarkNotificationsReadRequest,
-    AdminUserResponse, AdminUserListResponse, UpdateUserRoleRequest,
+    AdminUserResponse, AdminUserListResponse, UpdateUserRoleRequest, UpdateAdminUserRequest,
     AdminCommentResponse, AdminCommentListResponse,
-    AdminBlogListItem, AdminBlogListResponse, UpdateBlogCategoryRequest,
+    AdminBlogListItem, AdminBlogListResponse, UpdateBlogCategoryRequest, UpdateBlogFeaturedRequest,
     InviteCodeResponse, InviteCodeListResponse, CreateInviteCodeResponse,
     UpdateInviteCodeReusableRequest,
     CreateProjectRequest, UpdateProjectRequest, ProjectResponse,
@@ -28,6 +28,7 @@ from schemas import (
     FriendLinkRequest, FriendLinkResponse, FriendLinkListResponse,
     UpdateFriendLinkRequest,
     SiteSettingResponse, UpdateSiteSettingRequest, ContactItem,
+    DeleteAccountRequest,
 )
 from auth import hash_password, verify_password, create_access_token, decode_access_token
 
@@ -248,6 +249,24 @@ def require_admin(current_user: User = Depends(get_current_user_obj)) -> User:
     return current_user
 
 
+@app.post("/api/user/delete-account", response_model=MessageResponse, tags=["用户"])
+def delete_own_account(
+    req: DeleteAccountRequest,
+    current_user: User = Depends(get_current_user_obj),
+    db: Session = Depends(get_db),
+):
+    """注销当前账号（需账号与密码验证，博客/评论/点赞/邀请码由外键级联删除）"""
+    if req.username != current_user.username or not verify_password(req.password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="账号或密码错误",
+        )
+
+    db.delete(current_user)
+    db.commit()
+    return MessageResponse(message="账号已注销")
+
+
 def get_optional_user(token: Optional[str], db: Session) -> Optional[User]:
     """可选鉴权：传入 Bearer token 时返回用户，否则返回 None"""
     if not token:
@@ -289,19 +308,54 @@ def list_blogs(
     skip: int = 0,
     limit: int = 20,
     category: Optional[str] = None,
+    q: Optional[str] = None,
+    sort: str = "created",
+    from_date: Optional[str] = Query(None, alias="from", description="起始日期 YYYY-MM-DD"),
+    to_date: Optional[str] = Query(None, alias="to", description="截止日期 YYYY-MM-DD"),
     token: Optional[str] = Depends(oauth2_scheme_optional),
     db: Session = Depends(get_db),
 ):
-    """获取博客列表（按更新时间倒序，可按分类筛选）"""
+    """获取博客列表（可按分类/关键词/日期筛选，排序：created 精选优先 / likes 点赞 / comprehensive 综合）"""
+    from datetime import date, datetime, timedelta
+
     current_user = get_optional_user(token, db)
     query = db.query(Blog)
     if category:
         query = query.filter(Blog.category == category)
+    if q:
+        query = query.filter(or_(Blog.title.like(f"%{q}%"), Blog.content_md.like(f"%{q}%")))
+    if from_date:
+        try:
+            from_dt = datetime.combine(date.fromisoformat(from_date), datetime.min.time())
+        except ValueError:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="from 日期格式非法（应为 YYYY-MM-DD）")
+        query = query.filter(Blog.created_at >= from_dt)
+    if to_date:
+        try:
+            to_dt = datetime.combine(date.fromisoformat(to_date), datetime.min.time()) + timedelta(days=1)
+        except ValueError:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="to 日期格式非法（应为 YYYY-MM-DD）")
+        query = query.filter(Blog.created_at < to_dt)
     total = query.count()
+    like_count_expr = (
+        select(func.count(BlogLike.id))
+        .where(BlogLike.blog_id == Blog.id)
+        .scalar_subquery()
+    )
+    if sort == "likes":
+        query = query.order_by(like_count_expr.desc(), Blog.created_at.desc())
+    elif sort == "comprehensive":
+        query = query.order_by(
+            Blog.is_featured.desc(),  # 精选优先
+            # 综合 = 点赞×3（低权重） + 时效因子 10/(距今天数+1)（高权重，新博文最高 10 分 ≈ 3.3 个赞）
+            (like_count_expr * 3 + 10 / (func.datediff(func.now(), Blog.created_at) + 1)).desc(),
+            Blog.created_at.desc(),
+        )
+    else:
+        query = query.order_by(Blog.created_at.desc())  # 时间排序：纯发布时间倒序，不精选优先
     blogs = (
         query
         .options(joinedload(Blog.author), joinedload(Blog.project))
-        .order_by(Blog.created_at.desc())
         .offset(skip)
         .limit(limit)
         .all()
@@ -1117,6 +1171,45 @@ def admin_update_user_role(
     return user
 
 
+@app.put("/api/admin/users/{user_id}", response_model=AdminUserResponse, tags=["管理员"])
+def admin_update_user(
+    user_id: int,
+    req: UpdateAdminUserRequest,
+    _admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """管理员更新用户昵称/头像/密码（昵称头像可清空，密码非空时重置）"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
+    if "nickname" in req.model_fields_set:
+        user.nickname = req.nickname or None
+    if "avatar_url" in req.model_fields_set:
+        user.avatar_url = req.avatar_url or None
+    if req.password:
+        user.hashed_password = hash_password(req.password)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+@app.delete("/api/admin/users/{user_id}", response_model=MessageResponse, tags=["管理员"])
+def admin_delete_user(
+    user_id: int,
+    _admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """管理员删除用户（其博客/评论/点赞/项目/邀请码由外键 CASCADE 级联删除）"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
+    if user.id == _admin.id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="不能删除当前管理员账户")
+    db.delete(user)
+    db.commit()
+    return MessageResponse(message="用户已删除")
+
+
 @app.get("/api/admin/comments", response_model=AdminCommentListResponse, tags=["管理员"])
 def admin_list_comments(
     _admin: User = Depends(require_admin),
@@ -1216,6 +1309,23 @@ def admin_update_blog_category(
     db.refresh(blog)
     # 重新加载 author 关系
     blog = db.query(Blog).options(joinedload(Blog.author)).filter(Blog.id == blog_id).first()
+    return blog
+
+
+@app.put("/api/admin/blogs/{blog_id}/featured", response_model=AdminBlogListItem, tags=["管理员"])
+def admin_set_blog_featured(
+    blog_id: int,
+    req: UpdateBlogFeaturedRequest,
+    _admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """管理员设置博客精选"""
+    blog = db.query(Blog).options(joinedload(Blog.author)).filter(Blog.id == blog_id).first()
+    if not blog:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="博客不存在")
+    blog.is_featured = req.is_featured
+    db.commit()
+    db.refresh(blog)
     return blog
 
 
@@ -1383,6 +1493,10 @@ def get_site_settings(db: Session = Depends(get_db)):
             {"label": "邮箱", "value": setting.email or _DEFAULT_CONTACT_ITEMS[0]["value"]},
             {"label": "GitHub", "value": setting.github_url or _DEFAULT_CONTACT_ITEMS[1]["value"]},
         ]
+    # 旧数据兼容：缺 type/icon 的联系项补默认值
+    for it in items:
+        it.setdefault("type", "link")
+        it.setdefault("icon", "")
     return SiteSettingResponse(email=setting.email or "", github_url=setting.github_url or "", contact_items=items)
 
 
