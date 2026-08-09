@@ -1404,6 +1404,7 @@
   border-bottom: 1px solid var(--border-color);
   transition: background 0.2s;
   animation: list-item-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  position: relative;
 }
 
 @keyframes list-item-in {
@@ -1419,6 +1420,7 @@
 
 .blog-list-item:hover {
   background: var(--bg-card);
+  z-index: 5; /* hover 行浮起，避免下拉菜单被相邻行遮挡 */
 }
 
 .blog-list-item-title {

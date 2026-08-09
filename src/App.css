@@ -304,7 +304,7 @@
 
 .nav-dropdown-menu {
   position: absolute;
-  top: calc(100% + 10px);
+  top: 100%;
   left: 50%;
   transform: translateX(-50%) translateY(-8px) scale(0.96);
   background: var(--bg-card);
@@ -312,7 +312,7 @@
   -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 6px;
+  padding: 12px 6px 6px;
   min-width: 130px;
   opacity: 0;
   visibility: hidden;
@@ -334,7 +334,7 @@
 .nav-dropdown-menu::before {
   content: '';
   position: absolute;
-  top: -6px;
+  top: 6px;
   left: 50%;
   transform: translateX(-50%);
   border-left: 6px solid transparent;
@@ -345,12 +345,12 @@
 .nav-dropdown-menu::after {
   content: '';
   position: absolute;
-  top: -5px;
+  top: 7px;
   left: 50%;
   transform: translateX(-50%);
   border-left: 5px solid transparent;
   border-right: 5px solid transparent;
-  border-bottom: 5px solid var(--white);
+  border-bottom: 5px solid var(--bg-card);
   z-index: 1;
 }
 
