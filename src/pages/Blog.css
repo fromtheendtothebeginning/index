@@ -434,6 +434,22 @@
   display: block;
 }
 
+.markdown-body iframe,
+.markdown-body video,
+.markdown-body embed,
+.markdown-body audio {
+  max-width: 100%;
+  border-radius: 10px;
+  margin: 16px 0;
+  display: block;
+}
+
+.markdown-body iframe {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: none;
+}
+
 .markdown-body strong {
   font-weight: 600;
 }

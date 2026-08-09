@@ -11,6 +11,45 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;')
 }
 
+// —— 媒体嵌入白名单：支持 <video> <iframe> <embed> <audio>
+// 属性白名单 + src 仅允许 http(s)，其余属性一律丢弃，防 XSS
+const MEDIA_ATTRS = {
+  video: ['src', 'controls', 'width', 'height', 'poster'],
+  iframe: ['src', 'width', 'height', 'title', 'loading', 'allowfullscreen'],
+  embed: ['src', 'type', 'width', 'height'],
+  audio: ['src', 'controls'],
+}
+const MEDIA_RE = /<(video|iframe|embed|audio)\b[^>]*>[\s\S]*?<\/\1>|<(video|iframe|embed|audio)\b[^>]*\/?>/g
+
+function sanitizeMedia(tag) {
+  const m = tag.match(/^<(\w+)\b([^>]*)>/)
+  if (!m) return null
+  const name = m[1]
+  const allowed = MEDIA_ATTRS[name]
+  if (!allowed) return null
+  const attrs = {}
+  const re = /([\w-]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g
+  let a
+  while ((a = re.exec(m[2]))) {
+    attrs[a[1].toLowerCase()] = (a[2] ?? a[3] ?? a[4] ?? '')
+  }
+  const out = []
+  for (const k of allowed) {
+    const v = attrs[k]
+    if (v === undefined) continue
+    if (k === 'src') {
+      if (!/^(https?:)?\/\//i.test(v.trim())) continue
+      out.push(` src="${escapeHtml(v.trim())}"`)
+    } else if (k === 'controls' || k === 'allowfullscreen') {
+      out.push(` ${k}`)
+    } else {
+      out.push(` ${k}="${escapeHtml(v)}"`)
+    }
+  }
+  if (!out.some(s => s.includes(' src='))) return null
+  return `<${name}${out.join('')}${/\/>$/.test(tag) ? ' />' : `></${name}>`}`
+}
+
 // 处理行内标记：粗体、斜体、删除线、行内代码、链接、图片
 function renderInline(text) {
   let s = text
@@ -87,6 +126,22 @@ function renderTable(lines) {
 export function renderMd(text) {
   if (!text) return ''
 
+  // 0. 预提取：先保护代码块，再提取媒体嵌入（避免代码块内的媒体标签被误放行）
+  const mediaBlocks = []
+  const codeBlocks = []
+  text = text.replace(/```[\s\S]*?```/g, (m) => {
+    const lang = m.match(/^```(\w*)/)?.[1] || ''
+    const body = m.replace(/^```\w*\s*\n?/, '').replace(/\n?```$/, '')
+    codeBlocks.push(`<pre><code class="lang-${lang}">${escapeHtml(body)}</code></pre>`)
+    return `\u0000CODEBLOCK${codeBlocks.length - 1}\u0000`
+  })
+  text = text.replace(MEDIA_RE, (m) => {
+    const safe = sanitizeMedia(m)
+    if (!safe) return m
+    mediaBlocks.push(safe)
+    return `\u0000MEDIA${mediaBlocks.length - 1}\u0000`
+  })
+
   // 1. 转义 HTML
   let src = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
@@ -98,13 +153,18 @@ export function renderMd(text) {
   const out = []
   let i = 0
 
-  // 代码块占位（避免被其他规则改写）
-  const codeBlocks = []
-
   while (i < lines.length) {
     const line = lines[i]
 
-    // —— 代码块 ```lang ... ```
+    // —— 代码块占位行（入口已预提取闭合代码块）
+    const cbMatch = line.match(/^\u0000CODEBLOCK(\d+)\u0000$/)
+    if (cbMatch) {
+      out.push(codeBlocks[Number(cbMatch[1])])
+      i++
+      continue
+    }
+
+    // —— 未闭合代码块兜底
     const fence = line.match(/^```(\w*)\s*$/)
     if (fence) {
       const lang = fence[1] || ''
@@ -118,6 +178,14 @@ export function renderMd(text) {
       const codeHtml = `<pre><code class="lang-${lang}">${buf.join('\n')}</code></pre>`
       codeBlocks.push(codeHtml)
       out.push(`\u0000BLOCK${codeBlocks.length - 1}\u0000`)
+      continue
+    }
+
+    // —— 媒体占位行（独立一行的视频嵌入）
+    const mediaMatch = line.match(/^\u0000MEDIA(\d+)\u0000$/)
+    if (mediaMatch) {
+      out.push(mediaBlocks[Number(mediaMatch[1])])
+      i++
       continue
     }
 
@@ -270,8 +338,12 @@ export function renderMd(text) {
   // 4. 拼接
   let html = out.join('\n')
 
-  // 5. 还原代码块占位
+  // 5. 还原代码块占位（入口预提取 + 未闭合兜底）
+  html = html.replace(/\u0000CODEBLOCK(\d+)\u0000/g, (_, idx) => codeBlocks[Number(idx)])
   html = html.replace(/\u0000BLOCK(\d+)\u0000/g, (_, idx) => codeBlocks[Number(idx)])
+
+  // 6. 还原媒体嵌入占位
+  html = html.replace(/\u0000MEDIA(\d+)\u0000/g, (_, idx) => mediaBlocks[Number(idx)])
 
   return html
 }
