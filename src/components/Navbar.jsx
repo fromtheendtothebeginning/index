@@ -88,15 +88,23 @@ function Navbar({ activePage }) {
   }, [user])
 
   const scrollToSection = (id) => {
+    const go = () => {
+      const el = document.getElementById(id)
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' })
+        return true
+      }
+      return false
+    }
     if (window.location.pathname !== '/') {
       navigate('/')
-      setTimeout(() => {
-        const el = document.getElementById(id)
-        if (el) el.scrollIntoView({ behavior: 'smooth' })
-      }, 100)
+      // 等待首页目标区块挂载后滚动（轮询，最多约 1.5s，兼容慢设备/慢网络）
+      let tries = 0
+      const timer = setInterval(() => {
+        if (go() || ++tries >= 10) clearInterval(timer)
+      }, 150)
     } else {
-      const el = document.getElementById(id)
-      if (el) el.scrollIntoView({ behavior: 'smooth' })
+      go()
     }
   }
 
