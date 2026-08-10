@@ -11,6 +11,15 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;')
 }
 
+// 链接/图片 URL 白名单：仅 http(s)/协议相对/mailto/锚点/站内路径，其余协议（javascript: data: 等）拒绝
+function sanitizeUrl(url) {
+  const u = (url || '').trim()
+  if (/^(https?:)?\/\//i.test(u)) return u
+  if (/^mailto:/i.test(u)) return u
+  if (/^#/.test(u) || /^\//.test(u)) return u
+  return null
+}
+
 // —— 媒体嵌入白名单：支持 <video> <iframe> <embed> <audio>
 // 属性白名单 + src 仅允许 http(s)，其余属性一律丢弃，防 XSS
 const MEDIA_ATTRS = {
@@ -63,15 +72,19 @@ function renderInline(text) {
   // 图片 ![alt](url)
   s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)/g,
     (_, alt, url, title) => {
+      const u = sanitizeUrl(url)
+      if (!u) return `![${alt}](${url})`
       const t = title ? ` title="${title}"` : ''
-      return `<img src="${url}" alt="${alt}"${t} loading="lazy" />`
+      return `<img src="${u}" alt="${alt}"${t} loading="lazy" />`
     }
   )
   // 链接 [text](url)
   s = s.replace(/(?<!!)\[([^\]]+)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)/g,
     (_, text, url, title) => {
+      const u = sanitizeUrl(url)
+      if (!u) return text
       const t = title ? ` title="${title}"` : ''
-      return `<a href="${url}" target="_blank" rel="noopener noreferrer"${t}>${text}</a>`
+      return `<a href="${u}" target="_blank" rel="noopener noreferrer"${t}>${text}</a>`
     }
   )
 

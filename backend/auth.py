@@ -15,7 +15,9 @@ load_dotenv()
 # ============================================
 # 配置（生产环境请从环境变量读取）
 # ============================================
-SECRET_KEY = os.getenv("SECRET_KEY", "change-this-to-a-long-random-secret-key-in-production")
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("缺少 SECRET_KEY 环境变量，拒绝启动（防止使用可预测密钥签发 JWT）")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 小时
 

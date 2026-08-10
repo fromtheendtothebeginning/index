@@ -42,10 +42,10 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login")
 # 可选鉴权 —— 未携带 token 时不报错，返回 None（用于公开接口附带当前用户信息）
 oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="/api/login", auto_error=False)
 
-# CORS —— 允许前端开发服务器跨域访问
+# CORS —— 允许前端开发服务器跨域访问（生产走 nginx 同源代理，无需跨域）
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3300", "http://127.0.0.1:3300"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -153,7 +153,10 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if payload is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
 
-    user_id = int(payload.get("sub"))
+    try:
+        user_id = int(payload.get("sub"))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
@@ -172,7 +175,10 @@ def update_profile(
     if payload is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
 
-    user_id = int(payload.get("sub"))
+    try:
+        user_id = int(payload.get("sub"))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
@@ -199,7 +205,7 @@ def check_username(username: str, db: Session = Depends(get_db)):
 
 @app.put("/api/user/reset-password", response_model=MessageResponse, tags=["用户"])
 def reset_password(req: ResetPasswordRequest, db: Session = Depends(get_db)):
-    """重置密码（无需登录，需邀请码验证）"""
+    """重置密码（无需登录，需本人专属可重复邀请码验证，防止接管他人账号）"""
     user = db.query(User).filter(User.username == req.username).first()
     if not user:
         raise HTTPException(
@@ -207,17 +213,12 @@ def reset_password(req: ResetPasswordRequest, db: Session = Depends(get_db)):
             detail="用户不存在",
         )
 
-    # 校验邀请码（改密码时只需有效邀请码，不消耗）
+    # 校验邀请码归属：必须是该账号本人的专属可重复邀请码（不消耗）
     invite = db.query(InviteCode).filter(InviteCode.code == req.invite_code).first()
-    if not invite:
+    if not invite or invite.owner_user_id != user.id or not invite.is_reusable:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="邀请码无效",
-        )
-    if invite.is_used and not invite.is_reusable:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="邀请码已被使用",
+            detail="邀请码无效或不属于该账号",
         )
 
     user.hashed_password = hash_password(req.new_password)
@@ -235,7 +236,10 @@ def get_current_user_obj(token: str = Depends(oauth2_scheme), db: Session = Depe
     payload = decode_access_token(token)
     if payload is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
-    user_id = int(payload.get("sub"))
+    try:
+        user_id = int(payload.get("sub"))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
