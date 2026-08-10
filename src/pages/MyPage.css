@@ -122,6 +122,18 @@
   border-radius: 12px;
   cursor: default;
   transition: transform 0.15s, box-shadow 0.2s, border-color 0.2s;
+  animation: my-item-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes my-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .my-item-link {

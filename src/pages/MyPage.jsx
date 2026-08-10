@@ -108,13 +108,14 @@ function MyPage() {
           <div className="my-empty">暂无通知</div>
         ) : (
           <ul className="my-list">
-            {notifications.map(n => {
+            {notifications.map((n, i) => {
               const meta = TYPE_META[n.type] || { icon: '•', label: n.type }
               return (
                 <li
                   key={n.id}
                   className={`my-item ${n.is_read ? '' : 'my-item-unread'} ${n.blog_id ? 'my-item-link' : ''}`}
                   onClick={() => handleClick(n)}
+                  style={{ animationDelay: `${i * 60}ms` }}
                 >
                   <span className="my-item-icon" title={meta.label}>{meta.icon}</span>
                   <div className="my-item-main">
