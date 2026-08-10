@@ -117,7 +117,7 @@
   align-items: flex-start;
   gap: 12px;
   padding: 14px 16px;
-  background: var(--white);
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   cursor: default;
