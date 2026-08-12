@@ -487,6 +487,11 @@
     white-space: normal;
   }
 
+  /* 移动端点击直接跳转（不展开子菜单），隐藏箭头避免误导 */
+  .nav-drawer .arrow-down {
+    display: none;
+  }
+
   .nav-drawer-user {
     margin-top: 12px;
     padding-top: 16px;
@@ -498,24 +503,22 @@
     text-align: center;
   }
 
-  /* 移动端子菜单：静态流入文档流、默认隐藏，点击 trigger 展开（覆盖 hover 展开） */
+  /* 移动端下拉：浮层式展开（absolute 覆盖在 trigger 下方），不挤动其他组件位置 */
   .nav-dropdown-menu {
-    position: static;
-    top: auto;
-    left: auto;
-    transform: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
     opacity: 1;
     visibility: visible;
     display: none;
-    min-width: 0;
-    padding: 4px 0 4px 12px; /* 子菜单缩进 */
-    background: transparent;
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    transition: none;
+    min-width: 160px;
+    padding: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+    z-index: 60; /* 高于页面内容（卡片 hover 5 / 行 5 / admin 10），低于导航（100） */
   }
 
   .nav-dropdown.mobile-open .nav-dropdown-menu {
