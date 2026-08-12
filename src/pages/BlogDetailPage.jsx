@@ -64,7 +64,9 @@ function CommentCard({
             <span className="comment-like-icon">{c.liked_by_me ? '♥' : '♡'}</span>
             <span className="comment-like-count">{c.like_count || 0}</span>
           </button>
-          <button className="comment-reply-btn" onClick={() => handleOpenReply(c)}>回复</button>
+          <button className="comment-reply-btn" onClick={() => handleOpenReply(c)}>
+            回复{c.reply_count > 0 ? ` (${c.reply_count})` : ''}
+          </button>
           <button className="comment-chain-link" onClick={() => setChainCommentId(c.id)}>↗ 回复链</button>
         </div>
         {showReplyBox && (
