@@ -13,8 +13,8 @@
 - 每次任务完成并验证通过后，**自动启动本地前后端并保持存活**，向用户汇报地址与端口：
   - 前端 http://localhost:3000（`/api` 经 Vite 代理到后端）
   - 后端 http://127.0.0.1:8000（本机若 8000 被 Windows/Hyper-V 排除区间占用，改用 18000 并同步 `vite.config.js` 代理；端口说明见 `log/acceptance-2026-08-06.md`）
-- 启动方式：用 WMI/CIM（`Invoke-CimMethod Win32_Process Create`）脱离会话启动，日志写 `log/back.out.log` / `log/fe.out.log`，PID 存 `log/run.pids`。
-- **部署红线：未经用户明确同意，禁止运行 deploy.bat / 发布到服务器**。完成功能后只启动本地服务供验收，等用户指示「发布到服务器并git」再部署。
+- 启动方式：用 **agent 内部终端**（Bash 工具，常驻用 `run_in_background`）启动，**不要打开新的终端弹窗/新窗口**（用户明确要求，2026-08-12）；日志写 `log/back.out.log` / `log/fe.out.log`。
+- **部署红线：未经用户明确同意，禁止运行任何部署脚本（`deploy.bat` / `deploy-backend.bat` / `deploy-fresh-server.bat` 等，`deploy-config.bat` 是共享凭据来源）或发布到服务器**。完成功能后只启动本地服务供验收，等用户指示「发布到服务器并git」再部署。**代理不得读取、展示或上传这些脚本中的任何凭据/密码**——凭据仅由用户本人运行脚本时使用，代理一概不接触。
 
 ## 协作与流程规则
 - **Todo 管理**：每个 todo 完成并验证后立即在 todo 列表打钩（`todowrite` 更新状态）；**全部完成后归档清理**，不要遗留已完成的旧 todo 一直挂在右侧，进入下一任务前清空/替换列表。
@@ -61,7 +61,7 @@
 - 大型多步骤任务优先派子代理实施，主脑负责架构、接口约定与验证，保持上下文清洁。
 
 ## 部署（Windows → 阿里云 47.100.125.150）
-- 迭代部署跑本地 `deploy.bat`（已 gitignore，仅本机存在）：构建前端、SCP 上传前后端、装依赖、重启 systemd 服务 `anticraft-api`、reload Nginx。
+- 迭代部署跑本地 `deploy.bat`（已 gitignore，仅本机存在）：构建前端、SCP 上传前后端、装依赖、重启 systemd 服务 `anticraft-api`、reload Nginx。同目录还有 `deploy-backend.bat`（仅传后端+重启）、`deploy-fresh-server.bat`（全新服务器初始化）、`deploy-config.bat`（SSH/凭据共享配置，被其余脚本引用）——均含服务器凭据，同样禁止未经同意运行。**代理不得读取/展示这些脚本中的凭据内容**，部署与凭据处理只由用户本人执行。
 - `deploy.bat` 硬编码服务器 DB 密码（已 gitignore，仅本机存在），并覆盖生成 `backend/.env`。
 - Windows cmd 中 SSH 命令的 `&&`/多行字符串会被错误拆分（warning.md #2/#10），修改部署脚本时注意。
 - 服务器数据库检查可用 `check_db.sh`。

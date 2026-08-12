@@ -39,6 +39,9 @@ yarn-error.log*
 .cache/
 .eslintcache
 
+# 安全扫描工具输出
+.mimosa/
+
 deploy.bat
 deploy-backend.bat
 check_db.sh
