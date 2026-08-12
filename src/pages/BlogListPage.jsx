@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar'
 import Modal from '../components/Modal'
 import Reveal from '../components/Reveal'
 import CategoryDropdown from '../components/CategoryDropdown'
+import { UiIcon } from '../components/Icons'
 import './Blog.css'
 
 const API_BASE = '/api'
@@ -286,7 +287,7 @@ function BlogListPage() {
                       <div className="blog-card-body">
                         <h2 className="blog-card-title">
                           {blog.category && <span className="blog-card-category">{blog.category}</span>}
-                          {blog.is_featured && <span className="blog-card-featured" title="精选">⭐</span>}
+                          {blog.is_featured && <span className="blog-card-featured" title="精选"><UiIcon name="star" filled size={14} /></span>}
                           {blog.title}
                         </h2>
                         <div className="blog-card-meta">
@@ -306,7 +307,7 @@ function BlogListPage() {
                           onClick={() => handleToggleFeatured(blog.id)}
                           title={blog.is_featured ? '取消精选' : '设为精选'}
                         >
-                          ⭐
+                          <UiIcon name="star" size={13} />
                         </button>
                         <CategoryDropdown
                           value={blog.category || ''}
@@ -336,15 +337,15 @@ function BlogListPage() {
                 {blogs.map((blog, i) => (
                   <div key={blog.id} className="blog-list-item" style={{ animationDelay: `${i * 60}ms` }}>
                     <Link to={`/blogs/${blog.id}`} className="blog-list-item-title">
-                      {blog.is_featured && <span className="blog-list-featured" title="精选">⭐</span>}
+                      {blog.is_featured && <span className="blog-list-featured" title="精选"><UiIcon name="star" filled size={14} /></span>}
                       {blog.title}
                     </Link>
                     <div className="blog-list-meta">
                       {blog.category && <span className="blog-card-category">{blog.category}</span>}
                       <span>{blog.author?.nickname || blog.author?.username || '匿名'}</span>
                       <span>{new Date(blog.created_at).toLocaleDateString('zh-CN')}</span>
-                      <span>♥ {blog.like_count || 0}</span>
-                      <span>💬 {blog.comment_count || 0}</span>
+                      <span><UiIcon name="heart" size={13} /> {blog.like_count || 0}</span>
+                      <span><UiIcon name="message" size={13} /> {blog.comment_count || 0}</span>
                     </div>
                     {isAdmin && (
                       <div className="blog-list-admin">
@@ -353,7 +354,7 @@ function BlogListPage() {
                           onClick={() => handleToggleFeatured(blog.id)}
                           title={blog.is_featured ? '取消精选' : '设为精选'}
                         >
-                          ⭐ 精选
+                          <UiIcon name="star" size={13} /> 精选
                         </button>
                         <CategoryDropdown
                           value={blog.category || ''}

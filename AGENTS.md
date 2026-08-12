@@ -13,7 +13,8 @@
 - 每次任务完成并验证通过后，**自动启动本地前后端并保持存活**，向用户汇报地址与端口：
   - 前端 http://localhost:3000（`/api` 经 Vite 代理到后端）
   - 后端 http://127.0.0.1:8000（本机若 8000 被 Windows/Hyper-V 排除区间占用，改用 18000 并同步 `vite.config.js` 代理；端口说明见 `log/acceptance-2026-08-06.md`）
-- 启动方式：用 **agent 内部终端**（Bash 工具，常驻用 `run_in_background`）启动，**不要打开新的终端弹窗/新窗口**（用户明确要求，2026-08-12）；日志写 `log/back.out.log` / `log/fe.out.log`。
+- 启动方式：用 **agent 内部终端**（Bash 工具，常驻用 `run_in_background`）启动，**不要打开新的终端弹窗/新窗口**（用户明确要求，2026-08-12）；若确需可视终端，**使用 VSCode 内置终端**（不用 cmd/PowerShell 独立窗口）；日志写 `log/back.out.log` / `log/fe.out.log`。
+- **任务完成提醒**：每个任务完成并验证通过后，发出声音提醒用户（如 PowerShell `[console]::beep(800,300)` 或系统提示音）。
 - **部署红线：未经用户明确同意，禁止运行任何部署脚本（`deploy.bat` / `deploy-backend.bat` / `deploy-fresh-server.bat` 等，`deploy-config.bat` 是共享凭据来源）或发布到服务器**。完成功能后只启动本地服务供验收，等用户指示「发布到服务器并git」再部署。**代理不得读取、展示或上传这些脚本中的任何凭据/密码**——凭据仅由用户本人运行脚本时使用，代理一概不接触。
 
 ## 协作与流程规则
@@ -46,6 +47,7 @@
 - 确认弹窗统一用 `src/components/Modal.jsx`，不用 `window.confirm`。
 - 每页独立 CSS 文件；主题色在 `src/index.css` 的 CSS 变量（`--bg-primary` / `--text-primary` / `--accent-1` / `--accent-2`）。
 - react-router-dom v7，路由集中在 `src/App.jsx`，页面在 `src/pages/`。
+- **图标一律不用 emoji**：统一用镂空简笔 SVG 图标（`src/components/Icons.jsx` 的 `UiIcon` 组件，Feather 风格 stroke；品牌图标用 `ContactIcon`）。新增图标先看 Icons.jsx 是否已有，没有则按相同风格补一个。
 
 ## harness（AI 智能体管控框架，顶层目录）
 - 纯 Python 标准库，零第三方依赖；不修改 `backend/` 代码，后端集成走懒加载。
@@ -59,6 +61,18 @@
 - `check_db.sh` 含硬编码服务器密码，已 gitignore，勿提交 git。
 - models.py 勿新增仅序列化/零读写的字段（`User.email` 教训）；在 models.py 加列必须同步 `database.py` 的 `run_migrations()`。
 - 大型多步骤任务优先派子代理实施，主脑负责架构、接口约定与验证，保持上下文清洁。
+
+## 运行注意事项（每次任务结束追加新发现）
+1. **本地后端端口必须是 8000**：`vite.config.js` 代理固定指向 `127.0.0.1:8000`，本地后端起 8000（18000 仅当 8000 被 Windows 排除区间占用时用，且必须同步 vite 代理）。用错端口 API 测试会 Connection refused。
+2. **Vite HMR 偶发失效**：改前端代码后浏览器仍显示旧代码/旧图标时，先杀 3000 端口进程重启 `npm run dev`，不要怀疑代码没改（2026-08-10 图标替换时踩坑）。
+3. **本地库 ≠ 服务器库**：本地库有测试数据（"测试博客 111"等），线上是真实数据；测试/示例用真实 id 前先查 API，勿按线上 id 假设本地存在（反之亦然）。
+4. **服务器 DB 密码禁止含 `@` 等 URL 特殊字符**：`database.py` 用 URL 拼接连接串，密码含 `@` 会导致启动失败 `Unknown MySQL server host`（2026-08-10 事故根因）。密码字符集只用字母数字 `_` `-`。改密流程：`ALTER USER`（远程 SQL 用 base64 传输，避免引号嵌套问题）→ 同步本机 `deploy.bat` L16 / `deploy-config.bat` L12 / `check_db.sh` L2 三处 → 重跑 `deploy.bat` 验证。
+5. **deploy.bat 每次部署覆盖生成 `backend/.env`**（从根 `.env` 复制并替换 `DB_PASSWORD` 为服务器密码）→ 本地 `backend/.env` 的 DB_PASSWORD 是服务器密码，连本地库需注意。
+6. **Playwright 验证环境**（项目已装 `playwright-core`，chromium 二进制在 `C:\Users\86133\AppData\Local\ms-playwright\chromium-1234\chrome-win64\chrome.exe`，启动需传 `executablePath`）：`addInitScript` 只接受一个参数（多参数先写入 localStorage 再 `location.reload()`）；`page.evaluate` 里的相对 fetch 需先 goto 一个页面；`innerText` 不含 input 值，验证输入用 `inputValue()`；CSS hover 菜单点击用 Playwright 会暴露真实用户遇见的 hover 断链/遮挡问题。
+7. **测试账号流程**：注册测试账号 → 直接改库 `role='admin'` 用其 token 调 admin 接口 → 测试完毕删除账号并**还原被改的数据**（如博客分类）。
+8. **CSS hover 下拉经验**：下拉菜单与触发按钮之间留 gap 会导致鼠标移动时 hover 断链、菜单收起（gap 归零 + `padding-top` 桥接热区）；列表项 `animation ... both` 保留的 transform 会创建 stacking context、导致相邻行遮挡下拉菜单（hover 行加 `position: relative; z-index: 5`）。
+9. `deploy.bat` 输出末尾的 `Input redirection is not supported` 是 systemd status 重定向的已知噪音（warning.md #2/#10），不影响部署结果。
+10. **深色模式排查**：任何组件"深色下看不清/仍是白底"，先查其 background 是否用了 `var(--white)`（恒定纯白）——应改用 `var(--bg-card)`（跟随主题）。
 
 ## 部署（Windows → 阿里云 47.100.125.150）
 - 迭代部署跑本地 `deploy.bat`（已 gitignore，仅本机存在）：构建前端、SCP 上传前后端、装依赖、重启 systemd 服务 `anticraft-api`、reload Nginx。同目录还有 `deploy-backend.bat`（仅传后端+重启）、`deploy-fresh-server.bat`（全新服务器初始化）、`deploy-config.bat`（SSH/凭据共享配置，被其余脚本引用）——均含服务器凭据，同样禁止未经同意运行。**代理不得读取/展示这些脚本中的凭据内容**，部署与凭据处理只由用户本人执行。

@@ -59,6 +59,52 @@ export const CONTACT_ICON_OPTIONS = [
   { key: 'custom', label: '自定义图片 URL' },
 ]
 
+const UI_ICONS = {
+  heart: <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />,
+  message: <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />,
+  star: <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21 12 17.77 5.82 21 7 14.14 2 9.27 8.91 8.26 12 2" />,
+  thumb: (
+    <>
+      <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+    </>
+  ),
+  pin: (
+    <>
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+      <circle cx="12" cy="10" r="3" />
+    </>
+  ),
+  image: (
+    <>
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <polyline points="21 15 16 10 5 21" />
+    </>
+  ),
+}
+
+export function UiIcon({ name, filled = false, size = 16, className }) {
+  const content = UI_ICONS[name]
+  if (!content) return null
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      className={className}
+      aria-hidden="true"
+      style={{ display: 'inline-block', verticalAlign: '-0.125em' }}
+      fill={filled ? 'currentColor' : 'none'}
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {content}
+    </svg>
+  )
+}
+
 export function ContactIcon({ icon, type, className }) {
   if (/^https?:/i.test(icon || '')) {
     return <img src={icon} alt="" className={className || 'contact-custom-icon'} />

@@ -5,6 +5,7 @@ import Modal from '../components/Modal'
 import ProjectCover from '../components/ProjectCover'
 import Reveal from '../components/Reveal'
 import { renderMd } from '../utils/markdown'
+import { UiIcon } from '../components/Icons'
 import './Project.css'
 
 // 单条项目评论卡片（顶层 / 子回复共用）
@@ -59,7 +60,7 @@ function ProjectCommentItem({
             disabled={likePending.has(c.id)}
             aria-label="评论点赞"
           >
-            <span className="comment-like-icon">{c.liked_by_me ? '♥' : '♡'}</span>
+            <span className="comment-like-icon"><UiIcon name="heart" filled={c.liked_by_me} size={14} /></span>
             <span className="comment-like-count">{c.like_count || 0}</span>
           </button>
           <button className="comment-reply-btn" onClick={() => onOpenReply(c)}>回复</button>
@@ -553,7 +554,7 @@ function ProjectDetailPage() {
                       {new Date(blog.created_at).toLocaleDateString('zh-CN')}
                     </span>
                     <span className="project-blog-stats">
-                      ♥ {blog.like_count || 0} · 💬 {blog.comment_count || 0}
+                      <UiIcon name="heart" size={13} /> {blog.like_count || 0} · <UiIcon name="message" size={13} /> {blog.comment_count || 0}
                     </span>
                   </Link>
                 ))}
@@ -567,7 +568,7 @@ function ProjectDetailPage() {
               onClick={handleProjectLike}
               disabled={projectLikePending}
             >
-              <span>{project.liked_by_me ? '♥' : '♡'}</span>
+              <span><UiIcon name="heart" filled={project.liked_by_me} size={14} /></span>
               <span>{project.like_count || 0}</span>
             </button>
             {user && project && user.id !== project.author_id && (

@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar'
 import Modal from '../components/Modal'
 import CategoryDropdown from '../components/CategoryDropdown'
 import { renderMd } from '../utils/markdown'
+import { UiIcon } from '../components/Icons'
 import './Blog.css'
 
 const CATEGORIES = ['技术讨论', '更新日志', '娱乐论坛']
@@ -61,7 +62,7 @@ function CommentCard({
             disabled={commentLikePending.has(c.id)}
             aria-label="评论点赞"
           >
-            <span className="comment-like-icon">{c.liked_by_me ? '♥' : '♡'}</span>
+            <span className="comment-like-icon"><UiIcon name="heart" filled={c.liked_by_me} size={14} /></span>
             <span className="comment-like-count">{c.like_count || 0}</span>
           </button>
           <button className="comment-reply-btn" onClick={() => handleOpenReply(c)}>
@@ -539,11 +540,11 @@ function BlogDetailPage() {
               disabled={likePending}
               aria-label="点赞"
             >
-              <span className="like-icon">{blog.liked_by_me ? '♥' : '♡'}</span>
+              <span className="like-icon"><UiIcon name="heart" filled={blog.liked_by_me} size={14} /></span>
               <span className="like-count">{blog.like_count || 0}</span>
             </button>
             <a href="#comments" className="comment-count-link">
-              <span className="comment-icon">💬</span>
+              <span className="comment-icon"><UiIcon name="message" size={14} /></span>
               <span>{blog.comment_count || 0} 条评论</span>
             </a>
           </div>

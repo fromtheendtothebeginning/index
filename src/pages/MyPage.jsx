@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import { UiIcon } from '../components/Icons'
 import './MyPage.css'
 
 const TYPE_META = {
-  comment_reply: { icon: '💬', label: '回复' },
-  comment_like: { icon: '♥', label: '点赞' },
-  blog_comment_like: { icon: '👍', label: '评论获赞' },
-  project_new_blog: { icon: '📌', label: '项目新博客' },
-  blog_like: { icon: '♥', label: '博客点赞' },
-  blog_new_comment: { icon: '💬', label: '博客新评论' },
+  comment_reply: { icon: 'message', label: '回复' },
+  comment_like: { icon: 'heart', label: '点赞' },
+  blog_comment_like: { icon: 'thumb', label: '评论获赞' },
+  project_new_blog: { icon: 'pin', label: '项目新博客' },
+  blog_like: { icon: 'heart', label: '博客点赞' },
+  blog_new_comment: { icon: 'message', label: '博客新评论' },
 }
 
 function MyPage() {
@@ -117,7 +118,7 @@ function MyPage() {
                   onClick={() => handleClick(n)}
                   style={{ animationDelay: `${i * 60}ms` }}
                 >
-                  <span className="my-item-icon" title={meta.label}>{meta.icon}</span>
+                  <span className="my-item-icon" title={meta.label}><UiIcon name={meta.icon} size={15} /></span>
                   <div className="my-item-main">
                     <p className="my-item-content">{n.content}</p>
                     <p className="my-item-meta">

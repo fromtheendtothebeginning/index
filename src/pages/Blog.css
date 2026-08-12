@@ -578,6 +578,9 @@
 }
 
 .toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   padding: 6px 14px;
   border: 1px solid var(--border-color);
   border-radius: 8px;
@@ -830,6 +833,8 @@
 }
 
 .like-btn .like-icon {
+  display: inline-flex;
+  align-items: center;
   font-size: 18px;
   line-height: 1;
 }
@@ -1177,6 +1182,8 @@
 }
 
 .comment-like-icon {
+  display: inline-flex;
+  align-items: center;
   font-size: 15px;
   line-height: 1;
 }
@@ -1399,6 +1406,8 @@
 /* ---------- 精选标记 / 精选按钮 ---------- */
 .blog-card-featured,
 .blog-list-featured {
+  display: inline-flex;
+  align-items: center;
   color: #f5b301;
   margin-right: 6px;
   font-size: 14px;

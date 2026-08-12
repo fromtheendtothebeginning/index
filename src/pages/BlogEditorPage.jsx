@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import CategoryDropdown from '../components/CategoryDropdown'
 import { renderMd } from '../utils/markdown'
+import { UiIcon } from '../components/Icons'
 import './Blog.css'
 
 function BlogEditorPage() {
@@ -135,7 +136,7 @@ function BlogEditorPage() {
 
           <div className="editor-toolbar">
             <button type="button" className="toolbar-btn" onClick={handleInsertImage} title="插入图片">
-              🖼 图床
+              <UiIcon name="image" size={15} /> 图床
             </button>
             <span className="toolbar-hint">支持 Markdown 语法，图片使用图床链接</span>
           </div>
