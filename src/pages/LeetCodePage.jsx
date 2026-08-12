@@ -15,27 +15,38 @@ function LeetCodePage() {
   const [unbindText, setUnbindText] = useState('')
   const [unbinding, setUnbinding] = useState(false)
 
-  const lcHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` })
+const CACHE_KEY = 'lc_me_cache'
 
-  const loadLc = () => {
-    fetch('/api/leetcode/me', { headers: lcHeaders() })
-      .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d) setMe(d) })
-      .catch(() => {})
-  }
+const lcHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` })
 
-  const load = () => {
-    fetch('/api/leetcode/leaderboard')
-      .then(r => r.json())
-      .then(d => setBoard(d))
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }
+const loadLc = () => {
+  fetch('/api/leetcode/me', { headers: lcHeaders() })
+    .then(r => r.ok ? r.json() : null)
+    .then(d => {
+      if (!d) return
+      setMe(d)
+      localStorage.setItem(CACHE_KEY, JSON.stringify(d))
+    })
+    .catch(() => {})
+}
 
-  useEffect(() => {
-    load()
-    loadLc()
-  }, [])
+const load = () => {
+  fetch('/api/leetcode/leaderboard')
+    .then(r => r.json())
+    .then(d => setBoard(d))
+    .catch(() => {})
+    .finally(() => setLoading(false))
+}
+
+useEffect(() => {
+  load()
+  // 先渲染本地缓存的绑定状态，避免切换页面时闪出绑定表单（实时同步 LeetCode 需 1-3s）
+  try {
+    const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null')
+    if (cached && cached.bound) setMe(cached)
+  } catch {}
+  loadLc()
+}, [])
 
   const handleBind = async () => {
     const name = lcUsername.trim()
@@ -64,6 +75,7 @@ function LeetCodePage() {
       const res = await fetch('/api/leetcode/me', { method: 'DELETE', headers: lcHeaders() })
       if (res.ok) {
         setMe(null)
+        localStorage.removeItem(CACHE_KEY)
         setUnbindOpen(false)
         setUnbindText('')
         load()
