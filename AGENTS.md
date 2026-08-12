@@ -14,7 +14,7 @@
   - 前端 http://localhost:3000（`/api` 经 Vite 代理到后端）
   - 后端 http://127.0.0.1:8000（本机若 8000 被 Windows/Hyper-V 排除区间占用，改用 18000 并同步 `vite.config.js` 代理；端口说明见 `log/acceptance-2026-08-06.md`）
 - 启动方式：用 **agent 内部终端**（Bash 工具，常驻用 `run_in_background`）启动，**不要打开新的终端弹窗/新窗口**（用户明确要求，2026-08-12）；若确需可视终端，**使用 VSCode 内置终端**（不用 cmd/PowerShell 独立窗口）；日志写 `log/back.out.log` / `log/fe.out.log`。
-- **任务完成提醒**：每个任务完成并验证通过后，发出声音提醒用户（如 PowerShell `[console]::beep(800,300)` 或系统提示音）。
+- **任务完成提醒**：每个任务完成并验证通过后，发出声音提醒用户——播放 Undertale《His Theme》9 秒节奏（`python play_ring.py`，脚本与 `ringtone/his_theme.wav` 已 gitignore，零依赖 winsound，音量已调低；**用分离子进程播放且无黑窗口（DETACHED_PROCESS+CREATE_NO_WINDOW），主进程立即返回不阻塞总结**）。
 - **部署红线：未经用户明确同意，禁止运行任何部署脚本（`deploy.bat` / `deploy-backend.bat` / `deploy-fresh-server.bat` 等，`deploy-config.bat` 是共享凭据来源）或发布到服务器**。完成功能后只启动本地服务供验收，等用户指示「发布到服务器并git」再部署。**代理不得读取、展示或上传这些脚本中的任何凭据/密码**——凭据仅由用户本人运行脚本时使用，代理一概不接触。
 
 ## 协作与流程规则

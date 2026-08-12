@@ -9,6 +9,7 @@ import BlogEditorPage from './pages/BlogEditorPage'
 import ProjectListPage from './pages/ProjectListPage'
 import ProjectDetailPage from './pages/ProjectDetailPage'
 import ProjectEditorPage from './pages/ProjectEditorPage'
+import LeetCodePage from './pages/LeetCodePage'
 import ProfileEdit from './pages/ProfileEdit'
 import AdminPage from './pages/AdminPage'
 import MyPage from './pages/MyPage'
@@ -235,6 +236,7 @@ function App() {
       <Route path="/projects/new" element={<ProjectEditorPage />} />
       <Route path="/projects/:id" element={<ProjectDetailPage />} />
       <Route path="/projects/:id/edit" element={<ProjectEditorPage />} />
+      <Route path="/leetcode" element={<LeetCodePage />} />
       <Route path="/profile" element={<ProfileEdit />} />
       <Route path="/admin" element={<AdminPage />} />
       <Route path="/my" element={<MyPage />} />

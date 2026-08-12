@@ -194,6 +194,31 @@ class InviteCode(Base):
         return f"<InviteCode(id={self.id}, code='{self.code}', used={self.is_used}, reusable={self.is_reusable})>"
 
 
+class LeetcodeBinding(Base):
+    """LeetCode 绑定 —— 记录用户 LeetCode 刷题增量（8.13 起算）"""
+    __tablename__ = "leetcode_bindings"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True, comment="绑定用户 ID")
+    leetcode_username = Column(String(100), unique=True, nullable=False, index=True, comment="LeetCode 用户名（leetcode.cn）")
+    difficulty_mode = Column(Boolean, default=False, nullable=False, comment="困难模式：得分减半")
+    base_easy = Column(Integer, default=0, nullable=False, comment="8.13 基线：简单题数")
+    base_medium = Column(Integer, default=0, nullable=False, comment="8.13 基线：中等题数")
+    base_hard = Column(Integer, default=0, nullable=False, comment="8.13 基线：困难题数")
+    cur_easy = Column(Integer, default=0, nullable=False, comment="最近同步：简单题数")
+    cur_medium = Column(Integer, default=0, nullable=False, comment="最近同步：中等题数")
+    cur_hard = Column(Integer, default=0, nullable=False, comment="最近同步：困难题数")
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), comment="更新时间"
+    )
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), comment="创建时间")
+
+    user = relationship("User")
+
+    def __repr__(self):
+        return f"<LeetcodeBinding(id={self.id}, user_id={self.user_id}, leetcode_username='{self.leetcode_username}')>"
+
+
 class FriendLink(Base):
     """友情链接"""
     __tablename__ = "friend_links"

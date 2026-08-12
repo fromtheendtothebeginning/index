@@ -1,0 +1,253 @@
+import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
+import Navbar from '../components/Navbar'
+import './LeetCodePage.css'
+
+function LeetCodePage() {
+  const [board, setBoard] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [me, setMe] = useState(null)
+  const [lcUsername, setLcUsername] = useState('')
+  const [lcSaving, setLcSaving] = useState(false)
+  const [lcError, setLcError] = useState('')
+  const [unbindOpen, setUnbindOpen] = useState(false)
+  const [unbindText, setUnbindText] = useState('')
+  const [unbinding, setUnbinding] = useState(false)
+
+  const lcHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` })
+
+  const loadLc = () => {
+    fetch('/api/leetcode/me', { headers: lcHeaders() })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setMe(d) })
+      .catch(() => {})
+  }
+
+  const load = () => {
+    fetch('/api/leetcode/leaderboard')
+      .then(r => r.json())
+      .then(d => setBoard(d))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    load()
+    loadLc()
+  }, [])
+
+  const handleBind = async () => {
+    const name = lcUsername.trim()
+    if (!name) { setLcError('请输入 LeetCode 用户名'); return }
+    setLcSaving(true)
+    setLcError('')
+    try {
+      const res = await fetch('/api/leetcode/me', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...lcHeaders() },
+        body: JSON.stringify({ leetcode_username: name }),
+      })
+      const d = await res.json()
+      if (!res.ok) { setLcError(d.detail || '绑定失败'); return }
+      setMe(d)
+      setLcUsername('')
+      load()
+    } catch { setLcError('网络错误') }
+    finally { setLcSaving(false) }
+  }
+
+  const handleUnbind = async () => {
+    if (unbindText.trim() !== '确认解绑') return
+    setUnbinding(true)
+    try {
+      const res = await fetch('/api/leetcode/me', { method: 'DELETE', headers: lcHeaders() })
+      if (res.ok) {
+        setMe(null)
+        setUnbindOpen(false)
+        setUnbindText('')
+        load()
+      }
+    } catch {}
+    finally { setUnbinding(false) }
+  }
+
+  const handleMode = async (mode) => {
+    try {
+      const res = await fetch('/api/leetcode/me/mode', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...lcHeaders() },
+        body: JSON.stringify({ difficulty_mode: mode }),
+      })
+      const d = await res.json()
+      if (res.ok && d) { setMe(d); load() }
+    } catch {}
+  }
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    try {
+      await fetch('/api/leetcode/refresh', { method: 'POST' })
+    } catch {}
+    load()
+    setRefreshing(false)
+  }
+
+  const users = board?.users || []
+  const localUser = (() => {
+    try { return JSON.parse(localStorage.getItem('user') || 'null') } catch { return null }
+  })()
+  const myRow = me && me.bound && localUser ? users.find(u => u.user_id === localUser.id) : null
+  const myRank = myRow ? users.findIndex(u => u.user_id === myRow.user_id) : -1
+
+  const meCard = (
+    <div className={`lc-mine ${me && me.bound ? 'lc-mine-ranked' : ''}`}>
+      {!me || !me.bound ? (
+        <div className="lc-bind-box">
+          <div className="lc-bind-head">
+            <span className="lc-mine-label">绑定 LeetCode 账号</span>
+            {lcError && <span className="lc-bind-error">{lcError}</span>}
+          </div>
+          <p className="lc-bind-hint">
+            绑定 leetcode.cn 账号后，榜单将展示你从绑定时刻起的刷题增量（简单 2 分 / 中等 4 分 / 困难 8 分）
+          </p>
+          <div className="lc-bind-row">
+            <input
+              type="text"
+              className="lc-bind-input"
+              placeholder="LeetCode 用户名"
+              value={lcUsername}
+              onChange={e => setLcUsername(e.target.value)}
+              maxLength={100}
+            />
+            <button className="btn btn-primary lc-bind-btn" onClick={handleBind} disabled={lcSaving}>
+              {lcSaving ? '绑定中...' : '绑定'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <span className="lc-mine-label">我的排名</span>
+          <span className="lc-mine-rank">#{myRank >= 0 ? myRank + 1 : '-'}</span>
+          <span className="lc-mine-user">
+            <span className="lc-nickname">{myRow ? (myRow.nickname || myRow.username) : me.leetcode_username}</span>
+            <span className="lc-username">@{me.leetcode_username}</span>
+            {me.difficulty_mode && (
+              <span className="lc-hard-tag" title="困难模式下得分减半">困难模式</span>
+            )}
+          </span>
+          <span className="lc-mine-stats">
+            简单 {me.inc.easy} · 中等 {me.inc.medium} · 困难 {me.inc.hard} · 总增量 {me.total_inc}
+          </span>
+          <span className="lc-mine-score">{me.score} 分</span>
+          <div className="lc-mine-actions">
+            <label className="lc-mode-toggle" title="困难模式下得分减半">
+              <input
+                type="checkbox"
+                checked={!!me.difficulty_mode}
+                onChange={e => handleMode(e.target.checked)}
+              />
+              困难模式
+            </label>
+            <button className="lc-unbind-btn" onClick={() => setUnbindOpen(true)}>解绑</button>
+          </div>
+          {unbindOpen && (
+            <div className="lc-unbind-confirm">
+              <p className="lc-unbind-tip">解绑后榜单将不再展示你的刷题量，且重新绑定将重新计算（从新绑定时刻起算）。输入「确认解绑」以解绑：</p>
+              <div className="lc-unbind-row">
+                <input
+                  type="text"
+                  className="lc-bind-input"
+                  placeholder="确认解绑"
+                  value={unbindText}
+                  onChange={e => setUnbindText(e.target.value)}
+                />
+                <button
+                  className="btn btn-danger lc-unbind-confirm-btn"
+                  disabled={unbindText.trim() !== '确认解绑' || unbinding}
+                  onClick={handleUnbind}
+                >
+                  {unbinding ? '解绑中...' : '确认解绑'}
+                </button>
+                <button
+                  className="lc-unbind-cancel"
+                  onClick={() => { setUnbindOpen(false); setUnbindText('') }}
+                >
+                  取消
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+
+  return (
+    <div className="lc-page">
+      <Navbar activePage="leetcode" />
+      <div className="lc-main">
+        <div className="lc-header">
+          <h1 className="lc-title">LeetCode 刷题榜</h1>
+          <p className="lc-subtitle">
+            绑定 LeetCode 账号后的刷题量 · 简单 2 分 / 中等 4 分 / 困难 8 分 · 困难模式得分减半
+          </p>
+        </div>
+
+        <div className="lc-toolbar">
+          <button className="btn btn-primary lc-refresh-btn" onClick={handleRefresh} disabled={refreshing}>
+            {refreshing ? '同步中...' : '刷新数据'}
+          </button>
+          <span className="lc-updated">
+            {board ? `更新于 ${new Date(board.generated_at).toLocaleString('zh-CN')}` : ''}
+          </span>
+        </div>
+
+        {meCard}
+
+        {loading ? (
+          <div className="lc-loading">加载中...</div>
+        ) : users.length === 0 ? (
+          <div className="lc-empty">
+            <p>暂无用户绑定 LeetCode</p>
+          </div>
+        ) : (
+          <div className="lc-board">
+            <div className="lc-row lc-row-head">
+              <span className="lc-col-rank">排名</span>
+              <span className="lc-col-user">用户</span>
+              <span className="lc-col-stat">简单</span>
+              <span className="lc-col-stat">中等</span>
+              <span className="lc-col-stat">困难</span>
+              <span className="lc-col-stat">总数</span>
+              <span className="lc-col-score">得分</span>
+            </div>
+            {users.map((u, i) => (
+              <div
+                key={u.user_id}
+                className={`lc-row ${u.difficulty_mode ? 'lc-row-hard' : ''} ${me && me.bound && localUser && u.user_id === localUser.id ? 'lc-row-self' : ''}`}
+                style={{ animationDelay: `${i * 60}ms` }}
+              >
+                <span className={`lc-col-rank ${i < 3 ? 'lc-rank-top' : ''}`}>{i + 1}</span>
+                <span className="lc-col-user">
+                  <span className="lc-nickname">{u.nickname || u.username}</span>
+                  <span className="lc-username">@{u.leetcode_username}</span>
+                  {u.difficulty_mode && (
+                    <span className="lc-hard-tag" title="困难模式下得分减半">困难模式</span>
+                  )}
+                </span>
+                <span className="lc-col-stat">{u.easy}</span>
+                <span className="lc-col-stat">{u.medium}</span>
+                <span className="lc-col-stat">{u.hard}</span>
+                <span className="lc-col-stat">{u.total}</span>
+                <span className="lc-col-score">{u.score}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export default LeetCodePage

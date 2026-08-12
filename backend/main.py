@@ -1,6 +1,11 @@
 # main.py — FastAPI 应用入口
 
+import json
+import re
 import secrets
+import urllib.parse
+import urllib.request
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import FastAPI, Depends, HTTPException, status, Query
@@ -10,7 +15,7 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_, select, func
 
 from database import get_db, init_db, run_migrations
-from models import User, Blog, BlogLike, Comment, CommentLike, Notification, InviteCode, Project, FriendLink, SiteSetting, ProjectLike, ProjectFollow
+from models import User, Blog, BlogLike, Comment, CommentLike, Notification, InviteCode, Project, FriendLink, SiteSetting, ProjectLike, ProjectFollow, LeetcodeBinding
 from schemas import (
     RegisterRequest, LoginRequest, ResetPasswordRequest, UpdateProfileRequest,
     CreateBlogRequest, UpdateBlogRequest, TokenResponse, UserResponse,
@@ -29,6 +34,8 @@ from schemas import (
     UpdateFriendLinkRequest,
     SiteSettingResponse, UpdateSiteSettingRequest, ContactItem,
     DeleteAccountRequest,
+    UpdateLeetcodeRequest, UpdateLeetcodeModeRequest, LeetcodeMeResponse,
+    LeetcodeBoardUser, LeetcodeBoardResponse, LeetcodeRefreshResponse,
 )
 from auth import hash_password, verify_password, create_access_token, decode_access_token
 
@@ -1531,6 +1538,232 @@ def update_site_settings(
     db.commit()
     db.refresh(setting)
     return setting
+
+
+# ============================================
+# LeetCode 刷题量 & 公开榜单
+# ============================================
+
+LEETCODE_GRAPHQL = "https://leetcode.cn/graphql"
+LEETCODE_QUERY = (
+    "query userQuestionProgress($userSlug: String!) {"
+    " userProfileUserQuestionProgress(userSlug: $userSlug) {"
+    "  numAcceptedQuestions { difficulty count }"
+    " } }"
+)
+
+
+def fetch_leetcode_progress(username: str):
+    """调用 LeetCode 公开 GraphQL 拉取用户各难度已解题数。
+    返回 (easy, medium, hard) 或 None（用户不存在）；网络/解析失败抛异常。"""
+    body = json.dumps({
+        "query": LEETCODE_QUERY,
+        "variables": {"userSlug": username},
+    }).encode()
+    req = urllib.request.Request(
+        LEETCODE_GRAPHQL, data=body,
+        headers={
+            "Content-Type": "application/json",
+            "Referer": "https://leetcode.cn/u/" + urllib.parse.quote(username, safe=""),
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) anticraft-leetcode-sync",
+        },
+    )
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        data = json.loads(resp.read().decode())
+    inner = data.get("data") or {}
+    nums = inner.get("userProfileUserQuestionProgress")
+    if not nums or not nums.get("numAcceptedQuestions"):
+        # 用户不存在（接口返回空数组 / null）
+        return None
+    counts = {"EASY": 0, "MEDIUM": 0, "HARD": 0}
+    for item in nums["numAcceptedQuestions"]:
+        counts[item.get("difficulty", "")] = int(item.get("count") or 0)
+    return counts["EASY"], counts["MEDIUM"], counts["HARD"]
+
+
+def leetcode_inc(binding) -> tuple:
+    """8.13 起（绑定日）的刷题增量：当前题数 - 基线，各维度不为负"""
+    return (
+        max(0, binding.cur_easy - binding.base_easy),
+        max(0, binding.cur_medium - binding.base_medium),
+        max(0, binding.cur_hard - binding.base_hard),
+    )
+
+
+def leetcode_score(e: int, m: int, h: int, mode: bool) -> float:
+    """简单 2 分 / 中等 4 分 / 困难 8 分；困难模式减半"""
+    score = e * 2 + m * 4 + h * 8
+    return score / 2 if mode else float(score)
+
+
+def _leetcode_me_payload(binding) -> dict:
+    e, m, h = leetcode_inc(binding)
+    return {
+        "bound": True,
+        "leetcode_username": binding.leetcode_username,
+        "difficulty_mode": bool(binding.difficulty_mode),
+        "base": {"easy": binding.base_easy, "medium": binding.base_medium, "hard": binding.base_hard},
+        "cur": {"easy": binding.cur_easy, "medium": binding.cur_medium, "hard": binding.cur_hard},
+        "inc": {"easy": e, "medium": m, "hard": h},
+        "total_inc": e + m + h,
+        "score": leetcode_score(e, m, h, bool(binding.difficulty_mode)),
+        "updated_at": binding.updated_at,
+        "leetcode_ok": True,
+    }
+
+
+@app.get("/api/leetcode/me", response_model=LeetcodeMeResponse, tags=["LeetCode"])
+def leetcode_me(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    """获取当前用户的 LeetCode 绑定与刷题增量（实时同步）"""
+    payload = decode_access_token(token)
+    if payload is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
+    try:
+        user_id = int(payload.get("sub"))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
+    binding = db.query(LeetcodeBinding).filter(LeetcodeBinding.user_id == user_id).first()
+    if not binding:
+        return LeetcodeMeResponse(bound=False)
+    try:
+        prog = fetch_leetcode_progress(binding.leetcode_username)
+        if prog is not None:
+            binding.cur_easy, binding.cur_medium, binding.cur_hard = prog
+            db.commit()
+    except Exception:
+        pass
+    return LeetcodeMeResponse(**_leetcode_me_payload(binding))
+
+
+@app.put("/api/leetcode/me", response_model=LeetcodeMeResponse, tags=["LeetCode"])
+def leetcode_bind(
+    req: UpdateLeetcodeRequest,
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+):
+    """绑定/改绑 LeetCode 账号（绑定时刻为 8.13 起算基线）"""
+    payload = decode_access_token(token)
+    if payload is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
+    try:
+        user_id = int(payload.get("sub"))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
+    username = req.leetcode_username.strip()
+    if not username:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="用户名不能为空")
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+", username):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="用户名无效，仅支持字母、数字、下划线等字符")
+    try:
+        prog = fetch_leetcode_progress(username)
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="无法连接 LeetCode，请稍后重试")
+    if prog is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="LeetCode 用户不存在")
+    existing = db.query(LeetcodeBinding).filter(
+        LeetcodeBinding.leetcode_username == username,
+        LeetcodeBinding.user_id != user_id,
+    ).first()
+    if existing:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="该 LeetCode 账号已被其他用户绑定")
+    binding = db.query(LeetcodeBinding).filter(LeetcodeBinding.user_id == user_id).first()
+    if binding:
+        binding.leetcode_username = username
+    else:
+        binding = LeetcodeBinding(user_id=user_id, leetcode_username=username)
+        db.add(binding)
+    binding.base_easy, binding.base_medium, binding.base_hard = prog
+    binding.cur_easy, binding.cur_medium, binding.cur_hard = prog
+    db.commit()
+    db.refresh(binding)
+    return LeetcodeMeResponse(**_leetcode_me_payload(binding))
+
+
+@app.delete("/api/leetcode/me", response_model=MessageResponse, tags=["LeetCode"])
+def leetcode_unbind(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    """解绑 LeetCode 账号"""
+    payload = decode_access_token(token)
+    if payload is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
+    try:
+        user_id = int(payload.get("sub"))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
+    binding = db.query(LeetcodeBinding).filter(LeetcodeBinding.user_id == user_id).first()
+    if binding:
+        db.delete(binding)
+        db.commit()
+    return MessageResponse(message="已解绑")
+
+
+@app.put("/api/leetcode/me/mode", response_model=LeetcodeMeResponse, tags=["LeetCode"])
+def leetcode_mode(
+    req: UpdateLeetcodeModeRequest,
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+):
+    """切换困难模式（得分减半）"""
+    payload = decode_access_token(token)
+    if payload is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
+    try:
+        user_id = int(payload.get("sub"))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
+    binding = db.query(LeetcodeBinding).filter(LeetcodeBinding.user_id == user_id).first()
+    if not binding:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="尚未绑定 LeetCode 账号")
+    binding.difficulty_mode = req.difficulty_mode
+    db.commit()
+    db.refresh(binding)
+    return LeetcodeMeResponse(**_leetcode_me_payload(binding))
+
+
+@app.get("/api/leetcode/leaderboard", response_model=LeetcodeBoardResponse, tags=["LeetCode"])
+def leetcode_leaderboard(db: Session = Depends(get_db)):
+    """公开榜单：从 8.13 起的刷题增量，按得分排序（缓存数据，不实时同步）"""
+    rows = (
+        db.query(LeetcodeBinding)
+        .options(joinedload(LeetcodeBinding.user))
+        .order_by(LeetcodeBinding.created_at.asc())
+        .all()
+    )
+    users = []
+    for b in rows:
+        e, m, h = leetcode_inc(b)
+        users.append({
+            "user_id": b.user_id,
+            "nickname": b.user.nickname if b.user else None,
+            "username": b.user.username if b.user else "已注销",
+            "leetcode_username": b.leetcode_username,
+            "difficulty_mode": bool(b.difficulty_mode),
+            "easy": e,
+            "medium": m,
+            "hard": h,
+            "total": e + m + h,
+            "score": leetcode_score(e, m, h, bool(b.difficulty_mode)),
+            "updated_at": b.updated_at,
+        })
+    users.sort(key=lambda u: (-u["score"], -u["total"], u["user_id"]))
+    return LeetcodeBoardResponse(users=users, generated_at=datetime.now(timezone.utc))
+
+
+@app.post("/api/leetcode/refresh", response_model=LeetcodeRefreshResponse, tags=["LeetCode"])
+def leetcode_refresh(db: Session = Depends(get_db)):
+    """同步所有绑定用户的 LeetCode 数据（失败者保留旧值）"""
+    bindings = db.query(LeetcodeBinding).all()
+    synced = 0
+    for b in bindings:
+        try:
+            prog = fetch_leetcode_progress(b.leetcode_username)
+        except Exception:
+            continue
+        if prog is None:
+            continue
+        b.cur_easy, b.cur_medium, b.cur_hard = prog
+        synced += 1
+    db.commit()
+    return LeetcodeRefreshResponse(synced=synced, total=len(bindings))
 
 
 # ============================================

@@ -1,0 +1,373 @@
+.lc-page {
+  min-height: 100vh;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.lc-page .navbar {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.lc-main {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 100px 20px 60px;
+}
+
+.lc-header {
+  margin-bottom: 24px;
+}
+
+.lc-title {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.lc-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.lc-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.lc-refresh-btn {
+  padding: 8px 20px;
+  font-size: 13px;
+}
+
+/* 置顶"我的排名"卡片（第一名上方） */
+.lc-mine {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  border-radius: 14px;
+  background: var(--bg-card);
+  border: 1px dashed var(--border-color);
+  font-size: 13px;
+}
+
+.lc-mine-ranked {
+  border: 1px solid var(--accent-1);
+  border-left: 4px solid var(--accent-1);
+  background: var(--accent-1-soft);
+  box-shadow: 0 4px 16px var(--accent-1-soft);
+}
+
+.lc-mine-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+.lc-mine-rank {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--accent-1);
+}
+
+.lc-mine-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.lc-mine-stats {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.lc-mine-score {
+  font-weight: 700;
+  color: var(--accent-1);
+  margin-left: auto;
+}
+
+.lc-mine-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.lc-mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.lc-unbind-btn {
+  border: none;
+  background: transparent;
+  color: var(--danger);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.lc-unbind-btn:hover {
+  background: var(--danger-soft);
+}
+
+/* 解绑二次确认 */
+.lc-unbind-confirm {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--danger-border);
+  border-radius: 10px;
+  background: var(--danger-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lc-unbind-tip {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.lc-unbind-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.lc-unbind-confirm-btn {
+  padding: 8px 18px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.lc-unbind-cancel {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 8px 12px;
+}
+
+/* 绑定表单 */
+.lc-bind-box {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lc-bind-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.lc-bind-error {
+  font-size: 12px;
+  color: var(--danger);
+}
+
+.lc-bind-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.lc-bind-row {
+  display: flex;
+  gap: 10px;
+  max-width: 420px;
+}
+
+.lc-bind-input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.lc-bind-input:focus {
+  border-color: var(--accent-1);
+}
+
+.lc-bind-btn {
+  padding: 8px 18px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.lc-updated {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.lc-bind-link {
+  font-size: 13px;
+  color: var(--accent-1);
+  text-decoration: none;
+}
+
+.lc-loading,
+.lc-empty {
+  text-align: center;
+  padding: 60px 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.lc-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.lc-board {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.lc-row {
+  display: grid;
+  grid-template-columns: 64px 1.6fr repeat(4, 72px) 90px;
+  align-items: center;
+  padding: 12px 18px;
+  gap: 8px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
+  font-size: 14px;
+  animation: lc-row-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  position: relative;
+}
+
+@keyframes lc-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.lc-row-self {
+  background: var(--accent-1-soft);
+  border-left: 3px solid var(--accent-1);
+  z-index: 5;
+}
+
+.lc-row:last-child {
+  border-bottom: none;
+}
+
+.lc-row-head {
+  background: var(--bg-card-strong, var(--bg-card));
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.lc-row-hard {
+  background: var(--accent-1-soft);
+}
+
+.lc-col-rank {
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.lc-rank-top {
+  color: var(--accent-1);
+}
+
+.lc-col-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.lc-nickname {
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lc-username {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.lc-hard-tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: var(--white);
+  cursor: help;
+  white-space: nowrap;
+}
+
+.lc-col-stat {
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.lc-col-score {
+  text-align: right;
+  font-weight: 700;
+  color: var(--accent-1);
+}
+
+@media (max-width: 720px) {
+  .lc-row {
+    grid-template-columns: 40px 1.4fr repeat(4, 44px) 64px;
+    padding: 10px 12px;
+    font-size: 12px;
+    gap: 6px;
+  }
+
+  .lc-username {
+    display: none;
+  }
+}

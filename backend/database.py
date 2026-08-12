@@ -171,6 +171,27 @@ def run_migrations():
             if "contact_items" not in scols:
                 conn.execute(text("ALTER TABLE site_settings ADD COLUMN contact_items JSON NULL"))
                 conn.commit()
+        # leetcode_bindings 表（新表；create_all 已建时 IF NOT EXISTS 无副作用）
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS leetcode_bindings (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                leetcode_username VARCHAR(100) NOT NULL,
+                difficulty_mode TINYINT(1) NOT NULL DEFAULT 0,
+                base_easy INT NOT NULL DEFAULT 0,
+                base_medium INT NOT NULL DEFAULT 0,
+                base_hard INT NOT NULL DEFAULT 0,
+                cur_easy INT NOT NULL DEFAULT 0,
+                cur_medium INT NOT NULL DEFAULT 0,
+                cur_hard INT NOT NULL DEFAULT 0,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY uq_leetcode_user (user_id),
+                UNIQUE KEY uq_leetcode_username (leetcode_username),
+                CONSTRAINT fk_leetcode_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """))
+        conn.commit()
 
     # 为所有没有专属邀请码的已存在用户分配一个邀请码
     from sqlalchemy.orm import Session

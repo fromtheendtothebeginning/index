@@ -227,6 +227,18 @@ function ProfileEdit() {
 
           {saved && <div className="profile-success">&#10003; 保存成功</div>}
 
+          <hr className="profile-divider" />
+
+          <div className="profile-leetcode">
+            <div className="profile-leetcode-head">
+              <h3 className="profile-leetcode-title">LeetCode 刷题</h3>
+              <Link to="/leetcode" className="profile-leetcode-link">去榜单绑定与查看 &#8250;</Link>
+            </div>
+            <p className="profile-field-hint">LeetCode 绑定、刷题量与困难模式设置已移至榜单页（导航栏「榜单」）</p>
+          </div>
+
+          <hr className="profile-divider" />
+
           {user.role === 'admin' && (
             <>
               <hr className="profile-divider" />

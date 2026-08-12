@@ -487,3 +487,56 @@ class UpdateSiteSettingRequest(BaseModel):
     email: Optional[str] = Field(None, max_length=200, description="联系邮箱")
     github_url: Optional[str] = Field(None, max_length=500, description="GitHub 链接")
     contact_items: Optional[list[ContactItem]] = Field(None, description="自定义联系项（与邮箱/GitHub 并列）")
+
+
+# ── LeetCode ──
+
+class UpdateLeetcodeRequest(BaseModel):
+    leetcode_username: str = Field(..., min_length=1, max_length=100, description="LeetCode 用户名（leetcode.cn）")
+
+
+class UpdateLeetcodeModeRequest(BaseModel):
+    difficulty_mode: bool = Field(..., description="是否开启困难模式（得分减半）")
+
+
+class LeetcodeProgress(BaseModel):
+    easy: int = 0
+    medium: int = 0
+    hard: int = 0
+
+
+class LeetcodeMeResponse(BaseModel):
+    bound: bool = False
+    leetcode_username: Optional[str] = None
+    difficulty_mode: bool = False
+    base: LeetcodeProgress = Field(default_factory=LeetcodeProgress)
+    cur: LeetcodeProgress = Field(default_factory=LeetcodeProgress)
+    inc: LeetcodeProgress = Field(default_factory=LeetcodeProgress)
+    total_inc: int = 0
+    score: float = 0
+    updated_at: Optional[datetime] = None
+    leetcode_ok: bool = False
+
+
+class LeetcodeBoardUser(BaseModel):
+    user_id: int
+    nickname: Optional[str] = None
+    username: str
+    leetcode_username: str
+    difficulty_mode: bool
+    easy: int
+    medium: int
+    hard: int
+    total: int
+    score: float
+    updated_at: datetime
+
+
+class LeetcodeBoardResponse(BaseModel):
+    users: list[LeetcodeBoardUser] = []
+    generated_at: datetime
+
+
+class LeetcodeRefreshResponse(BaseModel):
+    synced: int = 0
+    total: int = 0
