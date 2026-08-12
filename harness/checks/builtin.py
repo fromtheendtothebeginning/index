@@ -1,8 +1,11 @@
 # checks/builtin.py — 内置检查：通用 + anticraft 后端集成
 from __future__ import annotations
 
+import ipaddress
 import os
+import socket
 import sys
+import urllib.parse
 import urllib.request
 
 from ..core.types import CheckResult, RiskLevel
@@ -32,8 +35,19 @@ def env_presence(*keys: str) -> CheckResult:
 
 
 def http_health(url: str, timeout: float = 5.0) -> CheckResult:
+    """HTTP 健康检查（仅限本地/私网目标）。
+
+    协议白名单 http/https，目标解析后仅允许回环/私网 IP（本工具专用于本机服务
+    健康检查），阻断公网与链路本地（云元数据）等外部目标。
+    """
     name = f"http:{url}"
     try:
+        parsed = urllib.parse.urlparse(url)
+        if parsed.scheme not in ("http", "https") or not parsed.hostname:
+            return CheckResult(name, False, f"非法 URL 协议: {parsed.scheme or '(空)'}", RiskLevel.CRITICAL)
+        ip = ipaddress.ip_address(socket.gethostbyname(parsed.hostname))
+        if not (ip.is_loopback or ip.is_private):
+            return CheckResult(name, False, f"目标非本地/私网地址: {ip}", RiskLevel.CRITICAL)
         with urllib.request.urlopen(url, timeout=timeout) as resp:
             ok = 200 <= resp.status < 300
             return CheckResult(name, ok, f"HTTP {resp.status}")
