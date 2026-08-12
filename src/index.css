@@ -126,6 +126,7 @@
 
 html {
   scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -151,4 +152,9 @@ a {
 img {
   max-width: 100%;
   display: block;
+}
+
+/* 移动端点击优化：按钮不触发双击缩放 */
+button {
+  touch-action: manipulation;
 }

@@ -133,7 +133,8 @@ function renderTable(lines) {
     `<th${aligns[i] ? ` style="text-align:${aligns[i]}"` : ''}>${renderInline(c)}</th>`
   ).join('')
 
-  return `<table><thead><tr>${ths}</tr></thead><tbody>${rowsHtml}</tbody></table>`
+  // 外层包横向滚动容器（窄屏表格可滚动，保持表格布局不被破坏）
+  return `<div class="markdown-table-wrap"><table><thead><tr>${ths}</tr></thead><tbody>${rowsHtml}</tbody></table></div>`
 }
 
 export function renderMd(text) {

@@ -42,6 +42,9 @@ yarn-error.log*
 # 安全扫描工具输出
 .mimosa/
 
+# ZCode 工具缓存
+.zcode/
+
 deploy.bat
 deploy-backend.bat
 check_db.sh

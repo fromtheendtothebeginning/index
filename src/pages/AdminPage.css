@@ -527,6 +527,17 @@
   .admin-section {
     padding: 16px;
   }
+
+  /* 窄屏表格横向滚动（桌面端保持 overflow-x: visible，不裁剪分类下拉菜单） */
+  .admin-table {
+    overflow-x: auto;
+  }
+
+  /* 触控热区：扩大可点区域，负 margin 抵消 padding，视觉位置不变 */
+  .admin-back {
+    padding: 6px 4px;
+    margin: -6px -4px;
+  }
 }
 
 /* 评论项：内容左 + 删除按钮右侧（布局规则已合并到上方 .admin-comment-item） */

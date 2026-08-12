@@ -520,6 +520,38 @@
   .auth-form-card {
     max-width: 100%;
   }
+
+  /* 移动端品牌区只保留图标，隐藏标题/描述/引言 */
+  .auth-brand-title,
+  .auth-brand-desc,
+  .auth-brand-quote {
+    display: none;
+  }
+
+  /* 返回按钮移到左上角，醒目可见（原位置在品牌区底部太隐蔽） */
+  .auth-back-link {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 10;
+    padding: 8px 14px;
+    margin: 0;
+    border-radius: 999px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    font-size: 14px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  }
+  .forgot-password-link {
+    padding: 6px 4px;
+    margin: -6px -4px;
+  }
+  .auth-switch-btn {
+    padding: 6px 4px;
+    margin: -6px -4px;
+    margin-left: 0;
+  }
 }
 
 @media (max-width: 480px) {

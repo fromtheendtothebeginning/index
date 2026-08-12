@@ -616,6 +616,15 @@
   background: rgba(0, 0, 0, 0.02);
 }
 
+/* 表格横向滚动容器（窄屏下保持表格布局，仅外层滚动；与 Blog.css 同步维护） */
+.markdown-table-wrap {
+  overflow-x: auto;
+}
+
+.markdown-table-wrap table {
+  width: 100%;
+}
+
 /* ---------- 错误提示 ---------- */
 .form-server-error {
   padding: 10px 14px;
@@ -648,6 +657,17 @@
 
   .project-blog-item {
     flex-wrap: wrap;
+  }
+
+  /* 触控热区：扩大可点区域，负 margin 抵消 padding，视觉位置不变 */
+  .blog-back-link {
+    padding: 6px 4px;
+    margin: -6px -4px;
+    margin-bottom: 32px;
+  }
+  .comment-login-hint a {
+    padding: 6px 4px;
+    margin: 0 -4px;
   }
 }
 

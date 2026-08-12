@@ -1,6 +1,9 @@
+import { useState } from 'react'
+
 /**
  * 统一分类/选项下拉选择器（悬停展开 + 动画，复用 App.css 的 .nav-dropdown / .category-btn 体系）。
  * 所有分类/选项选择场景统一使用本组件，避免各处手写重复结构。
+ * 移动端（≤768px）改为点击展开，选项列表静态流入文档流（.mobile-open 控制显隐）。
  *
  * @param {string} value - 当前选中值（显示在按钮上）
  * @param {function(string)} onChange - 选择回调（参数为选项 value，清空时传 ''）
@@ -18,14 +21,23 @@
  *   />
  */
 function CategoryDropdown({ value, onChange, options = [], placeholder = '未分类', size = 'default', hideClear = false }) {
+  // 移动端选项列表开合
+  const [open, setOpen] = useState(false)
+
   const pick = (v) => (e) => {
     e.preventDefault()
     e.stopPropagation()
     onChange(v)
+    setOpen(false)
   }
+
+  const toggle = () => {
+    if (window.innerWidth < 768) setOpen(o => !o)
+  }
+
   return (
-    <div className="nav-dropdown" onClick={e => e.stopPropagation()}>
-      <button type="button" className={`category-btn${size === 'sm' ? ' category-btn-sm' : ''}`}>
+    <div className={`nav-dropdown ${open ? 'mobile-open' : ''}`} onClick={e => e.stopPropagation()}>
+      <button type="button" className={`category-btn${size === 'sm' ? ' category-btn-sm' : ''}`} onClick={toggle}>
         {options.find(o => o.value === value)?.label || value || placeholder}
         <span className="arrow-down">▾</span>
       </button>

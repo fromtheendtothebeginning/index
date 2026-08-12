@@ -277,6 +277,14 @@
 }
 
 /* ── 响应式 ── */
+@media (max-width: 768px) {
+  /* 触控热区：扩大可点区域，负 margin 抵消 padding，视觉位置不变 */
+  .profile-back {
+    padding: 6px 4px;
+    margin: -6px -4px;
+  }
+}
+
 @media (max-width: 480px) {
   .profile-container {
     margin: 12px;

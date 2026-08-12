@@ -30,7 +30,7 @@ function CommentCard({
   return (
     <div
       className={`comment-item ${chainDepth !== null ? 'comment-chain-item' : ''}`}
-      style={chainDepth !== null ? { marginLeft: chainDepth * 28 } : undefined}
+      style={chainDepth !== null ? { marginLeft: chainDepth * (window.innerWidth < 768 ? 14 : 28) } : undefined}
     >
       <div className="comment-avatar">
         {c.user?.avatar_url ? (

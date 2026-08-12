@@ -514,6 +514,15 @@
   background: rgba(0, 0, 0, 0.02);
 }
 
+/* 表格横向滚动容器（窄屏下保持表格布局，仅外层滚动） */
+.markdown-table-wrap {
+  overflow-x: auto;
+}
+
+.markdown-table-wrap table {
+  width: 100%;
+}
+
 /* ---------- 编辑器 ---------- */
 .blog-editor {
   max-width: 960px;
@@ -662,6 +671,19 @@
   .blog-header {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .blog-detail-title {
+    font-size: 24px;
+  }
+
+  .blog-detail-meta {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .editor-toolbar {
+    flex-wrap: wrap;
   }
 
   .editor-split {
@@ -1022,10 +1044,27 @@
 
 @media (max-width: 768px) {
   .blog-interaction {
-    gap: 16px;
+    gap: 12px;
+  }
+  .comment-action-row {
+    gap: 10px;
   }
   .comment-delete-btn {
     opacity: 1;
+  }
+  /* 触控热区：扩大可点区域，负 margin 抵消 padding，视觉位置不变 */
+  .blog-back-link {
+    padding: 6px 4px;
+    margin: -6px -4px;
+    margin-bottom: 32px;
+  }
+  .comment-count-link {
+    padding: 6px 4px;
+    margin: -6px -4px;
+  }
+  .comment-login-hint a {
+    padding: 6px 4px;
+    margin: 0 -4px;
   }
 }
 
@@ -1468,5 +1507,8 @@
 
   .blog-list-item-title {
     flex-basis: 100%;
+    /* 触控热区：扩大可点区域，负 margin 抵消 padding，视觉位置不变 */
+    padding: 6px 0;
+    margin: -6px 0;
   }
 }
