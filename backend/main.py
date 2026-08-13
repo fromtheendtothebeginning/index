@@ -1704,7 +1704,7 @@ def leetcode_unbind(token: str = Depends(oauth2_scheme), db: Session = Depends(g
 
 
 def _enter_boost(binding) -> None:
-    """进入激励模式：备份当前基线并清零刷题量（退出时恢复）"""
+    """进入激励模式：备份当前基线并清零刷题量（退出时恢复），并关闭困难/严肃（互斥）"""
     if binding.backup_base_easy is None:
         binding.backup_base_easy = binding.base_easy
         binding.backup_base_medium = binding.base_medium
@@ -1713,6 +1713,8 @@ def _enter_boost(binding) -> None:
     binding.base_medium = binding.cur_medium
     binding.base_hard = binding.cur_hard
     binding.boost_mode = True
+    binding.difficulty_mode = False
+    binding.serious_mode = False
 
 
 def _exit_boost(binding) -> None:

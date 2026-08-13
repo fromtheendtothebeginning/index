@@ -32,6 +32,7 @@ function LeetCodePage() {
   const [unbinding, setUnbinding] = useState(false)
   const [boostConfirm, setBoostConfirm] = useState(false)
   const [boostExitConfirm, setBoostExitConfirm] = useState(false)
+  const [boostExitTarget, setBoostExitTarget] = useState(null)
 
 const CACHE_KEY = 'lc_me_cache'
 
@@ -182,7 +183,14 @@ useEffect(() => {
               <input
                 type="checkbox"
                 checked={!!me.difficulty_mode}
-                onChange={e => handleMode({ difficulty_mode: e.target.checked })}
+                onChange={e => {
+                  if (e.target.checked && me.boost_mode) {
+                    setBoostExitTarget('difficulty')
+                    setBoostExitConfirm(true)
+                    return
+                  }
+                  handleMode({ difficulty_mode: e.target.checked })
+                }}
               />
               困难模式
             </label>
@@ -190,7 +198,14 @@ useEffect(() => {
               <input
                 type="checkbox"
                 checked={!!me.serious_mode}
-                onChange={e => handleMode({ serious_mode: e.target.checked })}
+                onChange={e => {
+                  if (e.target.checked && me.boost_mode) {
+                    setBoostExitTarget('serious')
+                    setBoostExitConfirm(true)
+                    return
+                  }
+                  handleMode({ serious_mode: e.target.checked })
+                }}
               />
               严肃模式
             </label>
@@ -333,14 +348,20 @@ useEffect(() => {
       <Modal
         open={boostExitConfirm}
         title="退出激励模式"
-        message="退出激励模式后将恢复之前备份的刷题量（含激励期间新刷的题一并算回），并恢复普通计分（简单 2 / 中等 4 / 困难 8）。确定退出？"
+        message={boostExitTarget
+          ? `激励模式与${boostExitTarget === 'difficulty' ? '困难模式' : '严肃模式'}互斥。退出激励模式后将恢复之前备份的刷题量（含激励期间新刷的题一并算回），并开启${boostExitTarget === 'difficulty' ? '困难模式（得分减半）' : '严肃模式（简单题不计分）'}。确定？`
+          : '退出激励模式后将恢复之前备份的刷题量（含激励期间新刷的题一并算回），并恢复普通计分（简单 2 / 中等 4 / 困难 8）。确定退出？'}
         confirmText="确认退出"
         danger
         onConfirm={() => {
           setBoostExitConfirm(false)
-          handleMode({ boost_mode: false })
+          const target = boostExitTarget
+          setBoostExitTarget(null)
+          if (target === 'difficulty') handleMode({ difficulty_mode: true })
+          else if (target === 'serious') handleMode({ serious_mode: true })
+          else handleMode({ boost_mode: false })
         }}
-        onCancel={() => setBoostExitConfirm(false)}
+        onCancel={() => { setBoostExitConfirm(false); setBoostExitTarget(null) }}
       />
     </div>
   )
