@@ -171,7 +171,7 @@ useEffect(() => {
               <span className="lc-serious-tag" title="严肃模式下简单题不计入分数">严肃模式</span>
             )}
             {me.boost_mode && (
-              <span className="lc-boost-tag" title="激励模式：初始 -100 分，3/6/9 计分">激励模式</span>
+              <span className={`lc-boost-tag ${me.score > 0 ? 'lc-boost-tag-gold' : ''}`} title="激励模式：初始 -100 分，3/6/9 计分">激励模式</span>
             )}
           </span>
           <span className="lc-mine-stats">
@@ -319,7 +319,7 @@ useEffect(() => {
                     <span className="lc-serious-tag" title="严肃模式下简单题不计入分数">严肃模式</span>
                   )}
                   {u.boost_mode && (
-                    <span className="lc-boost-tag" title="激励模式：初始 -100 分，3/6/9 计分">激励模式</span>
+                    <span className={`lc-boost-tag ${u.score > 0 ? 'lc-boost-tag-gold' : ''}`} title="激励模式：初始 -100 分，3/6/9 计分">激励模式</span>
                   )}
                 </span>
                 <span className="lc-col-stat">{u.easy}</span>

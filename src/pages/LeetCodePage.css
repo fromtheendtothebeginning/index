@@ -401,6 +401,48 @@
   white-space: nowrap;
 }
 
+.lc-boost-tag-gold {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(
+    135deg,
+    #f9e08a 0%,
+    #f5c53a 35%,
+    #c9860b 55%,
+    #f0b429 75%,
+    #a9760a 100%
+  );
+  color: #4a3300;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.15),
+    0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.lc-boost-tag-gold::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -45%;
+  width: 35%;
+  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.75), transparent);
+  transform: skewX(-20deg);
+  animation: lc-shimmer 10s ease-in-out infinite;
+}
+
+@keyframes lc-shimmer {
+  0% {
+    left: -45%;
+  }
+  12% {
+    left: 110%;
+  }
+  100% {
+    left: 110%;
+  }
+}
+
 .lc-col-stat {
   text-align: center;
   color: var(--text-secondary);
