@@ -192,6 +192,12 @@ def run_migrations():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """))
         conn.commit()
+        lc_cols = {row[0] for row in conn.execute(text(
+            "SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'leetcode_bindings'"
+        ))}
+        if "serious_mode" not in lc_cols:
+            conn.execute(text("ALTER TABLE leetcode_bindings ADD COLUMN serious_mode TINYINT(1) NOT NULL DEFAULT 0"))
+            conn.commit()
 
     # 为所有没有专属邀请码的已存在用户分配一个邀请码
     from sqlalchemy.orm import Session

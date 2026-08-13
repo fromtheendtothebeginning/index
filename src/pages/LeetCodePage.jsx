@@ -99,12 +99,12 @@ useEffect(() => {
     finally { setUnbinding(false) }
   }
 
-  const handleMode = async (mode) => {
+  const handleMode = async (patch) => {
     try {
       const res = await fetch('/api/leetcode/me/mode', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...lcHeaders() },
-        body: JSON.stringify({ difficulty_mode: mode }),
+        body: JSON.stringify(patch),
       })
       const d = await res.json()
       if (res.ok && d) { setMe(d); load() }
@@ -173,9 +173,17 @@ useEffect(() => {
               <input
                 type="checkbox"
                 checked={!!me.difficulty_mode}
-                onChange={e => handleMode(e.target.checked)}
+                onChange={e => handleMode({ difficulty_mode: e.target.checked })}
               />
               困难模式
+            </label>
+            <label className="lc-mode-toggle" title="严肃模式下简单题不计入分数">
+              <input
+                type="checkbox"
+                checked={!!me.serious_mode}
+                onChange={e => handleMode({ serious_mode: e.target.checked })}
+              />
+              严肃模式
             </label>
             <button className="lc-unbind-btn" onClick={() => setUnbindOpen(true)}>解绑</button>
           </div>
@@ -218,7 +226,7 @@ useEffect(() => {
         <div className="lc-header">
           <h1 className="lc-title">LeetCode 刷题榜</h1>
           <p className="lc-subtitle">
-            绑定 LeetCode 账号后的刷题量 · 简单 2 分 / 中等 4 分 / 困难 8 分 · 困难模式得分减半
+            绑定 LeetCode 账号后的刷题量 · 简单 2 分 / 中等 4 分 / 困难 8 分 · 困难模式得分减半 · 严肃模式简单题不计分
           </p>
         </div>
 

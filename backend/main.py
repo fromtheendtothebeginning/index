@@ -1591,10 +1591,11 @@ def leetcode_inc(binding) -> tuple:
     )
 
 
-def leetcode_score(e: int, m: int, h: int, mode: bool) -> float:
-    """简单 2 分 / 中等 4 分 / 困难 8 分；困难模式减半"""
-    score = e * 2 + m * 4 + h * 8
-    return score / 2 if mode else float(score)
+def leetcode_score(e: int, m: int, h: int, difficulty_mode: bool, serious_mode: bool = False) -> float:
+    """简单 2 分 / 中等 4 分 / 困难 8 分；严肃模式简单题不计分；困难模式减半"""
+    e_score = 0 if serious_mode else e * 2
+    score = e_score + m * 4 + h * 8
+    return score / 2 if difficulty_mode else float(score)
 
 
 def _leetcode_me_payload(binding) -> dict:
@@ -1603,11 +1604,12 @@ def _leetcode_me_payload(binding) -> dict:
         "bound": True,
         "leetcode_username": binding.leetcode_username,
         "difficulty_mode": bool(binding.difficulty_mode),
+        "serious_mode": bool(binding.serious_mode),
         "base": {"easy": binding.base_easy, "medium": binding.base_medium, "hard": binding.base_hard},
         "cur": {"easy": binding.cur_easy, "medium": binding.cur_medium, "hard": binding.cur_hard},
         "inc": {"easy": e, "medium": m, "hard": h},
         "total_inc": e + m + h,
-        "score": leetcode_score(e, m, h, bool(binding.difficulty_mode)),
+        "score": leetcode_score(e, m, h, bool(binding.difficulty_mode), bool(binding.serious_mode)),
         "updated_at": binding.updated_at,
         "leetcode_ok": True,
     }
@@ -1714,7 +1716,10 @@ def leetcode_mode(
     binding = db.query(LeetcodeBinding).filter(LeetcodeBinding.user_id == user_id).first()
     if not binding:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="尚未绑定 LeetCode 账号")
-    binding.difficulty_mode = req.difficulty_mode
+    if req.difficulty_mode is not None:
+        binding.difficulty_mode = req.difficulty_mode
+    if req.serious_mode is not None:
+        binding.serious_mode = req.serious_mode
     db.commit()
     db.refresh(binding)
     return LeetcodeMeResponse(**_leetcode_me_payload(binding))
@@ -1743,7 +1748,7 @@ def leetcode_leaderboard(db: Session = Depends(get_db)):
             "medium": m,
             "hard": h,
             "total": e + m + h,
-            "score": leetcode_score(e, m, h, bool(b.difficulty_mode)),
+            "score": leetcode_score(e, m, h, bool(b.difficulty_mode), bool(b.serious_mode)),
             "updated_at": b.updated_at,
         })
     users.sort(key=lambda u: (-u["score"], -u["total"], u["user_id"]))

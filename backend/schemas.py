@@ -496,7 +496,8 @@ class UpdateLeetcodeRequest(BaseModel):
 
 
 class UpdateLeetcodeModeRequest(BaseModel):
-    difficulty_mode: bool = Field(..., description="是否开启困难模式（得分减半）")
+    difficulty_mode: Optional[bool] = Field(None, description="是否开启困难模式（得分减半）")
+    serious_mode: Optional[bool] = Field(None, description="是否开启严肃模式（简单题不计分）")
 
 
 class LeetcodeProgress(BaseModel):
@@ -509,6 +510,7 @@ class LeetcodeMeResponse(BaseModel):
     bound: bool = False
     leetcode_username: Optional[str] = None
     difficulty_mode: bool = False
+    serious_mode: bool = False
     base: LeetcodeProgress = Field(default_factory=LeetcodeProgress)
     cur: LeetcodeProgress = Field(default_factory=LeetcodeProgress)
     inc: LeetcodeProgress = Field(default_factory=LeetcodeProgress)

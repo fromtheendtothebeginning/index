@@ -202,6 +202,7 @@ class LeetcodeBinding(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True, comment="绑定用户 ID")
     leetcode_username = Column(String(100), unique=True, nullable=False, index=True, comment="LeetCode 用户名（leetcode.cn）")
     difficulty_mode = Column(Boolean, default=False, nullable=False, comment="困难模式：得分减半")
+    serious_mode = Column(Boolean, default=False, nullable=False, server_default="0", comment="严肃模式：简单题不计分")
     base_easy = Column(Integer, default=0, nullable=False, comment="8.13 基线：简单题数")
     base_medium = Column(Integer, default=0, nullable=False, comment="8.13 基线：中等题数")
     base_hard = Column(Integer, default=0, nullable=False, comment="8.13 基线：困难题数")
