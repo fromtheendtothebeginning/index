@@ -5,6 +5,7 @@ import re
 import secrets
 import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -1748,21 +1749,38 @@ def leetcode_leaderboard(db: Session = Depends(get_db)):
     return LeetcodeBoardResponse(users=users, generated_at=datetime.now(timezone.utc))
 
 
+def _sync_leetcode_one(bid: int, username: str) -> bool:
+    """同步单个绑定（独立 Session，供并发刷新使用）"""
+    from database import SessionLocal
+    db = SessionLocal()
+    try:
+        binding = db.query(LeetcodeBinding).filter(LeetcodeBinding.id == bid).first()
+        if not binding:
+            return False
+        prog = fetch_leetcode_progress(username)
+        if prog is None:
+            return False
+        binding.cur_easy, binding.cur_medium, binding.cur_hard = prog
+        db.commit()
+        return True
+    except Exception:
+        db.rollback()
+        return False
+    finally:
+        db.close()
+
+
 @app.post("/api/leetcode/refresh", response_model=LeetcodeRefreshResponse, tags=["LeetCode"])
 def leetcode_refresh(db: Session = Depends(get_db)):
-    """同步所有绑定用户的 LeetCode 数据（失败者保留旧值）"""
+    """同步所有绑定用户的 LeetCode 数据（并发重新请求，失败者保留旧值）"""
     bindings = db.query(LeetcodeBinding).all()
+    if not bindings:
+        return LeetcodeRefreshResponse(synced=0, total=0)
+    tasks = [(b.id, b.leetcode_username) for b in bindings]
     synced = 0
-    for b in bindings:
-        try:
-            prog = fetch_leetcode_progress(b.leetcode_username)
-        except Exception:
-            continue
-        if prog is None:
-            continue
-        b.cur_easy, b.cur_medium, b.cur_hard = prog
-        synced += 1
-    db.commit()
+    with ThreadPoolExecutor(max_workers=5) as pool:
+        results = pool.map(lambda t: _sync_leetcode_one(*t), tasks)
+        synced = sum(1 for ok in results if ok)
     return LeetcodeRefreshResponse(synced=synced, total=len(bindings))
 
 
