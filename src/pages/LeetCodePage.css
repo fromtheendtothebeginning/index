@@ -310,10 +310,43 @@
 .lc-col-rank {
   font-weight: 700;
   color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.lc-rank-top {
-  color: var(--accent-1);
+.lc-medal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lc-medal-gold {
+  color: #f5b301;
+}
+
+.lc-medal-silver {
+  color: #9aa5b1;
+}
+
+.lc-medal-bronze {
+  color: #cd7f32;
+}
+
+.lc-avatar {
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--border-color);
+}
+
+.lc-avatar-letter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--white);
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-1-light));
 }
 
 .lc-col-user {

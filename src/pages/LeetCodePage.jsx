@@ -1,7 +1,22 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import { UiIcon } from '../components/Icons'
 import './LeetCodePage.css'
+
+const MEDAL_COLORS = { 0: 'lc-medal-gold', 1: 'lc-medal-silver', 2: 'lc-medal-bronze' }
+
+const Avatar = ({ user, size = 28 }) => {
+  if (user.avatar_url) {
+    return <img src={user.avatar_url} alt="" className="lc-avatar" style={{ width: size, height: size }} />
+  }
+  const name = user.nickname || user.username || '?'
+  return (
+    <span className="lc-avatar lc-avatar-letter" style={{ width: size, height: size, fontSize: size * 0.42 }}>
+      {name.charAt(0).toUpperCase()}
+    </span>
+  )
+}
 
 function LeetCodePage() {
   const [board, setBoard] = useState(null)
@@ -142,6 +157,7 @@ useEffect(() => {
           <span className="lc-mine-label">我的排名</span>
           <span className="lc-mine-rank">#{myRank >= 0 ? myRank + 1 : '-'}</span>
           <span className="lc-mine-user">
+            <Avatar user={{ avatar_url: myRow ? myRow.avatar_url : null, nickname: myRow ? myRow.nickname : null, username: myRow ? myRow.username : null }} />
             <span className="lc-nickname">{myRow ? (myRow.nickname || myRow.username) : me.leetcode_username}</span>
             <span className="lc-username">@{me.leetcode_username}</span>
             {me.difficulty_mode && (
@@ -240,8 +256,17 @@ useEffect(() => {
                 className={`lc-row ${u.difficulty_mode ? 'lc-row-hard' : ''} ${me && me.bound && localUser && u.user_id === localUser.id ? 'lc-row-self' : ''}`}
                 style={{ animationDelay: `${i * 60}ms` }}
               >
-                <span className={`lc-col-rank ${i < 3 ? 'lc-rank-top' : ''}`}>{i + 1}</span>
+                <span className="lc-col-rank">
+                  {i < 3 ? (
+                    <span className={`lc-medal ${MEDAL_COLORS[i]}`} title={`第 ${i + 1} 名`}>
+                      <UiIcon name="medal" size={20} />
+                    </span>
+                  ) : (
+                    i + 1
+                  )}
+                </span>
                 <span className="lc-col-user">
+                  <Avatar user={u} />
                   <span className="lc-nickname">{u.nickname || u.username}</span>
                   <span className="lc-username">@{u.leetcode_username}</span>
                   {u.difficulty_mode && (

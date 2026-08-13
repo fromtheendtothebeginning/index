@@ -81,6 +81,12 @@ const UI_ICONS = {
       <polyline points="21 15 16 10 5 21" />
     </>
   ),
+  medal: (
+    <>
+      <circle cx="12" cy="8" r="7" />
+      <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" />
+    </>
+  ),
 }
 
 export function UiIcon({ name, filled = false, size = 16, className }) {

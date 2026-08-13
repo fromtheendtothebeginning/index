@@ -1736,6 +1736,7 @@ def leetcode_leaderboard(db: Session = Depends(get_db)):
             "user_id": b.user_id,
             "nickname": b.user.nickname if b.user else None,
             "username": b.user.username if b.user else "已注销",
+            "avatar_url": b.user.avatar_url if b.user else None,
             "leetcode_username": b.leetcode_username,
             "difficulty_mode": bool(b.difficulty_mode),
             "easy": e,

@@ -522,6 +522,7 @@ class LeetcodeBoardUser(BaseModel):
     user_id: int
     nickname: Optional[str] = None
     username: str
+    avatar_url: Optional[str] = None
     leetcode_username: str
     difficulty_mode: bool
     easy: int
