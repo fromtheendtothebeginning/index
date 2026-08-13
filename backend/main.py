@@ -1744,6 +1744,7 @@ def leetcode_leaderboard(db: Session = Depends(get_db)):
             "avatar_url": b.user.avatar_url if b.user else None,
             "leetcode_username": b.leetcode_username,
             "difficulty_mode": bool(b.difficulty_mode),
+            "serious_mode": bool(b.serious_mode),
             "easy": e,
             "medium": m,
             "hard": h,

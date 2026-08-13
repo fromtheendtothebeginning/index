@@ -163,6 +163,9 @@ useEffect(() => {
             {me.difficulty_mode && (
               <span className="lc-hard-tag" title="困难模式下得分减半">困难模式</span>
             )}
+            {me.serious_mode && (
+              <span className="lc-serious-tag" title="严肃模式下简单题不计入分数">严肃模式</span>
+            )}
           </span>
           <span className="lc-mine-stats">
             简单 {me.inc.easy} · 中等 {me.inc.medium} · 困难 {me.inc.hard} · 总增量 {me.total_inc}
@@ -279,6 +282,9 @@ useEffect(() => {
                   <span className="lc-username">@{u.leetcode_username}</span>
                   {u.difficulty_mode && (
                     <span className="lc-hard-tag" title="困难模式下得分减半">困难模式</span>
+                  )}
+                  {u.serious_mode && (
+                    <span className="lc-serious-tag" title="严肃模式下简单题不计入分数">严肃模式</span>
                   )}
                 </span>
                 <span className="lc-col-stat">{u.easy}</span>

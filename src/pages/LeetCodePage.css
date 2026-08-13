@@ -381,6 +381,16 @@
   white-space: nowrap;
 }
 
+.lc-serious-tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #1e4f8f;
+  color: var(--white);
+  cursor: help;
+  white-space: nowrap;
+}
+
 .lc-col-stat {
   text-align: center;
   color: var(--text-secondary);
