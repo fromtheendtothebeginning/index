@@ -1592,10 +1592,10 @@ def leetcode_inc(binding) -> tuple:
 
 
 def leetcode_score(e: int, m: int, h: int, difficulty_mode: bool, serious_mode: bool = False, boost_mode: bool = False) -> float:
-    """激励模式：初始 -50 分，简单 3 / 中等 6 / 困难 9；
+    """激励模式：初始 -100 分，简单 3 / 中等 6 / 困难 9；
     否则：简单 2 / 中等 4 / 困难 8，严肃模式简单不计分，困难模式减半"""
     if boost_mode:
-        return -50.0 + e * 3 + m * 6 + h * 9
+        return -100.0 + e * 3 + m * 6 + h * 9
     e_score = 0 if serious_mode else e * 2
     score = e_score + m * 4 + h * 8
     return score / 2 if difficulty_mode else float(score)
@@ -1703,13 +1703,39 @@ def leetcode_unbind(token: str = Depends(oauth2_scheme), db: Session = Depends(g
     return MessageResponse(message="已解绑")
 
 
+def _enter_boost(binding) -> None:
+    """进入激励模式：备份当前基线并清零刷题量（退出时恢复）"""
+    if binding.backup_base_easy is None:
+        binding.backup_base_easy = binding.base_easy
+        binding.backup_base_medium = binding.base_medium
+        binding.backup_base_hard = binding.base_hard
+    binding.base_easy = binding.cur_easy
+    binding.base_medium = binding.cur_medium
+    binding.base_hard = binding.cur_hard
+    binding.boost_mode = True
+
+
+def _exit_boost(binding) -> None:
+    """退出激励模式：恢复备份的基线（若此前已进入）"""
+    if not binding.boost_mode:
+        return
+    if binding.backup_base_easy is not None:
+        binding.base_easy = binding.backup_base_easy
+        binding.base_medium = binding.backup_base_medium
+        binding.base_hard = binding.backup_base_hard
+        binding.backup_base_easy = None
+        binding.backup_base_medium = None
+        binding.backup_base_hard = None
+    binding.boost_mode = False
+
+
 @app.put("/api/leetcode/me/mode", response_model=LeetcodeMeResponse, tags=["LeetCode"])
 def leetcode_mode(
     req: UpdateLeetcodeModeRequest,
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ):
-    """切换困难模式（得分减半）"""
+    """切换模式（激励与困难/严肃互斥；进入激励备份并清零刷题量，退出恢复）"""
     payload = decode_access_token(token)
     if payload is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
@@ -1722,17 +1748,15 @@ def leetcode_mode(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="尚未绑定 LeetCode 账号")
     # 三模式互斥：激励与困难/严肃不可共存
     if req.boost_mode is True:
-        binding.boost_mode = True
-        binding.difficulty_mode = False
-        binding.serious_mode = False
+        _enter_boost(binding)
     if req.difficulty_mode is True:
+        _exit_boost(binding)
         binding.difficulty_mode = True
-        binding.boost_mode = False
     if req.serious_mode is True:
+        _exit_boost(binding)
         binding.serious_mode = True
-        binding.boost_mode = False
     if req.boost_mode is False:
-        binding.boost_mode = False
+        _exit_boost(binding)
     if req.difficulty_mode is False:
         binding.difficulty_mode = False
     if req.serious_mode is False:

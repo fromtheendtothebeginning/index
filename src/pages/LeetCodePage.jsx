@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import Modal from '../components/Modal'
 import { UiIcon } from '../components/Icons'
 import './LeetCodePage.css'
 
@@ -29,6 +30,8 @@ function LeetCodePage() {
   const [unbindOpen, setUnbindOpen] = useState(false)
   const [unbindText, setUnbindText] = useState('')
   const [unbinding, setUnbinding] = useState(false)
+  const [boostConfirm, setBoostConfirm] = useState(false)
+  const [boostExitConfirm, setBoostExitConfirm] = useState(false)
 
 const CACHE_KEY = 'lc_me_cache'
 
@@ -167,7 +170,7 @@ useEffect(() => {
               <span className="lc-serious-tag" title="严肃模式下简单题不计入分数">严肃模式</span>
             )}
             {me.boost_mode && (
-              <span className="lc-boost-tag" title="激励模式：初始 -50 分，3/6/9 计分">激励模式</span>
+              <span className="lc-boost-tag" title="激励模式：初始 -100 分，3/6/9 计分">激励模式</span>
             )}
           </span>
           <span className="lc-mine-stats">
@@ -191,11 +194,14 @@ useEffect(() => {
               />
               严肃模式
             </label>
-            <label className="lc-mode-toggle" title="激励模式：初始 -50 分，简单 3 分 / 中等 6 分 / 困难 9 分，与困难/严肃模式互斥">
+            <label className="lc-mode-toggle" title="激励模式：初始 -100 分，简单 3 分 / 中等 6 分 / 困难 9 分，与困难/严肃模式互斥">
               <input
                 type="checkbox"
                 checked={!!me.boost_mode}
-                onChange={e => handleMode({ boost_mode: e.target.checked })}
+                onChange={e => {
+                  if (e.target.checked) setBoostConfirm(true)
+                  else setBoostExitConfirm(true)
+                }}
               />
               激励模式
             </label>
@@ -240,7 +246,7 @@ useEffect(() => {
         <div className="lc-header">
           <h1 className="lc-title">LeetCode 刷题榜</h1>
           <p className="lc-subtitle">
-            绑定 LeetCode 账号后的刷题量 · 简单 2 分 / 中等 4 分 / 困难 8 分 · 困难模式减半 · 严肃模式简单不计分 · 激励模式初始 -50 分（3/6/9）
+            绑定 LeetCode 账号后的刷题量 · 简单 2 分 / 中等 4 分 / 困难 8 分 · 困难模式减半 · 严肃模式简单不计分 · 激励模式初始 -100 分（3/6/9）
           </p>
         </div>
 
@@ -298,7 +304,7 @@ useEffect(() => {
                     <span className="lc-serious-tag" title="严肃模式下简单题不计入分数">严肃模式</span>
                   )}
                   {u.boost_mode && (
-                    <span className="lc-boost-tag" title="激励模式：初始 -50 分，3/6/9 计分">激励模式</span>
+                    <span className="lc-boost-tag" title="激励模式：初始 -100 分，3/6/9 计分">激励模式</span>
                   )}
                 </span>
                 <span className="lc-col-stat">{u.easy}</span>
@@ -311,6 +317,31 @@ useEffect(() => {
           </div>
         )}
       </div>
+
+      <Modal
+        open={boostConfirm}
+        title="开启激励模式"
+        message="开启激励模式后将清零当前刷题量（已自动备份），退出激励模式时自动恢复。激励模式初始 -100 分，简单 3 分 / 中等 6 分 / 困难 9 分，且与困难、严肃模式互斥。确定开启？"
+        confirmText="确认开启"
+        danger
+        onConfirm={() => {
+          setBoostConfirm(false)
+          handleMode({ boost_mode: true })
+        }}
+        onCancel={() => setBoostConfirm(false)}
+      />
+      <Modal
+        open={boostExitConfirm}
+        title="退出激励模式"
+        message="退出激励模式后将恢复之前备份的刷题量（含激励期间新刷的题一并算回），并恢复普通计分（简单 2 / 中等 4 / 困难 8）。确定退出？"
+        confirmText="确认退出"
+        danger
+        onConfirm={() => {
+          setBoostExitConfirm(false)
+          handleMode({ boost_mode: false })
+        }}
+        onCancel={() => setBoostExitConfirm(false)}
+      />
     </div>
   )
 }

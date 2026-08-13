@@ -201,6 +201,10 @@ def run_migrations():
         if "boost_mode" not in lc_cols:
             conn.execute(text("ALTER TABLE leetcode_bindings ADD COLUMN boost_mode TINYINT(1) NOT NULL DEFAULT 0"))
             conn.commit()
+        for col in ("backup_base_easy", "backup_base_medium", "backup_base_hard"):
+            if col not in lc_cols:
+                conn.execute(text(f"ALTER TABLE leetcode_bindings ADD COLUMN {col} INT NULL"))
+                conn.commit()
 
     # 为所有没有专属邀请码的已存在用户分配一个邀请码
     from sqlalchemy.orm import Session
