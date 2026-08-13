@@ -391,6 +391,16 @@
   white-space: nowrap;
 }
 
+.lc-boost-tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #1e7f4f;
+  color: var(--white);
+  cursor: help;
+  white-space: nowrap;
+}
+
 .lc-col-stat {
   text-align: center;
   color: var(--text-secondary);

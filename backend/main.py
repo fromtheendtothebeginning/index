@@ -1591,8 +1591,11 @@ def leetcode_inc(binding) -> tuple:
     )
 
 
-def leetcode_score(e: int, m: int, h: int, difficulty_mode: bool, serious_mode: bool = False) -> float:
-    """简单 2 分 / 中等 4 分 / 困难 8 分；严肃模式简单题不计分；困难模式减半"""
+def leetcode_score(e: int, m: int, h: int, difficulty_mode: bool, serious_mode: bool = False, boost_mode: bool = False) -> float:
+    """激励模式：初始 -50 分，简单 3 / 中等 6 / 困难 9；
+    否则：简单 2 / 中等 4 / 困难 8，严肃模式简单不计分，困难模式减半"""
+    if boost_mode:
+        return -50.0 + e * 3 + m * 6 + h * 9
     e_score = 0 if serious_mode else e * 2
     score = e_score + m * 4 + h * 8
     return score / 2 if difficulty_mode else float(score)
@@ -1605,11 +1608,12 @@ def _leetcode_me_payload(binding) -> dict:
         "leetcode_username": binding.leetcode_username,
         "difficulty_mode": bool(binding.difficulty_mode),
         "serious_mode": bool(binding.serious_mode),
+        "boost_mode": bool(binding.boost_mode),
         "base": {"easy": binding.base_easy, "medium": binding.base_medium, "hard": binding.base_hard},
         "cur": {"easy": binding.cur_easy, "medium": binding.cur_medium, "hard": binding.cur_hard},
         "inc": {"easy": e, "medium": m, "hard": h},
         "total_inc": e + m + h,
-        "score": leetcode_score(e, m, h, bool(binding.difficulty_mode), bool(binding.serious_mode)),
+        "score": leetcode_score(e, m, h, bool(binding.difficulty_mode), bool(binding.serious_mode), bool(binding.boost_mode)),
         "updated_at": binding.updated_at,
         "leetcode_ok": True,
     }
@@ -1716,10 +1720,23 @@ def leetcode_mode(
     binding = db.query(LeetcodeBinding).filter(LeetcodeBinding.user_id == user_id).first()
     if not binding:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="尚未绑定 LeetCode 账号")
-    if req.difficulty_mode is not None:
-        binding.difficulty_mode = req.difficulty_mode
-    if req.serious_mode is not None:
-        binding.serious_mode = req.serious_mode
+    # 三模式互斥：激励与困难/严肃不可共存
+    if req.boost_mode is True:
+        binding.boost_mode = True
+        binding.difficulty_mode = False
+        binding.serious_mode = False
+    if req.difficulty_mode is True:
+        binding.difficulty_mode = True
+        binding.boost_mode = False
+    if req.serious_mode is True:
+        binding.serious_mode = True
+        binding.boost_mode = False
+    if req.boost_mode is False:
+        binding.boost_mode = False
+    if req.difficulty_mode is False:
+        binding.difficulty_mode = False
+    if req.serious_mode is False:
+        binding.serious_mode = False
     db.commit()
     db.refresh(binding)
     return LeetcodeMeResponse(**_leetcode_me_payload(binding))
@@ -1745,11 +1762,12 @@ def leetcode_leaderboard(db: Session = Depends(get_db)):
             "leetcode_username": b.leetcode_username,
             "difficulty_mode": bool(b.difficulty_mode),
             "serious_mode": bool(b.serious_mode),
+            "boost_mode": bool(b.boost_mode),
             "easy": e,
             "medium": m,
             "hard": h,
             "total": e + m + h,
-            "score": leetcode_score(e, m, h, bool(b.difficulty_mode), bool(b.serious_mode)),
+            "score": leetcode_score(e, m, h, bool(b.difficulty_mode), bool(b.serious_mode), bool(b.boost_mode)),
             "updated_at": b.updated_at,
         })
     users.sort(key=lambda u: (-u["score"], -u["total"], u["user_id"]))

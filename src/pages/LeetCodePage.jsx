@@ -166,6 +166,9 @@ useEffect(() => {
             {me.serious_mode && (
               <span className="lc-serious-tag" title="严肃模式下简单题不计入分数">严肃模式</span>
             )}
+            {me.boost_mode && (
+              <span className="lc-boost-tag" title="激励模式：初始 -50 分，3/6/9 计分">激励模式</span>
+            )}
           </span>
           <span className="lc-mine-stats">
             简单 {me.inc.easy} · 中等 {me.inc.medium} · 困难 {me.inc.hard} · 总增量 {me.total_inc}
@@ -187,6 +190,14 @@ useEffect(() => {
                 onChange={e => handleMode({ serious_mode: e.target.checked })}
               />
               严肃模式
+            </label>
+            <label className="lc-mode-toggle" title="激励模式：初始 -50 分，简单 3 分 / 中等 6 分 / 困难 9 分，与困难/严肃模式互斥">
+              <input
+                type="checkbox"
+                checked={!!me.boost_mode}
+                onChange={e => handleMode({ boost_mode: e.target.checked })}
+              />
+              激励模式
             </label>
             <button className="lc-unbind-btn" onClick={() => setUnbindOpen(true)}>解绑</button>
           </div>
@@ -229,7 +240,7 @@ useEffect(() => {
         <div className="lc-header">
           <h1 className="lc-title">LeetCode 刷题榜</h1>
           <p className="lc-subtitle">
-            绑定 LeetCode 账号后的刷题量 · 简单 2 分 / 中等 4 分 / 困难 8 分 · 困难模式得分减半 · 严肃模式简单题不计分
+            绑定 LeetCode 账号后的刷题量 · 简单 2 分 / 中等 4 分 / 困难 8 分 · 困难模式减半 · 严肃模式简单不计分 · 激励模式初始 -50 分（3/6/9）
           </p>
         </div>
 
@@ -285,6 +296,9 @@ useEffect(() => {
                   )}
                   {u.serious_mode && (
                     <span className="lc-serious-tag" title="严肃模式下简单题不计入分数">严肃模式</span>
+                  )}
+                  {u.boost_mode && (
+                    <span className="lc-boost-tag" title="激励模式：初始 -50 分，3/6/9 计分">激励模式</span>
                   )}
                 </span>
                 <span className="lc-col-stat">{u.easy}</span>

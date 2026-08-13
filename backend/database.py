@@ -198,6 +198,9 @@ def run_migrations():
         if "serious_mode" not in lc_cols:
             conn.execute(text("ALTER TABLE leetcode_bindings ADD COLUMN serious_mode TINYINT(1) NOT NULL DEFAULT 0"))
             conn.commit()
+        if "boost_mode" not in lc_cols:
+            conn.execute(text("ALTER TABLE leetcode_bindings ADD COLUMN boost_mode TINYINT(1) NOT NULL DEFAULT 0"))
+            conn.commit()
 
     # 为所有没有专属邀请码的已存在用户分配一个邀请码
     from sqlalchemy.orm import Session
