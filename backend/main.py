@@ -1793,14 +1793,21 @@ def leetcode_debug_toggle(
         binding.debug_backup_cur_hard = binding.cur_hard
         binding.debug_mode = True
     elif not req.debug_mode and binding.debug_mode:
-        # 关闭：恢复备份数据，回归正常
+        # 关闭：保留调试期间手动设置的增量（同步真实值后固化到 base），不再覆盖丢弃
         if binding.debug_backup_base_easy is not None:
-            binding.base_easy = binding.debug_backup_base_easy
-            binding.base_medium = binding.debug_backup_base_medium
-            binding.base_hard = binding.debug_backup_base_hard
-            binding.cur_easy = binding.debug_backup_cur_easy
-            binding.cur_medium = binding.debug_backup_cur_medium
-            binding.cur_hard = binding.debug_backup_cur_hard
+            try:
+                real = fetch_leetcode_progress(binding.leetcode_username)
+            except Exception:
+                real = None
+            if real is not None:
+                inc_e = max(0, binding.cur_easy - binding.debug_backup_base_easy)
+                inc_m = max(0, binding.cur_medium - binding.debug_backup_base_medium)
+                inc_h = max(0, binding.cur_hard - binding.debug_backup_base_hard)
+                binding.cur_easy, binding.cur_medium, binding.cur_hard = real
+                binding.base_easy = max(0, real[0] - inc_e)
+                binding.base_medium = max(0, real[1] - inc_m)
+                binding.base_hard = max(0, real[2] - inc_h)
+            # 同步失败：保留当前 cur/base 数据
         binding.debug_backup_base_easy = None
         binding.debug_backup_base_medium = None
         binding.debug_backup_base_hard = None
