@@ -48,6 +48,16 @@
   font-size: 13px;
 }
 
+.lc-debug-tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #1976d2;
+  color: var(--white);
+  cursor: help;
+  white-space: nowrap;
+}
+
 /* 置顶"我的排名"卡片（第一名上方） */
 .lc-mine {
   display: flex;
@@ -231,6 +241,41 @@
 .lc-updated {
   font-size: 12px;
   color: var(--text-muted);
+}
+
+.lc-updated-tip {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-1);
+  animation: lc-tip-in 0.5s ease;
+}
+
+@keyframes lc-tip-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.lc-heartbeat-hint {
+  font-size: 11px;
+  color: var(--accent-1);
+  cursor: help;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.lc-heartbeat-hint::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-2);
+  animation: heartbeat-pulse 2s ease-in-out infinite;
+}
+
+@keyframes heartbeat-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
 }
 
 .lc-bind-link {

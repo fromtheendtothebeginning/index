@@ -25,6 +25,9 @@ function AdminPage() {
   const [settings, setSettings] = useState({ email: '', github_url: '', contact_items: [] })
   const [settingsSaving, setSettingsSaving] = useState(false)
   const [settingsSaved, setSettingsSaved] = useState(false)
+  const [lcDebug, setLcDebug] = useState(null)
+  const [lcDebugInput, setLcDebugInput] = useState({ easy: 0, medium: 0, hard: 0 })
+  const [lcDebugBusy, setLcDebugBusy] = useState(false)
   const [editingUserId, setEditingUserId] = useState(null)
   const [editForm, setEditForm] = useState({ nickname: '', avatar_url: '', password: '' })
   const [loading, setLoading] = useState(false)
@@ -352,6 +355,54 @@ function AdminPage() {
     }))
   }
 
+  // LeetCode 调试模式
+  const loadLcDebug = () => {
+    fetch('/api/leetcode/me', { headers: authHeaders() })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d && d.bound) {
+          setLcDebug(d)
+          setLcDebugInput({ easy: d.inc.easy, medium: d.inc.medium, hard: d.inc.hard })
+        }
+      })
+      .catch(() => {})
+  }
+
+  useEffect(() => {
+    if (authChecked && tab === 'leetcode') loadLcDebug()
+  }, [authChecked, tab])
+
+  const handleLcDebugToggle = async (on) => {
+    setLcDebugBusy(true)
+    try {
+      const res = await fetch('/api/leetcode/me/debug', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ debug_mode: on }),
+      })
+      const d = await res.json()
+      if (!res.ok) { alert(d.detail || '操作失败'); return }
+      setLcDebug(d)
+      setLcDebugInput({ easy: d.inc.easy, medium: d.inc.medium, hard: d.inc.hard })
+    } catch { alert('网络错误') }
+    finally { setLcDebugBusy(false) }
+  }
+
+  const handleLcDebugSet = async () => {
+    setLcDebugBusy(true)
+    try {
+      const res = await fetch('/api/leetcode/me/debug/set', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ easy: Number(lcDebugInput.easy) || 0, medium: Number(lcDebugInput.medium) || 0, hard: Number(lcDebugInput.hard) || 0 }),
+      })
+      const d = await res.json()
+      if (!res.ok) { alert(d.detail || '操作失败'); return }
+      setLcDebug(d)
+    } catch { alert('网络错误') }
+    finally { setLcDebugBusy(false) }
+  }
+
   // 保存站点设置
   const handleSaveSettings = async () => {
     setSettingsSaving(true)
@@ -403,6 +454,7 @@ function AdminPage() {
           <button className={`admin-tab ${tab === 'codes' ? 'active' : ''}`} onClick={() => setTab('codes')}>邀请码</button>
           <button className={`admin-tab ${tab === 'links' ? 'active' : ''}`} onClick={() => setTab('links')}>友情链接</button>
           <button className={`admin-tab ${tab === 'settings' ? 'active' : ''}`} onClick={() => setTab('settings')}>站点设置</button>
+          <button className={`admin-tab ${tab === 'leetcode' ? 'active' : ''}`} onClick={() => setTab('leetcode')}>LeetCode 调试</button>
         </div>
 
         {error && <div className="admin-error">{error}</div>}
@@ -828,6 +880,58 @@ function AdminPage() {
                 {settingsSaved && <div className="profile-success">&#10003; 保存成功</div>}
               </div>
               <p className="admin-settings-hint">保存后首页"保持连接"区块即时生效；卡片显示「图标 + 标题 + 简介」，链接不显示在卡片上，点击卡片跳转</p>
+            </div>
+          </div>
+        )}
+
+        {/* LeetCode 调试模式 */}
+        {tab === 'leetcode' && !loading && (
+          <div className="admin-section">
+            <div className="admin-section-head">
+              <h2>LeetCode 调试模式</h2>
+            </div>
+            <div className="admin-settings-form">
+              {!lcDebug || !lcDebug.bound ? (
+                <div className="admin-empty">你尚未绑定 LeetCode 账号，请先到「榜单」页绑定</div>
+              ) : (
+                <>
+                  <p className="admin-settings-hint">
+                    调试模式开启后，该账号不再读取 LeetCode 数据，可手动调整刷题量；开启前会记录当前数据，关闭后自动恢复。
+                  </p>
+                  <div className="admin-settings-row">
+                    <span className="admin-settings-label">调试模式（@{lcDebug.leetcode_username}）</span>
+                    <button
+                      className={`btn btn-sm ${lcDebug.debug_mode ? 'btn-danger' : 'btn-primary'}`}
+                      onClick={() => handleLcDebugToggle(!lcDebug.debug_mode)}
+                      disabled={lcDebugBusy}
+                    >
+                      {lcDebug.debug_mode ? '关闭调试' : '开启调试'}
+                    </button>
+                  </div>
+                  {lcDebug.debug_mode && (
+                    <div className="admin-leetcode-debug">
+                      <p className="admin-settings-hint">设置各难度刷题量（增量，基于调试开启时保存的数据）：</p>
+                      <div className="admin-leetcode-debug-inputs">
+                        {[['easy', '简单题'], ['medium', '中等题'], ['hard', '困难题']].map(([k, label]) => (
+                          <label key={k} className="admin-leetcode-debug-field">
+                            <span>{label}</span>
+                            <input
+                              type="number"
+                              min="0"
+                              className="admin-link-input"
+                              value={lcDebugInput[k]}
+                              onChange={e => setLcDebugInput(prev => ({ ...prev, [k]: e.target.value }))}
+                            />
+                          </label>
+                        ))}
+                      </div>
+                      <button className="btn btn-primary btn-sm" onClick={handleLcDebugSet} disabled={lcDebugBusy}>
+                        应用刷题量
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
         )}

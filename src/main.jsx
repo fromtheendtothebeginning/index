@@ -2,16 +2,21 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
+import { THEMES, THEME_KEYS, detectThemeMode, modeIsDark } from './utils/themes'
 import './index.css'
 
-// 主题应用：localStorage.theme（system/light/dark，默认跟随系统）
-// system 不设置 data-theme（CSS 媒体查询自动跟随）；light/dark 显式覆盖
+// 初始主题应用：将所选主题变量直接写入 :root（无动画，首帧即正确主题），
+// 之后切换走 themeTransition.applyTheme 自动渐变。
 const applyTheme = () => {
-  const theme = localStorage.getItem('theme') || 'system'
-  if (theme === 'system') {
-    document.documentElement.removeAttribute('data-theme')
+  const root = document.documentElement
+  const mode = detectThemeMode()
+  if (mode === 'system') {
+    root.removeAttribute('data-theme')
+    const name = modeIsDark('system') ? 'dark' : 'light'
+    for (const key of THEME_KEYS) root.style.setProperty(key, THEMES[name][key])
   } else {
-    document.documentElement.setAttribute('data-theme', theme)
+    root.setAttribute('data-theme', mode)
+    for (const key of THEME_KEYS) root.style.setProperty(key, THEMES[mode][key])
   }
 }
 applyTheme()

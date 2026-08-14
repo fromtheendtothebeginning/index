@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Modal from '../components/Modal'
@@ -57,15 +57,45 @@ const load = () => {
     .finally(() => setLoading(false))
 }
 
-useEffect(() => {
-  load()
-  // 先渲染本地缓存的绑定状态，避免切换页面时闪出绑定表单（实时同步 LeetCode 需 1-3s）
-  try {
-    const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null')
-    if (cached && cached.bound) setMe(cached)
-  } catch {}
-  loadLc()
-}, [])
+  useEffect(() => {
+    load()
+    // 先渲染本地缓存的绑定状态，避免切换页面时闪出绑定表单（实时同步 LeetCode 需 1-3s）
+    try {
+      const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null')
+      if (cached && cached.bound) setMe(cached)
+    } catch {}
+    loadLc()
+  }, [])
+
+  // 后台心跳自动同步：前端轮询榜单，发现数据变化时用滚榜动画刷新
+  const [refreshKey, setRefreshKey] = useState(0)
+  const [updatedTip, setUpdatedTip] = useState(false)
+  const prevBoardRef = useRef(null)
+  const updatedTimerRef = useRef(null)
+  useEffect(() => {
+    const poll = () => {
+      fetch('/api/leetcode/leaderboard')
+        .then(r => r.json())
+        .then(d => {
+          const key = JSON.stringify(d.users || [])
+          if (prevBoardRef.current !== null && prevBoardRef.current !== key) {
+            // 数据变化：滚榜动画刷新 + 提示
+            setBoard(d)
+            setRefreshKey(k => k + 1)
+            setUpdatedTip(true)
+            clearTimeout(updatedTimerRef.current)
+            updatedTimerRef.current = setTimeout(() => setUpdatedTip(false), 4000)
+          } else {
+            setBoard(d)
+          }
+          prevBoardRef.current = key
+        })
+        .catch(() => {})
+    }
+    poll()
+    const timer = setInterval(poll, 30000)
+    return () => { clearInterval(timer); clearTimeout(updatedTimerRef.current) }
+  }, [])
 
   const handleBind = async () => {
     const name = lcUsername.trim()
@@ -173,6 +203,9 @@ useEffect(() => {
             {me.boost_mode && (
               <span className={`lc-boost-tag ${me.score > 0 ? 'lc-boost-tag-gold' : ''}`} title="激励模式：初始 -100 分，3/6/9 计分">激励模式</span>
             )}
+            {me.debug_mode && (
+              <span className="lc-debug-tag" title="调试模式：手动调整刷题量，不读取 LeetCode">调试</span>
+            )}
           </span>
           <span className="lc-mine-stats">
             简单 {me.inc.easy} · 中等 {me.inc.medium} · 困难 {me.inc.hard} · 总增量 {me.total_inc}
@@ -272,6 +305,8 @@ useEffect(() => {
           <span className="lc-updated">
             {board ? `更新于 ${new Date(board.generated_at).toLocaleString('zh-CN')}` : ''}
           </span>
+          {updatedTip && <span className="lc-updated-tip">数据已更新</span>}
+          <span className="lc-heartbeat-hint" title="后台每 60 秒自动同步所有绑定用户的 LeetCode 数据">自动同步中</span>
         </div>
 
         {meCard}
@@ -283,7 +318,7 @@ useEffect(() => {
             <p>暂无用户绑定 LeetCode</p>
           </div>
         ) : (
-          <div className="lc-board">
+          <div key={refreshKey} className="lc-board">
             <div className="lc-row lc-row-head">
               <span className="lc-col-rank">排名</span>
               <span className="lc-col-user">用户</span>
@@ -320,6 +355,9 @@ useEffect(() => {
                   )}
                   {u.boost_mode && (
                     <span className={`lc-boost-tag ${u.score > 0 ? 'lc-boost-tag-gold' : ''}`} title="激励模式：初始 -100 分，3/6/9 计分">激励模式</span>
+                  )}
+                  {u.debug_mode && (
+                    <span className="lc-debug-tag" title="调试模式：手动调整刷题量，不读取 LeetCode">调试</span>
                   )}
                 </span>
                 <span className="lc-col-stat">{u.easy}</span>

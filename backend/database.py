@@ -205,6 +205,12 @@ def run_migrations():
             if col not in lc_cols:
                 conn.execute(text(f"ALTER TABLE leetcode_bindings ADD COLUMN {col} INT NULL"))
                 conn.commit()
+        for col in ("debug_mode", "debug_backup_base_easy", "debug_backup_base_medium", "debug_backup_base_hard",
+                    "debug_backup_cur_easy", "debug_backup_cur_medium", "debug_backup_cur_hard"):
+            if col not in lc_cols:
+                typ = "TINYINT(1) NOT NULL DEFAULT 0" if col == "debug_mode" else "INT NULL"
+                conn.execute(text(f"ALTER TABLE leetcode_bindings ADD COLUMN {col} {typ}"))
+                conn.commit()
 
     # 为所有没有专属邀请码的已存在用户分配一个邀请码
     from sqlalchemy.orm import Session

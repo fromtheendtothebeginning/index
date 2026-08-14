@@ -3,6 +3,7 @@
 import json
 import re
 import secrets
+import threading
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
@@ -37,6 +38,7 @@ from schemas import (
     DeleteAccountRequest,
     UpdateLeetcodeRequest, UpdateLeetcodeModeRequest, LeetcodeMeResponse,
     LeetcodeBoardUser, LeetcodeBoardResponse, LeetcodeRefreshResponse,
+    UpdateLeetcodeDebugRequest, LeetcodeDebugSetRequest,
 )
 from auth import hash_password, verify_password, create_access_token, decode_access_token
 
@@ -62,9 +64,10 @@ app.add_middleware(
 
 @app.on_event("startup")
 def on_startup():
-    """首次启动自动建表 + 迁移新字段"""
+    """首次启动自动建表 + 迁移新字段 + 启动 LeetCode 心跳"""
     init_db()
     run_migrations()
+    _start_heartbeat()
 
 
 # ============================================
@@ -1609,6 +1612,7 @@ def _leetcode_me_payload(binding) -> dict:
         "difficulty_mode": bool(binding.difficulty_mode),
         "serious_mode": bool(binding.serious_mode),
         "boost_mode": bool(binding.boost_mode),
+        "debug_mode": bool(binding.debug_mode),
         "base": {"easy": binding.base_easy, "medium": binding.base_medium, "hard": binding.base_hard},
         "cur": {"easy": binding.cur_easy, "medium": binding.cur_medium, "hard": binding.cur_hard},
         "inc": {"easy": e, "medium": m, "hard": h},
@@ -1632,13 +1636,14 @@ def leetcode_me(token: str = Depends(oauth2_scheme), db: Session = Depends(get_d
     binding = db.query(LeetcodeBinding).filter(LeetcodeBinding.user_id == user_id).first()
     if not binding:
         return LeetcodeMeResponse(bound=False)
-    try:
-        prog = fetch_leetcode_progress(binding.leetcode_username)
-        if prog is not None:
-            binding.cur_easy, binding.cur_medium, binding.cur_hard = prog
-            db.commit()
-    except Exception:
-        pass
+    if not binding.debug_mode:
+        try:
+            prog = fetch_leetcode_progress(binding.leetcode_username)
+            if prog is not None:
+                binding.cur_easy, binding.cur_medium, binding.cur_hard = prog
+                db.commit()
+        except Exception:
+            pass
     return LeetcodeMeResponse(**_leetcode_me_payload(binding))
 
 
@@ -1768,6 +1773,69 @@ def leetcode_mode(
     return LeetcodeMeResponse(**_leetcode_me_payload(binding))
 
 
+@app.put("/api/leetcode/me/debug", response_model=LeetcodeMeResponse, tags=["LeetCode"])
+def leetcode_debug_toggle(
+    req: UpdateLeetcodeDebugRequest,
+    _admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """管理员调试模式：开启时不再读取 LeetCode，备份当前数据并手动调整；关闭时恢复备份数据"""
+    binding = db.query(LeetcodeBinding).filter(LeetcodeBinding.user_id == _admin.id).first()
+    if not binding:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="尚未绑定 LeetCode 账号")
+    if req.debug_mode and not binding.debug_mode:
+        # 开启：备份当前 base/cur
+        binding.debug_backup_base_easy = binding.base_easy
+        binding.debug_backup_base_medium = binding.base_medium
+        binding.debug_backup_base_hard = binding.base_hard
+        binding.debug_backup_cur_easy = binding.cur_easy
+        binding.debug_backup_cur_medium = binding.cur_medium
+        binding.debug_backup_cur_hard = binding.cur_hard
+        binding.debug_mode = True
+    elif not req.debug_mode and binding.debug_mode:
+        # 关闭：恢复备份数据，回归正常
+        if binding.debug_backup_base_easy is not None:
+            binding.base_easy = binding.debug_backup_base_easy
+            binding.base_medium = binding.debug_backup_base_medium
+            binding.base_hard = binding.debug_backup_base_hard
+            binding.cur_easy = binding.debug_backup_cur_easy
+            binding.cur_medium = binding.debug_backup_cur_medium
+            binding.cur_hard = binding.debug_backup_cur_hard
+        binding.debug_backup_base_easy = None
+        binding.debug_backup_base_medium = None
+        binding.debug_backup_base_hard = None
+        binding.debug_backup_cur_easy = None
+        binding.debug_backup_cur_medium = None
+        binding.debug_backup_cur_hard = None
+        binding.debug_mode = False
+    db.commit()
+    db.refresh(binding)
+    return LeetcodeMeResponse(**_leetcode_me_payload(binding))
+
+
+@app.put("/api/leetcode/me/debug/set", response_model=LeetcodeMeResponse, tags=["LeetCode"])
+def leetcode_debug_set(
+    req: LeetcodeDebugSetRequest,
+    _admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """调试模式下手动设置刷题量（增量 = 输入值，基于调试开启时保存的基线）"""
+    binding = db.query(LeetcodeBinding).filter(LeetcodeBinding.user_id == _admin.id).first()
+    if not binding:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="尚未绑定 LeetCode 账号")
+    if not binding.debug_mode:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="调试模式未开启")
+    base_e = binding.debug_backup_base_easy if binding.debug_backup_base_easy is not None else binding.base_easy
+    base_m = binding.debug_backup_base_medium if binding.debug_backup_base_medium is not None else binding.base_medium
+    base_h = binding.debug_backup_base_hard if binding.debug_backup_base_hard is not None else binding.base_hard
+    binding.cur_easy = base_e + max(0, req.easy)
+    binding.cur_medium = base_m + max(0, req.medium)
+    binding.cur_hard = base_h + max(0, req.hard)
+    db.commit()
+    db.refresh(binding)
+    return LeetcodeMeResponse(**_leetcode_me_payload(binding))
+
+
 @app.get("/api/leetcode/leaderboard", response_model=LeetcodeBoardResponse, tags=["LeetCode"])
 def leetcode_leaderboard(db: Session = Depends(get_db)):
     """公开榜单：从 8.13 起的刷题增量，按得分排序（缓存数据，不实时同步）"""
@@ -1789,6 +1857,7 @@ def leetcode_leaderboard(db: Session = Depends(get_db)):
             "difficulty_mode": bool(b.difficulty_mode),
             "serious_mode": bool(b.serious_mode),
             "boost_mode": bool(b.boost_mode),
+            "debug_mode": bool(b.debug_mode),
             "easy": e,
             "medium": m,
             "hard": h,
@@ -1806,7 +1875,7 @@ def _sync_leetcode_one(bid: int, username: str) -> bool:
     db = SessionLocal()
     try:
         binding = db.query(LeetcodeBinding).filter(LeetcodeBinding.id == bid).first()
-        if not binding:
+        if not binding or binding.debug_mode:
             return False
         prog = fetch_leetcode_progress(username)
         if prog is None:
@@ -1833,6 +1902,65 @@ def leetcode_refresh(db: Session = Depends(get_db)):
         results = pool.map(lambda t: _sync_leetcode_one(*t), tasks)
         synced = sum(1 for ok in results if ok)
     return LeetcodeRefreshResponse(synced=synced, total=len(bindings))
+
+
+# ============================================
+# LeetCode 心跳同步（后台线程，每分钟刷新所有绑定用户数据）
+# ============================================
+
+_heartbeat_lock = threading.Lock()
+_heartbeat_last = None  # 最近一次心跳完成时间（ISO）
+_heartbeat_last_count = 0  # 最近一次成功同步数
+_heartbeat_stop = threading.Event()
+
+
+def _sync_all_heartbeat():
+    """同步所有非调试绑定用户（独立会话，失败跳过）"""
+    from database import SessionLocal
+    db = SessionLocal()
+    try:
+        bindings = db.query(LeetcodeBinding).filter(LeetcodeBinding.debug_mode.is_(False)).all()
+        tasks = [(b.id, b.leetcode_username) for b in bindings]
+    finally:
+        db.close()
+    if not tasks:
+        return 0
+    synced = 0
+    with ThreadPoolExecutor(max_workers=5) as pool:
+        results = pool.map(lambda t: _sync_leetcode_one(*t), tasks)
+        synced = sum(1 for ok in results if ok)
+    return synced
+
+
+def _heartbeat_loop():
+    """后台循环：启动后立即同步一次，之后每分钟一次；防止上一次未完成时重叠"""
+    global _heartbeat_last, _heartbeat_last_count
+    while not _heartbeat_stop.wait(60):
+        if not _heartbeat_lock.acquire(blocking=False):
+            continue  # 上一次同步仍在进行，跳过本次
+        try:
+            _heartbeat_last_count = _sync_all_heartbeat()
+            _heartbeat_last = datetime.now(timezone.utc).isoformat()
+        except Exception:
+            _heartbeat_last_count = 0
+        finally:
+            _heartbeat_lock.release()
+
+
+def _start_heartbeat():
+    t = threading.Thread(target=_heartbeat_loop, daemon=True, name="leetcode-heartbeat")
+    t.start()
+
+
+@app.get("/api/leetcode/heartbeat", tags=["LeetCode"])
+def leetcode_heartbeat_status():
+    """心跳状态（最近同步时间与成功数）"""
+    return {
+        "enabled": True,
+        "interval": 60,
+        "last_run": _heartbeat_last,
+        "last_synced": _heartbeat_last_count,
+    }
 
 
 # ============================================
