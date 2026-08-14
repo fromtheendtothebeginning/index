@@ -1,6 +1,7 @@
 # main.py — FastAPI 应用入口
 
 import json
+import os
 import re
 import secrets
 import threading
@@ -10,11 +11,12 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import FastAPI, Depends, HTTPException, status, Query
+from fastapi import FastAPI, Depends, HTTPException, status, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_, select, func
+from sqlalchemy.exc import IntegrityError
 
 from database import get_db, init_db, run_migrations
 from models import User, Blog, BlogLike, Comment, CommentLike, Notification, InviteCode, Project, FriendLink, SiteSetting, ProjectLike, ProjectFollow, LeetcodeBinding
@@ -41,6 +43,7 @@ from schemas import (
     UpdateLeetcodeDebugRequest, LeetcodeDebugSetRequest,
 )
 from auth import hash_password, verify_password, create_access_token, decode_access_token
+from ratelimit import login_ip, login_user, register_ip, reset_ip, check_username_ip, reset_lock
 
 # ============================================
 # 应用初始化
@@ -53,9 +56,16 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login")
 oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="/api/login", auto_error=False)
 
 # CORS —— 允许前端开发服务器跨域访问（生产走 nginx 同源代理，无需跨域）
+_cors_origins = [
+    o.strip() for o in os.getenv(
+        "CORS_ORIGINS",
+        "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3300,http://127.0.0.1:3300",
+    ).split(",")
+    if o.strip()
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3300", "http://127.0.0.1:3300"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -74,6 +84,53 @@ def on_startup():
 # API 路由
 # ============================================
 
+def _client_ip(request: Request) -> str:
+    """获取客户端 IP：优先取 X-Forwarded-For 首段（反向代理场景），否则取直连地址"""
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    if request.client:
+        return request.client.host
+    return "unknown"
+
+
+def _escape_like(s: str) -> str:
+    """转义 LIKE 通配符，防止搜索词里的 % _ \\ 被当作模式匹配"""
+    return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def _verify_token(token: str, db: Session) -> Optional[User]:
+    """校验 JWT 并返回用户；令牌无效 / 用户不存在 / 令牌版本号与用户不匹配时返回 None"""
+    payload = decode_access_token(token)
+    if payload is None:
+        return None
+    try:
+        user_id = int(payload.get("sub"))
+    except (TypeError, ValueError):
+        return None
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return None
+    if payload.get("ver") != user.token_version:
+        return None
+    return user
+
+
+def get_current_user_obj(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    """获取当前用户对象（含令牌版本校验）"""
+    user = _verify_token(token, db)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
+    return user
+
+
+def require_admin(current_user: User = Depends(get_current_user_obj)) -> User:
+    """管理员权限依赖 —— 非管理员返回 403"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="需要管理员权限")
+    return current_user
+
+
 @app.get("/api/health", tags=["系统"])
 def health_check():
     """健康检查"""
@@ -81,8 +138,13 @@ def health_check():
 
 
 @app.post("/api/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED, tags=["认证"])
-def register(req: RegisterRequest, db: Session = Depends(get_db)):
+def register(req: RegisterRequest, request: Request, db: Session = Depends(get_db)):
     """用户注册（需邀请码）"""
+    if not register_ip.allow(_client_ip(request)):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="请求过于频繁，请稍后再试",
+        )
 
     existing = db.query(User).filter(User.username == req.username).first()
     if existing:
@@ -109,7 +171,14 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
         hashed_password=hash_password(req.password),
     )
     db.add(user)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="用户名已被注册",
+        )
     db.refresh(user)
 
     # 标记邀请码已使用（可重复使用的邀请码也标记，但不阻止再次使用）
@@ -117,7 +186,14 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
     invite.is_used = True
     invite.used_by = user.id
     invite.used_at = datetime.now(timezone.utc)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="邀请码无效",
+        )
 
     # 为新用户自动生成专属邀请码（可重复使用）
     user_code = secrets.token_urlsafe(8).upper().replace("-", "").replace("_", "")[:12]
@@ -128,9 +204,16 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
         is_reusable=True,
     )
     db.add(user_invite)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="专属邀请码生成失败",
+        )
 
-    token = create_access_token({"sub": str(user.id), "username": user.username})
+    token = create_access_token({"sub": str(user.id), "username": user.username, "ver": user.token_version})
 
     return TokenResponse(
         access_token=token,
@@ -139,8 +222,13 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
 
 
 @app.post("/api/login", response_model=TokenResponse, tags=["认证"])
-def login(req: LoginRequest, db: Session = Depends(get_db)):
+def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
     """用户登录"""
+    if not login_ip.allow(_client_ip(request)) or not login_user.allow(req.username):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="请求过于频繁，请稍后再试",
+        )
 
     user = db.query(User).filter(User.username == req.username).first()
     if not user or not verify_password(req.password, user.hashed_password):
@@ -149,7 +237,7 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
             detail="用户名或密码错误",
         )
 
-    token = create_access_token({"sub": str(user.id), "username": user.username})
+    token = create_access_token({"sub": str(user.id), "username": user.username, "ver": user.token_version})
 
     return TokenResponse(
         access_token=token,
@@ -158,21 +246,9 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
 
 
 @app.get("/api/user/me", response_model=UserResponse, tags=["用户"])
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+def get_current_user(current_user: User = Depends(get_current_user_obj)):
     """获取当前登录用户信息（需 Bearer Token）"""
-    payload = decode_access_token(token)
-    if payload is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
-
-    try:
-        user_id = int(payload.get("sub"))
-    except (TypeError, ValueError):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
-
-    return UserResponse.model_validate(user)
+    return UserResponse.model_validate(current_user)
 
 
 @app.put("/api/user/profile", response_model=UserResponse, tags=["用户"])
@@ -206,8 +282,13 @@ def update_profile(
 
 
 @app.get("/api/user/check-username", tags=["用户"])
-def check_username(username: str, db: Session = Depends(get_db)):
+def check_username(username: str, request: Request, db: Session = Depends(get_db)):
     """检查用户名是否存在"""
+    if not check_username_ip.allow(_client_ip(request)):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="请求过于频繁，请稍后再试",
+        )
     user = db.query(User).filter(User.username == username).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
@@ -215,8 +296,14 @@ def check_username(username: str, db: Session = Depends(get_db)):
 
 
 @app.put("/api/user/reset-password", response_model=MessageResponse, tags=["用户"])
-def reset_password(req: ResetPasswordRequest, db: Session = Depends(get_db)):
+def reset_password(req: ResetPasswordRequest, request: Request, db: Session = Depends(get_db)):
     """重置密码（无需登录，需本人专属可重复邀请码验证，防止接管他人账号）"""
+    if not reset_ip.allow(_client_ip(request)):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="请求过于频繁，请稍后再试",
+        )
+
     user = db.query(User).filter(User.username == req.username).first()
     if not user:
         raise HTTPException(
@@ -224,16 +311,25 @@ def reset_password(req: ResetPasswordRequest, db: Session = Depends(get_db)):
             detail="用户不存在",
         )
 
+    if not reset_lock.check(user.username):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="尝试次数过多，请 15 分钟后再试",
+        )
+
     # 校验邀请码归属：必须是该账号本人的专属可重复邀请码（不消耗）
     invite = db.query(InviteCode).filter(InviteCode.code == req.invite_code).first()
     if not invite or invite.owner_user_id != user.id or not invite.is_reusable:
+        reset_lock.fail(user.username)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="邀请码无效或不属于该账号",
         )
 
     user.hashed_password = hash_password(req.new_password)
+    user.token_version = (user.token_version or 0) + 1
     db.commit()
+    reset_lock.clear(user.username)
 
     return MessageResponse(message="密码重置成功")
 
@@ -241,28 +337,6 @@ def reset_password(req: ResetPasswordRequest, db: Session = Depends(get_db)):
 # ============================================
 # 博客 API
 # ============================================
-
-def get_current_user_obj(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    """获取当前用户对象"""
-    payload = decode_access_token(token)
-    if payload is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
-    try:
-        user_id = int(payload.get("sub"))
-    except (TypeError, ValueError):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
-    return user
-
-
-def require_admin(current_user: User = Depends(get_current_user_obj)) -> User:
-    """管理员权限依赖 —— 非管理员返回 403"""
-    if current_user.role != "admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="需要管理员权限")
-    return current_user
-
 
 @app.post("/api/user/delete-account", response_model=MessageResponse, tags=["用户"])
 def delete_own_account(
@@ -286,13 +360,7 @@ def get_optional_user(token: Optional[str], db: Session) -> Optional[User]:
     """可选鉴权：传入 Bearer token 时返回用户，否则返回 None"""
     if not token:
         return None
-    payload = decode_access_token(token)
-    if payload is None:
-        return None
-    user_id = payload.get("sub")
-    if user_id is None:
-        return None
-    return db.query(User).filter(User.id == int(user_id)).first()
+    return _verify_token(token, db)
 
 
 def _attach_blog_stats(blog: Blog, db: Session, current_user: Optional[User]) -> None:
@@ -338,7 +406,11 @@ def list_blogs(
     if category:
         query = query.filter(Blog.category == category)
     if q:
-        query = query.filter(or_(Blog.title.like(f"%{q}%"), Blog.content_md.like(f"%{q}%")))
+        _escaped = _escape_like(q)
+        query = query.filter(or_(
+            Blog.title.like(f"%{_escaped}%", escape="\\"),
+            Blog.content_md.like(f"%{_escaped}%", escape="\\"),
+        ))
     if from_date:
         try:
             from_dt = datetime.combine(date.fromisoformat(from_date), datetime.min.time())
@@ -1203,6 +1275,7 @@ def admin_update_user(
         user.avatar_url = req.avatar_url or None
     if req.password:
         user.hashed_password = hash_password(req.password)
+        user.token_version = (user.token_version or 0) + 1
     db.commit()
     db.refresh(user)
     return user
@@ -1624,15 +1697,9 @@ def _leetcode_me_payload(binding) -> dict:
 
 
 @app.get("/api/leetcode/me", response_model=LeetcodeMeResponse, tags=["LeetCode"])
-def leetcode_me(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+def leetcode_me(current_user: User = Depends(get_current_user_obj), db: Session = Depends(get_db)):
     """获取当前用户的 LeetCode 绑定与刷题增量（实时同步）"""
-    payload = decode_access_token(token)
-    if payload is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
-    try:
-        user_id = int(payload.get("sub"))
-    except (TypeError, ValueError):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
+    user_id = current_user.id
     binding = db.query(LeetcodeBinding).filter(LeetcodeBinding.user_id == user_id).first()
     if not binding:
         return LeetcodeMeResponse(bound=False)
@@ -1650,17 +1717,11 @@ def leetcode_me(token: str = Depends(oauth2_scheme), db: Session = Depends(get_d
 @app.put("/api/leetcode/me", response_model=LeetcodeMeResponse, tags=["LeetCode"])
 def leetcode_bind(
     req: UpdateLeetcodeRequest,
-    token: str = Depends(oauth2_scheme),
+    current_user: User = Depends(get_current_user_obj),
     db: Session = Depends(get_db),
 ):
     """绑定/改绑 LeetCode 账号（绑定时刻为 8.13 起算基线）"""
-    payload = decode_access_token(token)
-    if payload is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
-    try:
-        user_id = int(payload.get("sub"))
-    except (TypeError, ValueError):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
+    user_id = current_user.id
     username = req.leetcode_username.strip()
     if not username:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="用户名不能为空")
@@ -1692,15 +1753,9 @@ def leetcode_bind(
 
 
 @app.delete("/api/leetcode/me", response_model=MessageResponse, tags=["LeetCode"])
-def leetcode_unbind(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+def leetcode_unbind(current_user: User = Depends(get_current_user_obj), db: Session = Depends(get_db)):
     """解绑 LeetCode 账号"""
-    payload = decode_access_token(token)
-    if payload is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
-    try:
-        user_id = int(payload.get("sub"))
-    except (TypeError, ValueError):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
+    user_id = current_user.id
     binding = db.query(LeetcodeBinding).filter(LeetcodeBinding.user_id == user_id).first()
     if binding:
         db.delete(binding)
@@ -1898,8 +1953,8 @@ def _sync_leetcode_one(bid: int, username: str) -> bool:
 
 
 @app.post("/api/leetcode/refresh", response_model=LeetcodeRefreshResponse, tags=["LeetCode"])
-def leetcode_refresh(db: Session = Depends(get_db)):
-    """同步所有绑定用户的 LeetCode 数据（并发重新请求，失败者保留旧值）"""
+def leetcode_refresh(current_user: User = Depends(get_current_user_obj), db: Session = Depends(get_db)):
+    """同步所有绑定用户的 LeetCode 数据（需登录，并发重新请求，失败者保留旧值）"""
     bindings = db.query(LeetcodeBinding).all()
     if not bindings:
         return LeetcodeRefreshResponse(synced=0, total=0)
@@ -1960,8 +2015,8 @@ def _start_heartbeat():
 
 
 @app.get("/api/leetcode/heartbeat", tags=["LeetCode"])
-def leetcode_heartbeat_status():
-    """心跳状态（最近同步时间与成功数）"""
+def leetcode_heartbeat_status(_admin: User = Depends(require_admin)):
+    """心跳状态（最近同步时间与成功数，仅管理员）"""
     return {
         "enabled": True,
         "interval": 60,
@@ -1976,4 +2031,4 @@ def leetcode_heartbeat_status():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)
+    uvicorn.run("main:app", host=os.getenv("HOST", "127.0.0.1"), port=8000, reload=False)

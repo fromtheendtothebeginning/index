@@ -148,7 +148,7 @@ const load = () => {
   const handleRefresh = async () => {
     setRefreshing(true)
     try {
-      await fetch('/api/leetcode/refresh', { method: 'POST' })
+      await fetch('/api/leetcode/refresh', { method: 'POST', headers: lcHeaders() })
     } catch {}
     load()
     setRefreshing(false)

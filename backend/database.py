@@ -3,6 +3,7 @@
 import os
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, inspect, text
+from sqlalchemy.engine import URL
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 # 优先使用根目录的 .env（本机开发环境），
@@ -43,9 +44,14 @@ if DRIVER is None:
         "  或 pip install pymysql"
     )
 
-DATABASE_URL = (
-    f"{DRIVER}://{DB_USER}:{DB_PASSWORD}"
-    f"@{DB_HOST}:{DB_PORT}/{DB_NAME}?charset=utf8mb4"
+DATABASE_URL = URL.create(
+    drivername=DRIVER,
+    username=DB_USER,
+    password=DB_PASSWORD,
+    host=DB_HOST,
+    port=int(DB_PORT),
+    database=DB_NAME,
+    query={"charset": "utf8mb4"},
 )
 
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
@@ -81,6 +87,11 @@ def run_migrations():
             if "role" not in columns:
                 conn.execute(text(
                     "ALTER TABLE users ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'user'"
+                ))
+                conn.commit()
+            if "token_version" not in columns:
+                conn.execute(text(
+                    "ALTER TABLE users ADD COLUMN token_version INT NOT NULL DEFAULT 0"
                 ))
                 conn.commit()
         # blogs 表新增 category 列（兼容旧版本）
@@ -241,8 +252,12 @@ def run_migrations():
             db.commit()
 
         # 将 end 用户提升为管理员（部署后初始化管理员账号）
+        # 守卫：仅当系统当前没有任何管理员、且用户数 > 1 时才提升，
+        # 防止全新库上抢注 end 即获管理员，也防止已有多管理员时反复提升
+        admin_count = db.query(User).filter(User.role == "admin").count()
+        total = db.query(User).count()
         end_user = db.query(User).filter(User.username == "end").first()
-        if end_user and end_user.role != "admin":
+        if end_user and admin_count == 0 and total > 1 and end_user.role != "admin":
             end_user.role = "admin"
             db.commit()
             print("[migrations] user 'end' promoted to admin")

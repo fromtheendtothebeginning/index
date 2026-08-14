@@ -14,7 +14,7 @@ import ProfileEdit from './pages/ProfileEdit'
 import AdminPage from './pages/AdminPage'
 import MyPage from './pages/MyPage'
 import GoldenMagic from './components/GoldenMagic'
-import { renderMd } from './utils/markdown'
+import { renderMd, sanitizeUrl } from './utils/markdown'
 import ProjectCover from './components/ProjectCover'
 import Reveal from './components/Reveal'
 import { ContactIcon } from './components/Icons'
@@ -161,7 +161,7 @@ function HomePage() {
               <p className="section-desc">值得推荐的伙伴站点</p>
             </Reveal>
             <Reveal className="friend-links-grid">
-              {friendLinks.map(f => (
+              {friendLinks.filter(f => sanitizeUrl(f.url)).map(f => (
                 <a key={f.id} href={f.url} target="_blank" rel="noopener noreferrer" className="friend-link-card">
                   <span className="friend-link-name">{f.name}</span>
                   {f.description && <span className="friend-link-desc">{f.description}</span>}
@@ -192,9 +192,8 @@ function HomePage() {
                   </div>
                 </>
               )
-              return item.type === 'text' ? (
-                <div key={i} className="contact-item contact-item-text">{inner}</div>
-              ) : (
+              const asLink = item.type === 'link' && (isMail || sanitizeUrl(item.value) !== null)
+              return asLink ? (
                 <a
                   key={i}
                   href={isMail ? `mailto:${item.value.replace(/^mailto:/i, '')}` : item.value}
@@ -204,6 +203,8 @@ function HomePage() {
                 >
                   {inner}
                 </a>
+              ) : (
+                <div key={i} className="contact-item contact-item-text">{inner}</div>
               )
             })}
           </Reveal>

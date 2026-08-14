@@ -559,7 +559,7 @@ function AdminPage() {
                       <div className="admin-comment-meta">
                         <span className="admin-comment-author">{c.user?.nickname || c.user?.username || '匿名'}</span>
                         <span className="admin-comment-blog">
-                          <Link to={`/blogs/${c.blog_id}`} target="_blank">{c.blog_title || `#${c.blog_id}`}</Link>
+                          <Link to={`/blogs/${c.blog_id}`} target="_blank" rel="noopener noreferrer">{c.blog_title || `#${c.blog_id}`}</Link>
                         </span>
                         <span className="admin-cell-time">{fmtTime(c.created_at)}</span>
                       </div>
@@ -610,7 +610,7 @@ function AdminPage() {
                   <div key={b.id} className="admin-row">
                     <span>{b.id}</span>
                     <span className="admin-cell-title">
-                      <Link to={`/blogs/${b.id}`} target="_blank">{b.title}</Link>
+                      <Link to={`/blogs/${b.id}`} target="_blank" rel="noopener noreferrer">{b.title}</Link>
                     </span>
                     <span>{b.author?.nickname || b.author?.username || '-'}</span>
                     <span>

@@ -11,8 +11,11 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;')
 }
 
+// 行内插值专用：仅转义引号，避免把 step1 已转义的 &lt; 等二次转义成 &amp;lt;
+const escapeQ = (s) => String(s).replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+
 // 链接/图片 URL 白名单：仅 http(s)/协议相对/mailto/锚点/站内路径，其余协议（javascript: data: 等）拒绝
-function sanitizeUrl(url) {
+export function sanitizeUrl(url) {
   const u = (url || '').trim()
   if (/^(https?:)?\/\//i.test(u)) return u
   if (/^mailto:/i.test(u)) return u
@@ -30,6 +33,17 @@ const MEDIA_ATTRS = {
 }
 const MEDIA_RE = /<(video|iframe|embed|audio)\b[^>]*>[\s\S]*?<\/\1>|<(video|iframe|embed|audio)\b[^>]*\/?>/g
 
+// iframe 域名白名单：仅允许视频/音乐平台，其余一律拒绝
+const IFRAME_ALLOWED_HOSTS = new Set([
+  'www.youtube.com',
+  'youtube.com',
+  'www.youtube-nocookie.com',
+  'player.bilibili.com',
+  'www.bilibili.com',
+  'player.youku.com',
+  'open.spotify.com',
+])
+
 function sanitizeMedia(tag) {
   const m = tag.match(/^<(\w+)\b([^>]*)>/)
   if (!m) return null
@@ -41,6 +55,11 @@ function sanitizeMedia(tag) {
   let a
   while ((a = re.exec(m[2]))) {
     attrs[a[1].toLowerCase()] = (a[2] ?? a[3] ?? a[4] ?? '')
+  }
+  if (name === 'iframe' && attrs.src) {
+    let host = ''
+    try { host = new URL(attrs.src.trim(), 'https://x').hostname } catch {}
+    if (!IFRAME_ALLOWED_HOSTS.has(host)) return null
   }
   const out = []
   for (const k of allowed) {
@@ -56,7 +75,10 @@ function sanitizeMedia(tag) {
     }
   }
   if (!out.some(s => s.includes(' src='))) return null
-  return `<${name}${out.join('')}${/\/>$/.test(tag) ? ' />' : `></${name}>`}`
+  const extra = name === 'iframe'
+    ? ' sandbox="allow-scripts allow-same-origin allow-presentation allow-popups allow-forms" referrerpolicy="no-referrer"'
+    : ''
+  return `<${name}${out.join('')}${extra}${/\/>$/.test(tag) ? ' />' : `></${name}>`}`
 }
 
 // 处理行内标记：粗体、斜体、删除线、行内代码、链接、图片
@@ -74,8 +96,8 @@ function renderInline(text) {
     (_, alt, url, title) => {
       const u = sanitizeUrl(url)
       if (!u) return `![${alt}](${url})`
-      const t = title ? ` title="${title}"` : ''
-      return `<img src="${u}" alt="${alt}"${t} loading="lazy" />`
+      const t = title ? ` title="${escapeQ(title)}"` : ''
+      return `<img src="${escapeQ(u)}" alt="${escapeQ(alt)}"${t} loading="lazy" />`
     }
   )
   // 链接 [text](url)
@@ -83,8 +105,8 @@ function renderInline(text) {
     (_, text, url, title) => {
       const u = sanitizeUrl(url)
       if (!u) return text
-      const t = title ? ` title="${title}"` : ''
-      return `<a href="${u}" target="_blank" rel="noopener noreferrer"${t}>${text}</a>`
+      const t = title ? ` title="${escapeQ(title)}"` : ''
+      return `<a href="${escapeQ(u)}" target="_blank" rel="noopener noreferrer"${t}>${escapeQ(text)}</a>`
     }
   )
 

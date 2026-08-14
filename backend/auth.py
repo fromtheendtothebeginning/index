@@ -1,6 +1,7 @@
 # auth.py — 密码加密 & JWT 令牌
 
 import os
+import re
 import hashlib
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -18,6 +19,10 @@ load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
 if not SECRET_KEY:
     raise RuntimeError("缺少 SECRET_KEY 环境变量，拒绝启动（防止使用可预测密钥签发 JWT）")
+if len(SECRET_KEY) < 32:
+    raise RuntimeError("SECRET_KEY 强度不足（<32 字符），拒绝启动")
+if "anticraft" in SECRET_KEY.lower() or not re.fullmatch(r"[a-zA-Z0-9_-]{32,64}", SECRET_KEY):
+    print("[auth] 警告：SECRET_KEY 可能为弱密钥，建议轮换")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 小时
 

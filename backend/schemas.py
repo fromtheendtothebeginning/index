@@ -5,6 +5,15 @@ from datetime import datetime
 from typing import Optional
 
 
+def _validate_http_url(value):
+    """校验必须是 http:// 或 https:// 开头的 URL；None / 空串放行"""
+    if value is None or value == "":
+        return value
+    if not (value.startswith("http://") or value.startswith("https://")):
+        raise ValueError("必须是 http:// 或 https:// 开头的合法 URL")
+    return value
+
+
 # ── 请求 ──
 
 class RegisterRequest(BaseModel):
@@ -27,6 +36,11 @@ class ResetPasswordRequest(BaseModel):
 class UpdateProfileRequest(BaseModel):
     nickname: Optional[str] = Field(None, max_length=50, description="昵称")
     avatar_url: Optional[str] = Field(None, max_length=500, description="头像 URL")
+
+    @field_validator("avatar_url")
+    @classmethod
+    def _validate_avatar_url(cls, v):
+        return _validate_http_url(v)
 
 
 class DeleteAccountRequest(BaseModel):
@@ -80,6 +94,11 @@ class ProjectLinkItem(BaseModel):
     name: str = Field(..., min_length=1, max_length=50, description="链接名称，如 GitHub/下载")
     url: str = Field(..., min_length=1, max_length=500, description="链接地址")
 
+    @field_validator("url")
+    @classmethod
+    def _validate_url(cls, v):
+        return _validate_http_url(v)
+
 
 class CreateProjectRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=200, description="项目名")
@@ -90,6 +109,11 @@ class CreateProjectRequest(BaseModel):
     link_url: Optional[str] = Field(None, max_length=500, description="项目链接（GitHub/下载，可自定义）")
     links: Optional[list[ProjectLinkItem]] = None
 
+    @field_validator("cover_url", "link_url")
+    @classmethod
+    def _validate_urls(cls, v):
+        return _validate_http_url(v)
+
 
 class UpdateProjectRequest(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=200, description="项目名")
@@ -99,6 +123,11 @@ class UpdateProjectRequest(BaseModel):
     bg_color: Optional[str] = Field(None, max_length=9, description="自定义封面背景色，如 #6c5ce7")
     link_url: Optional[str] = Field(None, max_length=500, description="项目链接（GitHub/下载，可自定义）")
     links: Optional[list[ProjectLinkItem]] = None
+
+    @field_validator("cover_url", "link_url")
+    @classmethod
+    def _validate_urls(cls, v):
+        return _validate_http_url(v)
 
 
 class UpdateProjectBlogsRequest(BaseModel):
@@ -356,6 +385,11 @@ class UpdateAdminUserRequest(BaseModel):
     avatar_url: Optional[str] = Field(None, max_length=500, description="头像 URL")
     password: Optional[str] = Field(None, min_length=6, max_length=128, description="新密码")
 
+    @field_validator("avatar_url")
+    @classmethod
+    def _validate_avatar_url(cls, v):
+        return _validate_http_url(v)
+
 
 class AdminCommentResponse(BaseModel):
     """管理员视角的评论（含博客标题、用户名与父评论）"""
@@ -442,11 +476,21 @@ class FriendLinkRequest(BaseModel):
     url: str = Field(..., min_length=1, max_length=500, description="链接地址")
     description: Optional[str] = Field(None, max_length=200, description="简介")
 
+    @field_validator("url")
+    @classmethod
+    def _validate_url(cls, v):
+        return _validate_http_url(v)
+
 
 class UpdateFriendLinkRequest(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100, description="站点名称")
     url: Optional[str] = Field(None, min_length=1, max_length=500, description="链接地址")
     description: Optional[str] = Field(None, max_length=200, description="简介")
+
+    @field_validator("url")
+    @classmethod
+    def _validate_url(cls, v):
+        return _validate_http_url(v)
 
 
 class FriendLinkResponse(BaseModel):
@@ -487,6 +531,11 @@ class UpdateSiteSettingRequest(BaseModel):
     email: Optional[str] = Field(None, max_length=200, description="联系邮箱")
     github_url: Optional[str] = Field(None, max_length=500, description="GitHub 链接")
     contact_items: Optional[list[ContactItem]] = Field(None, description="自定义联系项（与邮箱/GitHub 并列）")
+
+    @field_validator("github_url")
+    @classmethod
+    def _validate_github_url(cls, v):
+        return _validate_http_url(v)
 
 
 # ── LeetCode ──
