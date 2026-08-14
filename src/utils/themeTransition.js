@@ -2,7 +2,7 @@
 // 任何主题色变化（切换 / 换肤 / 新主题）都会从当前值逐帧线性插值到目标值，
 // 自动产生平滑渐变动画。主题定义见 themes.js。
 
-import { THEMES, modeIsDark, parseColor } from './themes'
+import { THEMES, detectThemeMode, modeIsDark, parseColor } from './themes'
 
 let rafId = null
 
@@ -21,13 +21,7 @@ function formatRgba([r, g, b, a]) {
   return a >= 1 ? `rgb(${r},${g},${b})` : `rgba(${r},${g},${b},${a.toFixed(3).replace(/0+$/, '').replace(/\.$/, '')})`
 }
 
-/**
- * 将当前主题渐变过渡到目标主题（自动对全部变量插值）。
- * @param {string} name - THEMES 中的主题名（light / dark / 未来新主题）
- * @param {number} [duration=600] - 动画时长 ms
- */
-export function applyTheme(name, duration = 600) {
-  const target = THEMES[name]
+function applyThemeVars(target, duration = 600, keepInline = false) {
   if (!target) return
   if (rafId) cancelAnimationFrame(rafId)
   const keys = Object.keys(target)
@@ -54,28 +48,65 @@ export function applyTheme(name, duration = 600) {
       rafId = requestAnimationFrame(step)
     } else {
       rafId = null
-      root.setAttribute('data-theme', name)
-      for (const key of keys) root.style.removeProperty(key)
+      if (!keepInline) for (const key of keys) root.style.removeProperty(key)
     }
   }
   rafId = requestAnimationFrame(step)
 }
 
 /**
+ * 将当前主题渐变过渡到目标主题（自动对 target 中定义的变量插值）。
+ * @param {string} name - THEMES 中的主题名（light / dark / gold / 未来新主题）
+ * @param {number} [duration=600] - 动画时长 ms
+ * @param {boolean} [keepInline=false] - 完成后保留内联变量（如黄金主题需保留金色）
+ */
+export function applyTheme(name, duration = 600, keepInline = false) {
+  const target = THEMES[name]
+  if (!target) return
+  if (name !== 'gold') document.documentElement.setAttribute('data-theme', name)
+  applyThemeVars(target, duration, keepInline)
+}
+
+/**
  * 浅色 ↔ 深色主题渐变切换（兼容旧调用，system 模式自动判断）。
+ * 黄金模式激活时：背景随主题切换、文字/按钮保持金色（一次渐变，避免闪烁）。
  * @param {'light'|'dark'|'system'} mode - 目标主题模式
  * @param {number} [duration=600] - 动画时长 ms
  */
 export function changeThemeWithTransition(mode, duration = 600) {
-  if (mode === 'system') {
-    const dark = modeIsDark('system')
-    applyTheme(dark ? 'dark' : 'light', duration)
-    document.documentElement.removeAttribute('data-theme')
-    // 无 data-theme 时由 media 查询接管；此处显式应用目标色后移除内联，交由 CSS 兜底
-    return
+  const isDark = mode === 'system' ? modeIsDark('system') : mode === 'dark'
+  const name = isDark ? 'dark' : 'light'
+  const root = document.documentElement
+  const goldenActive = root.getAttribute('data-golden') === '1'
+  if (mode === 'system') root.removeAttribute('data-theme')
+  else root.setAttribute('data-theme', name)
+  if (goldenActive) {
+    // 黄金保持：背景/中性用目标主题，文字/按钮用金色
+    const target = { ...THEMES[name], ...THEMES.gold }
+    applyThemeVars(target, duration, true)
+    root.setAttribute('data-golden', '1')
+  } else {
+    applyTheme(name, duration)
   }
-  applyTheme(mode === 'dark' ? 'dark' : 'light', duration)
+}
+
+/**
+ * 黄金模式：进入时字体/按钮变金色（背景不变，保留内联金色并标记 data-golden）；
+ * 退出时恢复原主题。
+ * @param {boolean} golden - true 进入黄金 / false 恢复
+ * @param {number} [duration=900] - 动画时长 ms
+ */
+export function applyGolden(golden, duration = 900) {
+  const root = document.documentElement
+  if (golden) {
+    root.setAttribute('data-golden', '1')
+    applyTheme('gold', duration, true)
+  } else {
+    root.removeAttribute('data-golden')
+    const mode = detectThemeMode()
+    applyTheme(mode === 'system' ? (modeIsDark('system') ? 'dark' : 'light') : (mode === 'dark' ? 'dark' : 'light'), duration)
+  }
 }
 
 // 保留检测工具，供其它模块引用
-export { modeIsDark }
+export { modeIsDark, detectThemeMode }

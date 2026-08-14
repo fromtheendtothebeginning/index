@@ -65,6 +65,28 @@ export const THEMES = {
     '--glow-cyan': 'rgba(46, 230, 224, 0.1)',
     '--glow-cyan-strong': 'rgba(46, 230, 224, 0.5)',
   },
+  // 黄金主题：字体/按钮变金色（背景保持当前主题不变，故不定义背景键）
+  gold: {
+    '--text-primary': '#b8860b',
+    '--text-secondary': '#c9a45a',
+    '--text-muted': '#a0863a',
+    '--border-color': '#e8d28a',
+    '--neutral-soft': '#f5e6b0',
+    '--neutral-soft-hover': '#ecd89a',
+    '--accent-1': '#d4a400',
+    '--accent-1-light': '#f0c23a',
+    '--accent-1-hover': '#b89100',
+    '--accent-1-soft': 'rgba(212, 164, 0, 0.15)',
+    '--accent-1-soft-strong': 'rgba(212, 164, 0, 0.22)',
+    '--accent-1-border': 'rgba(212, 164, 0, 0.45)',
+    '--accent-2': '#c99600',
+    '--accent-2-hover': '#b88100',
+    '--accent-2-soft': 'rgba(201, 150, 0, 0.18)',
+    '--glow-accent': 'rgba(212, 164, 0, 0.12)',
+    '--glow-accent-strong': 'rgba(212, 164, 0, 0.45)',
+    '--glow-cyan': 'rgba(201, 150, 0, 0.08)',
+    '--glow-cyan-strong': 'rgba(201, 150, 0, 0.4)',
+  },
 }
 
 // 主题键集合（供插值引擎使用）

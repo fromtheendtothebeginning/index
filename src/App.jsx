@@ -13,6 +13,7 @@ import LeetCodePage from './pages/LeetCodePage'
 import ProfileEdit from './pages/ProfileEdit'
 import AdminPage from './pages/AdminPage'
 import MyPage from './pages/MyPage'
+import GoldenMagic from './components/GoldenMagic'
 import { renderMd } from './utils/markdown'
 import ProjectCover from './components/ProjectCover'
 import Reveal from './components/Reveal'
@@ -223,8 +224,10 @@ function HomePage() {
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
+    <>
+      <GoldenMagic />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
       <Route path="/auth" element={<AuthPage />} />
       <Route path="/login" element={<Navigate to="/auth" replace />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -240,7 +243,8 @@ function App() {
       <Route path="/profile" element={<ProfileEdit />} />
       <Route path="/admin" element={<AdminPage />} />
       <Route path="/my" element={<MyPage />} />
-    </Routes>
+      </Routes>
+    </>
   )
 }
 
