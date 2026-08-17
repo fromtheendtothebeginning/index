@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // 生产构建注入 CSP meta（dev 不注入，避免破坏 HMR）
-const CSP_META = 'default-src \'self\'; script-src \'self\'; style-src \'self\' \'unsafe-inline\' https://fonts.googleapis.com; font-src \'self\' https://fonts.gstatic.com; img-src \'self\' data: https:; media-src \'self\' blob: https:; connect-src \'self\'; frame-src https:; object-src \'none\'; base-uri \'self\'; form-action \'self\''
+const CSP_META = 'default-src \'self\'; script-src \'self\'; style-src \'self\' \'unsafe-inline\' https://fonts.googleapis.com; font-src \'self\' data: https://fonts.gstatic.com; img-src \'self\' data: https:; media-src \'self\' blob: https:; connect-src \'self\'; frame-src https:; object-src \'none\'; base-uri \'self\'; form-action \'self\''
 
 function cspPlugin() {
   return {
