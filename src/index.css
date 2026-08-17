@@ -159,6 +159,91 @@ img {
   color: inherit;
 }
 
+/* ---------- 代码块语言角标 + highlight.js 语法染色（全局，覆盖 4 处 .markdown-body 渲染点） ---------- */
+.markdown-body pre[data-lang] {
+  position: relative;
+  padding-top: 44px;
+}
+
+.markdown-body pre[data-lang]::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 12px;
+  left: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  text-transform: none;
+  user-select: none;
+}
+
+/* hljs token 配色：背景继承 pre 的 var(--bg-elevated)，默认文字跟随主题 */
+.markdown-body code.hljs {
+  background: none;
+  color: var(--text-primary);
+}
+.markdown-body .hljs-comment,
+.markdown-body .hljs-quote {
+  color: var(--text-muted);
+  font-style: italic;
+}
+.markdown-body .hljs-keyword,
+.markdown-body .hljs-selector-tag,
+.markdown-body .hljs-literal,
+.markdown-body .hljs-section {
+  color: var(--accent-1);
+  font-weight: 600;
+}
+.markdown-body .hljs-string,
+.markdown-body .hljs-regexp,
+.markdown-body .hljs-addition,
+.markdown-body .hljs-attribute {
+  color: var(--accent-2);
+}
+.markdown-body .hljs-number,
+.markdown-body .hljs-symbol,
+.markdown-body .hljs-bullet {
+  color: #f39c12;
+}
+.markdown-body .hljs-title,
+.markdown-body .hljs-title.function_,
+.markdown-body .hljs-title.class_ {
+  color: #2d7ee7;
+}
+.markdown-body .hljs-built_in,
+.markdown-body .hljs-params {
+  color: #c7254e;
+}
+.markdown-body .hljs-type,
+.markdown-body .hljs-class .hljs-title {
+  color: #2d7ee7;
+}
+.markdown-body .hljs-meta,
+.markdown-body .hljs-meta .hljs-keyword {
+  color: var(--text-muted);
+}
+.markdown-body .hljs-attr,
+.markdown-body .hljs-variable,
+.markdown-body .hljs-template-variable,
+.markdown-body .hljs-property {
+  color: #6f42c1;
+}
+.markdown-body .hljs-name,
+.markdown-body .hljs-selector-class,
+.markdown-body .hljs-selector-id {
+  color: #d73a49;
+}
+.markdown-body .hljs-deletion {
+  color: #d73a49;
+}
+.markdown-body .hljs-emphasis {
+  font-style: italic;
+}
+.markdown-body .hljs-strong {
+  font-weight: 700;
+}
+
 /* 移动端点击优化：按钮不触发双击缩放 */
 button {
   touch-action: manipulation;

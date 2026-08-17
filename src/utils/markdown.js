@@ -3,6 +3,7 @@
 // 引用、有序/无序列表、表格、分隔线、删除线、LaTeX 数学公式（KaTeX）等。
 
 import katex from 'katex'
+import hljs from 'highlight.js/lib/common'
 
 // 数学公式渲染：throwOnError:false 下 KaTeX 会自行转义错误输入，try/catch 仅作保险
 function renderMath(latex, displayMode) {
@@ -24,6 +25,31 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;')
 }
+
+// 代码块渲染：已知语言按语言高亮；未知语言/无语言走 highlightAuto 自动检测；异常则纯文本兜底。
+// 代码内容一律经 hljs（内部已转义）或 escapeHtml，禁止裸插原文，保持 XSS 防线。
+function renderCodeBlock(rawLang, code) {
+  const lang = String(rawLang || '').trim().toLowerCase()
+  let html
+  let effective = lang
+  try {
+    if (lang && hljs.getLanguage(lang)) {
+      html = hljs.highlight(code, { language: lang, ignoreIllegals: true }).value
+    } else {
+      const r = hljs.highlightAuto(code)
+      html = r.value
+      effective = lang || r.language || ''
+    }
+  } catch {
+    html = escapeHtml(code)
+  }
+  const attr = effective ? ` data-lang="${escapeHtml(effective)}"` : ''
+  return `<pre class="lang-${escapeHtml(lang)}"${attr}><code class="hljs">${html}</code></pre>`
+}
+
+// 反转 step1 的 & / < / > 转义（未闭合代码块兜底时 buf 内容已被转义，
+// 需还原后再交给 hljs 重新转义一次，避免 &lt; 二次转义成 &amp;lt;）
+const unescapeStep1 = (s) => String(s).replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
 
 // 行内插值专用：仅转义引号，避免把 step1 已转义的 &lt; 等二次转义成 &amp;lt;
 const escapeQ = (s) => String(s).replace(/"/g, '&quot;').replace(/'/g, '&#39;')
@@ -178,7 +204,7 @@ export function renderMd(text) {
   text = text.replace(/```[\s\S]*?```/g, (m) => {
     const lang = m.match(/^```(\w*)/)?.[1] || ''
     const body = m.replace(/^```\w*\s*\n?/, '').replace(/\n?```$/, '')
-    codeBlocks.push(`<pre><code class="lang-${lang}">${escapeHtml(body)}</code></pre>`)
+    codeBlocks.push(renderCodeBlock(lang, body))
     return `\u0000CODEBLOCK${codeBlocks.length - 1}\u0000`
   })
   // 行内代码提前提取，保证 `$x$` 等公式语法在反引号内不被当作公式
@@ -238,7 +264,7 @@ export function renderMd(text) {
         i++
       }
       i++ // 跳过结束 ```
-      const codeHtml = `<pre><code class="lang-${lang}">${buf.join('\n')}</code></pre>`
+      const codeHtml = renderCodeBlock(lang, unescapeStep1(buf.join('\n')))
       codeBlocks.push(codeHtml)
       out.push(`\u0000BLOCK${codeBlocks.length - 1}\u0000`)
       continue
