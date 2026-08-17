@@ -1,6 +1,20 @@
 // markdown.js — 轻量 Markdown 渲染器
 // 支持大多数常用语法：标题、段落、强调、行内/代码块、链接、图片、
-// 引用、有序/无序列表、表格、分隔线、删除线等。
+// 引用、有序/无序列表、表格、分隔线、删除线、LaTeX 数学公式（KaTeX）等。
+
+import katex from 'katex'
+
+// 数学公式渲染：throwOnError:false 下 KaTeX 会自行转义错误输入，try/catch 仅作保险
+function renderMath(latex, displayMode) {
+  try {
+    return katex.renderToString(latex, { displayMode, throwOnError: false, output: 'html', strict: false })
+  } catch {
+    return escapeHtml(latex)
+  }
+}
+
+// 清理字符串中的占位符（用于 HTML 属性位置，防止 KaTeX HTML 注入属性破坏结构）
+const stripPlaceholders = (s) => String(s).replace(/\u0000(?:MATHB?|CODE|CODEBLOCK|MEDIA)\d+\u0000/g, '')
 
 function escapeHtml(str) {
   return str
@@ -81,31 +95,27 @@ function sanitizeMedia(tag) {
   return `<${name}${out.join('')}${extra}${/\/>$/.test(tag) ? ' />' : `></${name}>`}`
 }
 
-// 处理行内标记：粗体、斜体、删除线、行内代码、链接、图片
+// 处理行内标记：粗体、斜体、删除线、链接、图片（行内代码已在 step0 预提取为占位符）
 function renderInline(text) {
   let s = text
-  // 行内代码（优先处理，避免内部被其他规则改写）
-  const codeStash = []
-  s = s.replace(/`([^`]+)`/g, (_, code) => {
-    codeStash.push(code)
-    return `\u0000CODE${codeStash.length - 1}\u0000`
-  })
 
   // 图片 ![alt](url)
   s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)/g,
     (_, alt, url, title) => {
-      const u = sanitizeUrl(url)
+      const cleanAlt = stripPlaceholders(alt)
+      const u = sanitizeUrl(stripPlaceholders(url))
       if (!u) return `![${alt}](${url})`
-      const t = title ? ` title="${escapeQ(title)}"` : ''
-      return `<img src="${escapeQ(u)}" alt="${escapeQ(alt)}"${t} loading="lazy" />`
+      const t = title ? ` title="${escapeQ(stripPlaceholders(title))}"` : ''
+      return `<img src="${escapeQ(u)}" alt="${escapeQ(cleanAlt)}"${t} loading="lazy" />`
     }
   )
   // 链接 [text](url)
   s = s.replace(/(?<!!)\[([^\]]+)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)/g,
     (_, text, url, title) => {
-      const u = sanitizeUrl(url)
+      const u = sanitizeUrl(stripPlaceholders(url))
       if (!u) return text
-      const t = title ? ` title="${escapeQ(title)}"` : ''
+      const t = title ? ` title="${escapeQ(stripPlaceholders(title))}"` : ''
+      // 显示文本保留占位符：公式在链接内渲染是期望行为
       return `<a href="${escapeQ(u)}" target="_blank" rel="noopener noreferrer"${t}>${escapeQ(text)}</a>`
     }
   )
@@ -119,8 +129,6 @@ function renderInline(text) {
   // 删除线 ~~text~~
   s = s.replace(/~~([^~]+)~~/g, '<del>$1</del>')
 
-  // 还原行内代码
-  s = s.replace(/\u0000CODE(\d+)\u0000/g, (_, i) => `<code>${escapeHtml(codeStash[Number(i)])}</code>`)
   return s
 }
 
@@ -162,15 +170,34 @@ function renderTable(lines) {
 export function renderMd(text) {
   if (!text) return ''
 
-  // 0. 预提取：先保护代码块，再提取媒体嵌入（避免代码块内的媒体标签被误放行）
+  // 0. 预提取：先保护代码块，再提取行内代码与公式（避免 $ 在代码内被当公式），最后提取媒体嵌入
   const mediaBlocks = []
   const codeBlocks = []
+  const codeStash = []
+  const mathStash = []
   text = text.replace(/```[\s\S]*?```/g, (m) => {
     const lang = m.match(/^```(\w*)/)?.[1] || ''
     const body = m.replace(/^```\w*\s*\n?/, '').replace(/\n?```$/, '')
     codeBlocks.push(`<pre><code class="lang-${lang}">${escapeHtml(body)}</code></pre>`)
     return `\u0000CODEBLOCK${codeBlocks.length - 1}\u0000`
   })
+  // 行内代码提前提取，保证 `$x$` 等公式语法在反引号内不被当作公式
+  text = text.replace(/`([^`]+)`/g, (_, code) => {
+    codeStash.push(escapeHtml(code))
+    return `\u0000CODE${codeStash.length - 1}\u0000`
+  })
+  // 块级公式 $$...$$（必须先于行内公式提取）
+  text = text.replace(/\$\$([\s\S]+?)\$\$/g, (_, latex) => {
+    mathStash.push({ latex, display: true })
+    return `\u0000MATHB${mathStash.length - 1}\u0000`
+  })
+  // 行内公式 $...$（负向后行断言防 \$，开闭两侧禁空白，内容禁换行与 $）
+  text = text.replace(/(?<!\\)\$(?!\s)([^\n$]+?)(?<!\s)\$(?!\s)/g, (_, latex) => {
+    mathStash.push({ latex, display: false })
+    return `\u0000MATH${mathStash.length - 1}\u0000`
+  })
+  // 未被公式消费的 \$ 还原为字面 $
+  text = text.replace(/\\\$/g, '$')
   text = text.replace(MEDIA_RE, (m) => {
     const safe = sanitizeMedia(m)
     if (!safe) return m
@@ -375,11 +402,27 @@ export function renderMd(text) {
   let html = out.join('\n')
 
   // 5. 还原代码块占位（入口预提取 + 未闭合兜底）
-  html = html.replace(/\u0000CODEBLOCK(\d+)\u0000/g, (_, idx) => codeBlocks[Number(idx)])
-  html = html.replace(/\u0000BLOCK(\d+)\u0000/g, (_, idx) => codeBlocks[Number(idx)])
+  //    越界时原样保留占位符：引用块递归 renderMd 会带入外部占位符，
+  //    由外层作用域最终还原，避免丢失内容或渲染出 "undefined"
+  html = html.replace(/\u0000CODEBLOCK(\d+)\u0000/g, (_, idx) => codeBlocks[Number(idx)] ?? `\u0000CODEBLOCK${idx}\u0000`)
+  html = html.replace(/\u0000BLOCK(\d+)\u0000/g, (_, idx) => codeBlocks[Number(idx)] ?? `\u0000BLOCK${idx}\u0000`)
 
   // 6. 还原媒体嵌入占位
-  html = html.replace(/\u0000MEDIA(\d+)\u0000/g, (_, idx) => mediaBlocks[Number(idx)])
+  html = html.replace(/\u0000MEDIA(\d+)\u0000/g, (_, idx) => mediaBlocks[Number(idx)] ?? `\u0000MEDIA${idx}\u0000`)
+
+  // 7. 还原行内代码与数学公式占位（KaTeX 输出直接作为 HTML 注入，属预期行为）
+  html = html.replace(/\u0000CODE(\d+)\u0000/g, (_, idx) => {
+    const c = codeStash[Number(idx)]
+    return c === undefined ? `\u0000CODE${idx}\u0000` : `<code>${c}</code>`
+  })
+  html = html.replace(/\u0000MATHB(\d+)\u0000/g, (_, idx) => {
+    const m = mathStash[Number(idx)]
+    return m ? renderMath(m.latex, true) : `\u0000MATHB${idx}\u0000`
+  })
+  html = html.replace(/\u0000MATH(\d+)\u0000/g, (_, idx) => {
+    const m = mathStash[Number(idx)]
+    return m ? renderMath(m.latex, false) : `\u0000MATH${idx}\u0000`
+  })
 
   return html
 }

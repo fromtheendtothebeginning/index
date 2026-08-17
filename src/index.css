@@ -154,6 +154,11 @@ img {
   display: block;
 }
 
+/* KaTeX：跟随主题文字色，深色模式下不出现固定黑色 */
+.katex {
+  color: inherit;
+}
+
 /* 移动端点击优化：按钮不触发双击缩放 */
 button {
   touch-action: manipulation;
