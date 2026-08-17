@@ -383,3 +383,15 @@ button {
   cursor: pointer;
   text-decoration: underline;
 }
+
+/* ---------- 移动端 markdown：KaTeX 公式 / 代码块角标压缩 ---------- */
+@media (max-width: 768px) {
+  .markdown-body pre[data-lang] { padding-top: 34px; }
+  .markdown-body pre[data-lang]::before { top: 9px; left: 12px; font-size: 11px; }
+  .markdown-body pre { padding: 14px 12px; }
+  .markdown-body pre code { font-size: 13px; line-height: 1.55; }
+  .markdown-body .katex { font-size: 1.05em; }
+  .markdown-body .katex-display { margin: 12px 0; }
+  .markdown-body pre,
+  .markdown-body .katex-display { -webkit-overflow-scrolling: touch; }
+}

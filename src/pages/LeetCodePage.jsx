@@ -193,7 +193,14 @@ const load = () => {
           <span className="lc-mine-user">
             <Avatar user={{ avatar_url: myRow ? myRow.avatar_url : null, nickname: myRow ? myRow.nickname : null, username: myRow ? myRow.username : null }} />
             <span className="lc-nickname">{myRow ? (myRow.nickname || myRow.username) : me.leetcode_username}</span>
-            <span className="lc-username">@{me.leetcode_username}</span>
+            <a
+              className="lc-username lc-username-link"
+              href={`https://leetcode.cn/u/${encodeURIComponent(me.leetcode_username)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="在 LeetCode 查看主页"
+              onClick={e => e.stopPropagation()}
+            >@{me.leetcode_username}</a>
             {me.difficulty_mode && (
               <span className="lc-hard-tag" title="困难模式下得分减半">困难模式</span>
             )}
@@ -208,7 +215,9 @@ const load = () => {
             )}
           </span>
           <span className="lc-mine-stats">
-            简单 {me.inc.easy} · 中等 {me.inc.medium} · 困难 {me.inc.hard} · 总增量 {me.total_inc}
+            增量：简单 {me.inc.easy} · 中等 {me.inc.medium} · 困难 {me.inc.hard} · 合计 {me.total_inc}
+            <br />
+            力扣累计：简单 {me.cur.easy} · 中等 {me.cur.medium} · 困难 {me.cur.hard} · <b>总刷题量 {me.cur.easy + me.cur.medium + me.cur.hard}</b>
           </span>
           <span className="lc-mine-score">{me.score} 分</span>
           <div className="lc-mine-actions">
@@ -346,7 +355,14 @@ const load = () => {
                 <span className="lc-col-user">
                   <Avatar user={u} />
                   <span className="lc-nickname">{u.nickname || u.username}</span>
-                  <span className="lc-username">@{u.leetcode_username}</span>
+                  <a
+                    className="lc-username lc-username-link"
+                    href={`https://leetcode.cn/u/${encodeURIComponent(u.leetcode_username)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="在 LeetCode 查看主页"
+                    onClick={e => e.stopPropagation()}
+                  >@{u.leetcode_username}</a>
                   {u.difficulty_mode && (
                     <span className="lc-hard-tag" title="困难模式下得分减半">困难模式</span>
                   )}
@@ -360,11 +376,11 @@ const load = () => {
                     <span className="lc-debug-tag" title="调试模式：手动调整刷题量，不读取 LeetCode">调试</span>
                   )}
                 </span>
-                <span className="lc-col-stat">{u.easy}</span>
-                <span className="lc-col-stat">{u.medium}</span>
-                <span className="lc-col-stat">{u.hard}</span>
-                <span className="lc-col-stat">{u.total}</span>
-                <span className="lc-col-score">{u.score}</span>
+                <span className="lc-col-stat"><span className="lc-stat-label">简单 </span>{u.easy}</span>
+                <span className="lc-col-stat"><span className="lc-stat-label">中等 </span>{u.medium}</span>
+                <span className="lc-col-stat"><span className="lc-stat-label">困难 </span>{u.hard}</span>
+                <span className="lc-col-stat lc-col-total"><span className="lc-stat-label">总数 </span>{u.total}</span>
+                <span className="lc-col-score"><span className="lc-stat-label">得分 </span>{u.score}</span>
               </div>
             ))}
           </div>

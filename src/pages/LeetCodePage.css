@@ -416,6 +416,20 @@
   white-space: nowrap;
 }
 
+.lc-username-link {
+  color: var(--accent-1);
+  text-decoration: none;
+  transition: color .2s;
+}
+
+.lc-username-link:hover {
+  text-decoration: underline;
+}
+
+.lc-username-link:active {
+  opacity: 0.7;
+}
+
 .lc-hard-tag {
   font-size: 11px;
   padding: 2px 8px;
@@ -450,7 +464,8 @@
   position: relative;
   overflow: hidden;
   background: #ffd700;
-  color: #5a3e00;
+  color: #a8841a;
+  font-weight: 600;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
     inset 0 -1px 0 rgba(0, 0, 0, 0.12),
@@ -482,6 +497,20 @@
   }
 }
 
+.lc-username-link {
+  color: var(--accent-1);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.lc-username-link:hover {
+  text-decoration: underline;
+}
+
+.lc-username-link:active {
+  opacity: 0.75;
+}
+
 .lc-col-stat {
   text-align: center;
   color: var(--text-secondary);
@@ -493,15 +522,67 @@
   color: var(--accent-1);
 }
 
+/* 桌面端数据格不带标签（表头已有"简单/中等/困难/总数/得分"） */
+.lc-stat-label {
+  display: none;
+}
+
 @media (max-width: 720px) {
-  .lc-row {
-    grid-template-columns: 40px 1.4fr repeat(4, 44px) 64px;
-    padding: 10px 12px;
-    font-size: 12px;
-    gap: 6px;
+  .lc-board {
+    overflow-x: visible;
   }
 
-  .lc-username {
+  .lc-row.lc-row-head {
     display: none;
+  }
+
+  .lc-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-areas:
+      "rank user user"
+      "easy med hard"
+      "total total score";
+    column-gap: 10px;
+    row-gap: 6px;
+    min-width: 0;
+    padding: 10px 12px;
+    font-size: 12px;
+    align-items: center;
+  }
+
+  .lc-row > *:nth-child(1) { grid-area: rank; justify-content: flex-start; }
+  .lc-row > *:nth-child(2) { grid-area: user; min-width: 0; }
+  .lc-row > *:nth-child(3) { grid-area: easy; }
+  .lc-row > *:nth-child(4) { grid-area: med; }
+  .lc-row > *:nth-child(5) { grid-area: hard; }
+  .lc-row > *:nth-child(6) { grid-area: total; }
+  .lc-row > *:nth-child(7) { grid-area: score; }
+
+  .lc-col-stat,
+  .lc-col-total,
+  .lc-col-score {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 3px;
+    text-align: left;
+    font-weight: 500;
+    line-height: 1.6;
+  }
+
+  .lc-col-score {
+    color: var(--accent-1);
+    font-weight: 700;
+  }
+
+  .lc-stat-label {
+    display: inline;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+
+  .lc-username-link {
+    display: inline;
   }
 }
