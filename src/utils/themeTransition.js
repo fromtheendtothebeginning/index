@@ -27,14 +27,21 @@ function applyThemeVars(target, duration = 600, keepInline = false) {
   const keys = Object.keys(target)
   const from = readCurrentValues(keys)
   const to = {}
-  for (const key of keys) to[key] = parseColor(target[key])
+  const direct = {}
+  for (const key of keys) {
+    const parsed = parseColor(target[key])
+    if (parsed) to[key] = parsed
+    else direct[key] = target[key] // 非颜色值（渐变等）：直接赋值，不参与插值
+  }
   const root = document.documentElement
+  // 非插值变量（如 --progress-gradient 渐变）立即应用
+  for (const key of Object.keys(direct)) root.style.setProperty(key, direct[key])
   const start = performance.now()
 
   const step = (now) => {
     const t = Math.min(1, (now - start) / duration)
     const ease = 1 - Math.pow(1 - t, 3) // easeOutCubic
-    for (const key of keys) {
+    for (const key of Object.keys(to)) {
       const f = from[key] || [0, 0, 0, 1]
       const g = to[key] || [0, 0, 0, 1]
       root.style.setProperty(key, formatRgba([

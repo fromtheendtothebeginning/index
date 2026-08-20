@@ -132,6 +132,9 @@ function Navbar({ activePage }) {
       </NavItem>
       <NavItem label="项目" to="/projects" active={activePage === 'project'} onNavigate={closeMenu} />
       <NavItem label="榜单" to="/leetcode" active={activePage === 'leetcode'} onNavigate={closeMenu} />
+      <NavItem label="工具" to="/tools" active={activePage === 'tools'} onNavigate={closeMenu}>
+        <Link to="/tools/video-parse">视频解析</Link>
+      </NavItem>
       {user && (
         <NavItem
           label={<span>我的{unread > 0 && badgeOn && <span className="nav-badge">{unread}</span>}</span>}

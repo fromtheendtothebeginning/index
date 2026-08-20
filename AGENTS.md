@@ -70,6 +70,7 @@
 5. **deploy.bat 每次部署覆盖生成 `backend/.env`**（从根 `.env` 复制并替换 `DB_PASSWORD` 为服务器密码）→ 本地 `backend/.env` 的 DB_PASSWORD 是服务器密码，连本地库需注意。
 6. **Playwright 验证环境**（项目已装 `playwright-core`，chromium 二进制在 `C:\Users\86133\AppData\Local\ms-playwright\chromium-1234\chrome-win64\chrome.exe`，启动需传 `executablePath`）：`addInitScript` 只接受一个参数（多参数先写入 localStorage 再 `location.reload()`）；`page.evaluate` 里的相对 fetch 需先 goto 一个页面；`innerText` 不含 input 值，验证输入用 `inputValue()`；CSS hover 菜单点击用 Playwright 会暴露真实用户遇见的 hover 断链/遮挡问题。
 7. **测试账号流程**：注册测试账号 → 直接改库 `role='admin'` 用其 token 调 admin 接口 → 测试完毕删除账号并**还原被改的数据**（如博客分类）。
+   - **固定本地测试账号（长期保留，勿删除、勿重复注册）**：`demotools` / `DemoTools123`（admin）。需 token 时直接查库改其 `role='admin'` 后登录取 token；不要每次注册新账号再删。
 8. **CSS hover 下拉经验**：下拉菜单与触发按钮之间留 gap 会导致鼠标移动时 hover 断链、菜单收起（gap 归零 + `padding-top` 桥接热区）；列表项 `animation ... both` 保留的 transform 会创建 stacking context、导致相邻行遮挡下拉菜单（hover 行加 `position: relative; z-index: 5`）。
 9. `deploy.bat` 输出末尾的 `Input redirection is not supported` 是 systemd status 重定向的已知噪音（warning.md #2/#10），不影响部署结果。
 10. **深色模式排查**：任何组件"深色下看不清/仍是白底"，先查其 background 是否用了 `var(--white)`（恒定纯白）——应改用 `var(--bg-card)`（跟随主题）。

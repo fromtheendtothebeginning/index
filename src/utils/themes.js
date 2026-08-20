@@ -33,6 +33,7 @@ export const THEMES = {
     '--glow-accent-strong': 'rgba(108, 92, 231, 0.4)',
     '--glow-cyan': 'rgba(0, 206, 201, 0.06)',
     '--glow-cyan-strong': 'rgba(0, 206, 201, 0.4)',
+    '--progress-gradient': 'linear-gradient(90deg, #6c5ce7, #00cec9)',
   },
   dark: {
     '--bg-primary': '#0f1014',
@@ -64,6 +65,7 @@ export const THEMES = {
     '--glow-accent-strong': 'rgba(124, 108, 240, 0.5)',
     '--glow-cyan': 'rgba(46, 230, 224, 0.1)',
     '--glow-cyan-strong': 'rgba(46, 230, 224, 0.5)',
+    '--progress-gradient': 'linear-gradient(90deg, #7c6cf0, #2ee6e0)',
   },
   // 黄金主题：字体/按钮变金色（背景保持当前主题不变，故不定义背景键）
   gold: {
@@ -86,6 +88,7 @@ export const THEMES = {
     '--glow-accent-strong': 'rgba(212, 164, 0, 0.45)',
     '--glow-cyan': 'rgba(201, 150, 0, 0.08)',
     '--glow-cyan-strong': 'rgba(201, 150, 0, 0.4)',
+    '--progress-gradient': 'linear-gradient(90deg, #d4a400, #f0c23a)',
   },
 }
 

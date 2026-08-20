@@ -44,6 +44,8 @@
   --glow-cyan: rgba(0, 206, 201, 0.06);
   --glow-cyan-strong: rgba(0, 206, 201, 0.4);
 
+  --progress-gradient: linear-gradient(90deg, #6c5ce7, #00cec9);
+
   --max-width: 1200px;
 }
 
@@ -79,6 +81,7 @@
   --glow-accent-strong: rgba(124, 108, 240, 0.5);
   --glow-cyan: rgba(46, 230, 224, 0.1);
   --glow-cyan-strong: rgba(46, 230, 224, 0.5);
+  --progress-gradient: linear-gradient(90deg, #7c6cf0, #2ee6e0);
   color-scheme: dark;
 }
 
@@ -114,6 +117,7 @@
     --glow-accent-strong: rgba(124, 108, 240, 0.5);
     --glow-cyan: rgba(46, 230, 224, 0.1);
     --glow-cyan-strong: rgba(46, 230, 224, 0.5);
+    --progress-gradient: linear-gradient(90deg, #7c6cf0, #2ee6e0);
     color-scheme: dark;
   }
 }

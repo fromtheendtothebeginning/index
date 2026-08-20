@@ -13,6 +13,8 @@ import LeetCodePage from './pages/LeetCodePage'
 import ProfileEdit from './pages/ProfileEdit'
 import AdminPage from './pages/AdminPage'
 import MyPage from './pages/MyPage'
+import ToolHomePage from './pages/ToolHomePage'
+import ToolParsePage from './pages/ToolParsePage'
 import GoldenMagic from './components/GoldenMagic'
 import { renderMd, sanitizeUrl } from './utils/markdown'
 import ProjectCover from './components/ProjectCover'
@@ -241,6 +243,8 @@ function App() {
       <Route path="/projects/:id" element={<ProjectDetailPage />} />
       <Route path="/projects/:id/edit" element={<ProjectEditorPage />} />
       <Route path="/leetcode" element={<LeetCodePage />} />
+      <Route path="/tools" element={<ToolHomePage />} />
+      <Route path="/tools/video-parse" element={<ToolParsePage />} />
       <Route path="/profile" element={<ProfileEdit />} />
       <Route path="/admin" element={<AdminPage />} />
       <Route path="/my" element={<MyPage />} />

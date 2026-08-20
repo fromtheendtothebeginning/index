@@ -4,6 +4,7 @@ import json
 import os
 import re
 import secrets
+import socket
 import threading
 import urllib.parse
 import urllib.request
@@ -14,9 +15,15 @@ from typing import Optional
 from fastapi import FastAPI, Depends, HTTPException, status, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
+from fastapi.responses import FileResponse, Response
+from starlette.background import BackgroundTask
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_, select, func
 from sqlalchemy.exc import IntegrityError
+
+import ipaddress
+import tempfile
+import tools
 
 from database import get_db, init_db, run_migrations
 from models import User, Blog, BlogLike, Comment, CommentLike, Notification, InviteCode, Project, FriendLink, SiteSetting, ProjectLike, ProjectFollow, LeetcodeBinding
@@ -72,12 +79,38 @@ app.add_middleware(
 )
 
 
+# ============================================
+# 运行日志（启动 banner + 请求中间件 + 关键事件），便于命令行观察后端状态
+# ============================================
+import time as _time
+
+def _log(msg: str):
+    print(f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] {msg}", flush=True)
+
+
+@app.middleware("http")
+async def _log_requests(request: Request, call_next):
+    start = _time.time()
+    response = await call_next(request)
+    dur = (_time.time() - start) * 1000
+    path = request.url.path
+    # 记录工具相关请求 + 所有 4xx/5xx 错误，避免刷屏
+    if path.startswith("/api/tools") or response.status_code >= 400:
+        _log(f"req {request.method} {path} -> {response.status_code} ({dur:.0f}ms)")
+    return response
+
+
 @app.on_event("startup")
 def on_startup():
     """首次启动自动建表 + 迁移新字段 + 启动 LeetCode 心跳"""
+    _log("=" * 50)
+    _log("anticraft API 启动")
+    _log(f"端口 {os.getenv('PORT', '8000')} · 视频工具已加载 (yt-dlp) · HOST={os.getenv('HOST', '127.0.0.1')}")
+    _log("=" * 50)
     init_db()
     run_migrations()
     _start_heartbeat()
+    _log("启动完成：数据库就绪，心跳已启动")
 
 
 # ============================================
@@ -2003,6 +2036,7 @@ def _heartbeat_loop():
         try:
             _heartbeat_last_count = _sync_all_heartbeat()
             _heartbeat_last = datetime.now(timezone.utc).isoformat()
+            _log(f"heartbeat sync done: {_heartbeat_last_count} users")
         except Exception:
             _heartbeat_last_count = 0
         finally:
@@ -2023,6 +2057,193 @@ def leetcode_heartbeat_status(_admin: User = Depends(require_admin)):
         "last_run": _heartbeat_last,
         "last_synced": _heartbeat_last_count,
     }
+
+
+# ============================================
+# 视频工具 API（视频解析与下载，需登录）
+# ============================================
+
+def _require_http_url(url: str) -> str:
+    """校验工具 URL：必须以 http:// 或 https:// 开头，且非内网地址（防 SSRF/任意文件读取）"""
+    if not isinstance(url, str) or not url.lower().startswith(("http://", "https://")):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="URL 必须为 http:// 或 https:// 开头",
+        )
+    parsed = urllib.parse.urlsplit(url)
+    host = parsed.hostname
+    if not host:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="URL 无效")
+    lowered = host.lower().rstrip(".")
+    if lowered in ("localhost", "localhost.localdomain") or lowered.endswith((".localhost", ".local")):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="不允许访问内网地址")
+    try:
+        ip = ipaddress.ip_address(lowered)
+        if not ip.is_global:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="不允许访问内网地址")
+    except ValueError:
+        try:
+            resolved = socket.gethostbyname(host)
+            if not ipaddress.ip_address(resolved).is_global:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="不允许访问内网地址")
+        except HTTPException:
+            raise
+        except OSError:
+            pass  # 域名解析失败交由 yt-dlp 处理
+    return url
+
+
+_THUMB_ALLOW_HOSTS = ("hdslb.com", "bilibili.com", "ytimg.com", "youtube.com", "akamaized.net", "img.youtube.com", "youtu.be")
+
+
+def _thumb_host_allowed(host: str) -> bool:
+    return any(host == h or host.endswith("." + h) for h in _THUMB_ALLOW_HOSTS)
+
+
+@app.get("/api/tools/video/info", tags=["工具"])
+def video_info(
+    url: str = Query(...),
+    current_user: User = Depends(get_current_user_obj),
+):
+    """解析视频信息（不下载，需登录）"""
+    _require_http_url(url)
+    _log(f"video/info by {current_user.username} : {url[:80]}")
+    try:
+        info = tools.extract_video_info(url)
+    except Exception:
+        _log("video/info FAILED: " + url[:80])
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="无法解析该视频链接",
+        )
+    _log(f"video/info OK: 「{info.get('title', '')[:40]}」 {info.get('duration', 0)}s")
+    return {"ok": True, "info": info}
+
+
+@app.get("/api/tools/video/download", tags=["工具"])
+def video_download(
+    url: str = Query(...),
+    current_user: User = Depends(get_current_user_obj),
+):
+    """下载视频为 mp4（需登录，单并发；响应完成后自动清理临时文件）"""
+    _require_http_url(url)
+    try:
+        path, filename = tools.download_video(url)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="下载失败，请稍后重试",
+        )
+    return FileResponse(
+        path,
+        media_type="video/mp4",
+        filename=filename,
+        background=BackgroundTask(tools.cleanup_download_dir, os.path.dirname(path)),
+    )
+
+
+# 下载任务（后端 yt-dlp 实时进度 → 前端轮询）
+_dl_lock = threading.Lock()
+_dl_tasks = {}  # task_id -> {progress, status, path, filename, error}
+
+
+@app.post("/api/tools/video/download-task", tags=["工具"])
+def video_download_task(
+    req: dict,
+    current_user: User = Depends(get_current_user_obj),
+):
+    """创建下载任务，后台 yt-dlp 下载并实时更新进度（需登录）"""
+    url = (req.get("url") or "").strip()
+    if not url:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="请输入视频链接")
+    _require_http_url(url)
+    task_id = secrets.token_urlsafe(16)
+    task = {"progress": 0, "status": "downloading", "path": None, "filename": None, "error": None}
+    with _dl_lock:
+        _dl_tasks[task_id] = task
+    _log(f"download-task created by {current_user.username} : {url[:80]} -> {task_id[:8]}")
+
+    def _run():
+        try:
+            # progress 只增不减：yt-dlp 对音视频分离的源会分多路下载（视频流+音频流），
+            # 每路的 progress_hooks 独立 0-100，直接覆盖会让进度条走完一遍又从 0 走一遍
+            path, filename = tools.download_video(
+                url,
+                lambda p: task.__setitem__("progress", max(task["progress"], p)),
+            )
+            task["path"] = path
+            task["filename"] = filename
+            task["status"] = "done"
+            _log(f"download-task done: {filename} ({os.path.getsize(path) / 1024 / 1024:.1f} MB)")
+        except Exception as exc:
+            task["status"] = "failed"
+            task["error"] = str(exc)[:200]
+            _log(f"download-task FAILED: {str(exc)[:120]}")
+
+    threading.Thread(target=_run, daemon=True).start()
+    return {"task_id": task_id}
+
+
+@app.get("/api/tools/video/download-progress", tags=["工具"])
+def video_download_progress(
+    task_id: str = Query(...),
+    current_user: User = Depends(get_current_user_obj),
+):
+    """查询下载任务进度（前端轮询）"""
+    task = _dl_tasks.get(task_id)
+    if not task:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="任务不存在")
+    return {"progress": task["progress"], "status": task["status"], "error": task.get("error")}
+
+
+@app.get("/api/tools/video/download-file", tags=["工具"])
+def video_download_file(
+    task_id: str = Query(...),
+    current_user: User = Depends(get_current_user_obj),
+):
+    """下载任务完成后获取文件（需登录）"""
+    task = _dl_tasks.get(task_id)
+    if not task:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="任务不存在")
+    if task["status"] != "done":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="任务尚未完成")
+    path, filename = task["path"], task["filename"]
+    with _dl_lock:
+        _dl_tasks.pop(task_id, None)
+    return FileResponse(
+        path,
+        media_type="video/mp4",
+        filename=filename,
+        background=BackgroundTask(tools.cleanup_download_dir, os.path.dirname(path)),
+    )
+
+
+@app.get("/api/tools/thumb", tags=["工具"])
+def tool_thumb(
+    url: str = Query(...),
+    current_user: User = Depends(get_current_user_obj),
+):
+    """代理视频封面图（绕过防盗链/临时 URL 过期），仅允许图片 CDN 域名，需登录"""
+    parsed = urllib.parse.urlsplit(url)
+    host = (parsed.hostname or "").lower().rstrip(".")
+    if not _thumb_host_allowed(host):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="不允许的图片域名")
+    if parsed.scheme not in ("http", "https"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="图片 URL 无效")
+    try:
+        req = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+                "Referer": "https://www.bilibili.com/",
+            },
+        )
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = resp.read()
+            ctype = resp.headers.get("Content-Type", "image/jpeg")
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="图片获取失败")
+    return Response(content=data, media_type=ctype)
 
 
 # ============================================
