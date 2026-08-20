@@ -1,7 +1,7 @@
 {
   "name": "anticraft",
   "private": true,
-  "version": "1.0.0",
+  "version": "0.9.1",
   "type": "module",
   "description": "anticraft — 首页",
   "scripts": {

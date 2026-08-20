@@ -226,6 +226,7 @@
 .profile-admin-btn {
   width: 100%;
   justify-content: center;
+  margin-top: 12px;
 }
 
 /* ── 主题模式切换（浅色 / 深色 / 跟随系统） ── */
