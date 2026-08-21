@@ -608,3 +608,101 @@ class LeetcodeBoardResponse(BaseModel):
 class LeetcodeRefreshResponse(BaseModel):
     synced: int = 0
     total: int = 0
+
+# ── AI 设置（多 Key / 收藏 / 当前选择）──
+
+class AiKeyResponse(BaseModel):
+    id: int
+    provider: str
+    label: str = ""
+    has_key: bool = False
+    key_hint: Optional[str] = None
+    custom_base_url: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+
+class AiKeysResponse(BaseModel):
+    keys: list[AiKeyResponse] = []
+
+
+class CreateAiKeyRequest(BaseModel):
+    provider: str = Field(..., min_length=1, max_length=30, description="提供商 ID")
+    api_key: str = Field(..., min_length=1, max_length=300, description="API Key")
+    label: str = Field("", max_length=50, description="备注名")
+    custom_base_url: Optional[str] = Field(None, max_length=500, description="自定义 Base URL（可选）")
+
+    @field_validator("custom_base_url")
+    @classmethod
+    def _validate_base_url(cls, v):
+        return _validate_http_url(v)
+
+
+class UpdateAiKeyRequest(BaseModel):
+    label: Optional[str] = Field(None, max_length=50, description="备注名")
+    custom_base_url: Optional[str] = Field(None, max_length=500, description="自定义 Base URL")
+    api_key: Optional[str] = Field(None, max_length=300, description="新 API Key（缺省保留原值）")
+
+    @field_validator("custom_base_url")
+    @classmethod
+    def _validate_base_url(cls, v):
+        return _validate_http_url(v)
+
+
+class AiModelsResponse(BaseModel):
+    provider: str
+    models: list[str] = []
+    error: Optional[str] = None
+
+
+class AiFavoriteToggleRequest(BaseModel):
+    provider: str = Field(..., min_length=1, max_length=30)
+    model: str = Field(..., min_length=1, max_length=100)
+
+
+class AiFavoriteToggleResponse(BaseModel):
+    favorited: bool
+    favorites: list[str] = []
+
+
+class UpdateAiSettingsRequest(BaseModel):
+    key_id: Optional[int] = Field(None, ge=0, description="当前选中的 AI Key ID（0=不选）")
+    model: str = Field("", max_length=100, description="当前模型 ID")
+    thinking_level: str = Field("medium", description="思考深度 off/low/medium/high/max")
+    temperature: float = Field(0.7, ge=0, le=2, description="温度 0~2")
+    top_k: int = Field(40, ge=1, le=100, description="Top-K 1~100")
+
+    @field_validator("thinking_level")
+    @classmethod
+    def _validate_thinking(cls, v):
+        if v not in ("off", "low", "medium", "high", "max", "minimal"):
+            raise ValueError("thinking_level 必须是 off/low/medium/high/max/minimal")
+        return v
+
+
+class AiSettingsResponse(BaseModel):
+    key_id: Optional[int] = None
+    model: str = ""
+    thinking_level: str = "medium"
+    temperature: float = 0.7
+    top_k: int = 40
+    updated_at: Optional[datetime] = None
+
+
+class AiSettingsTestRequest(BaseModel):
+    key_id: Optional[int] = Field(None, description="用哪个 Key 测试（缺省=当前选中；api_key 为空则用它存储的 Key）")
+    model: Optional[str] = Field(None, max_length=100, description="测试用模型 ID")
+
+
+class AiSettingsTestResponse(BaseModel):
+    ok: bool
+    latency_ms: int = 0
+    error: Optional[str] = None
+
+
+class AiCustomModelRequest(BaseModel):
+    provider: str = Field(..., min_length=1, max_length=30)
+    model: str = Field(..., min_length=1, max_length=100)
+
+
+class AiCustomModelResponse(BaseModel):
+    models: list[str] = []

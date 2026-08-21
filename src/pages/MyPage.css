@@ -76,6 +76,462 @@
   border: none;
 }
 
+/* 标签页（通知 / AI 设置） */
+.my-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.my-tab {
+  position: relative;
+  padding: 8px 18px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.my-tab:hover {
+  border-color: var(--accent-1);
+  color: var(--text-primary);
+}
+
+.my-tab.active {
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  border-color: transparent;
+  color: #fff;
+}
+
+.my-tab-badge {
+  display: inline-block;
+  min-width: 16px;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 11px;
+  line-height: 16px;
+  text-align: center;
+}
+
+.my-subheader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+/* ============================================
+   AI 设置
+   ============================================ */
+
+.ai-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.ai-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+}
+
+.ai-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ai-section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ai-section-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.ai-section-ops {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ai-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-1);
+  font-variant-numeric: tabular-nums;
+}
+
+.ai-input {
+  width: 100%;
+}
+
+.ai-hint {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.ai-hint a {
+  color: var(--accent-1);
+  text-decoration: none;
+}
+
+.ai-hint a:hover {
+  text-decoration: underline;
+}
+
+/* 思考深度分段选择 */
+.ai-seg {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.ai-seg-option {
+  padding: 7px 20px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ai-seg-option:hover {
+  border-color: var(--accent-1);
+  color: var(--text-primary);
+}
+
+.ai-seg-option.active {
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  border-color: transparent;
+  color: #fff;
+}
+
+/* 滑块 */
+.ai-range {
+  width: 100%;
+  accent-color: var(--accent-1);
+  cursor: pointer;
+}
+
+/* 操作区 */
+.ai-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ai-saved {
+  margin: 0;
+}
+
+.ai-test {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ai-test.ok {
+  background: var(--success-soft, rgba(46, 160, 67, 0.12));
+  border: 1px solid var(--success, #2ea043);
+  color: var(--success, #2ea043);
+}
+
+.ai-test.err {
+  background: var(--danger-soft-strong);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
+}
+
+/* ── Key 列表 ── */
+.ai-key-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ai-key-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-primary);
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.ai-key-item.active {
+  border-color: var(--accent-1);
+  background: var(--accent-1-soft);
+}
+
+.ai-key-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.ai-key-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ai-key-provider {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ai-key-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.ai-key-current {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-1);
+  background: var(--accent-1-soft-strong);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.ai-key-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.ai-key-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.ai-key-url {
+  font-size: 11px;
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
+.ai-key-ops {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.ai-op-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ai-op-btn:hover {
+  color: var(--accent-1);
+  border-color: var(--accent-1);
+  background: var(--accent-1-soft);
+}
+
+.ai-op-btn.danger:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+  background: var(--danger-soft);
+}
+
+/* ── 模型列表 ── */
+.ai-model-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.ai-model-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-primary);
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.ai-model-item.active {
+  border-color: var(--accent-1);
+  background: var(--accent-1-soft);
+}
+
+.ai-model-name {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text-primary);
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-model-tag {
+  margin-left: 6px;
+  font-size: 10px;
+  color: var(--accent-1);
+  background: var(--accent-1-soft);
+  padding: 1px 6px;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+
+.ai-model-ops {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.ai-fav-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ai-fav-btn:hover {
+  border-color: #f5b942;
+  color: #f5b942;
+}
+
+.ai-fav-btn.active {
+  color: #f5b942;
+  background: rgba(245, 185, 66, 0.12);
+  border-color: #f5b942;
+}
+
+/* ── 弹窗表单字段 ── */
+.ai-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ai-modal-field .ai-provider-select {
+  min-width: 0;
+}
+
+/* AI 设置页内的 CategoryDropdown：容器收缩为按钮宽度（避免占满整行导致按钮外 hover 即展开），菜单左对齐跟随按钮 */
+.ai-settings .nav-dropdown,
+.ai-modal-field .nav-dropdown {
+  display: inline-block;
+  align-self: flex-start;
+  width: fit-content;
+}
+
+.ai-settings .nav-dropdown-menu,
+.ai-modal-field .nav-dropdown-menu {
+  left: 0;
+  transform: translateX(0) translateY(-8px) scale(0.96);
+}
+
+.ai-settings .nav-dropdown:hover .nav-dropdown-menu,
+.ai-modal-field .nav-dropdown:hover .nav-dropdown-menu {
+  transform: translateX(0) translateY(0) scale(1);
+}
+
+/* AI 设置页内选中后收起：强制向上收回（translateY(-8px)），不向左偏移 */
+.ai-settings .nav-dropdown.just-picked .nav-dropdown-menu,
+.ai-modal-field .nav-dropdown.just-picked .nav-dropdown-menu {
+  transform: translateX(0) translateY(-8px) scale(0.96) !important;
+}
+
+.ai-modal-err {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--danger);
+  background: var(--danger-soft-strong);
+  border: 1px solid var(--danger-border);
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .ai-section {
+    padding: 14px;
+  }
+
+  .ai-key-item {
+    flex-wrap: wrap;
+  }
+}
+
 .my-error {
   background: var(--danger-soft-strong);
   border: 1px solid var(--danger-border);

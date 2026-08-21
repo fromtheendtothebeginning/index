@@ -331,6 +331,13 @@
   transition-delay: 0.1s;
 }
 
+/* 选中后收起：桌面端 hover 菜单在选中瞬间隐藏，鼠标离开后恢复（配合 CategoryDropdown closeOnSelect）。
+   只隐藏不强制 transform，避免覆盖各场景（如 AI 设置页 left:0 左对齐）的定位，导致向侧面偏移收起 */
+.nav-dropdown.just-picked .nav-dropdown-menu {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
 .nav-dropdown-menu::before {
   content: '';
   position: absolute;
@@ -1114,6 +1121,15 @@
   font-size: 14px;
   color: var(--text-secondary);
   line-height: 1.5;
+}
+.modal-body {
+  margin: 16px 0 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.modal-body .ai-provider-select {
+  min-width: 0;
 }
 .modal-actions {
   display: flex;

@@ -11,6 +11,7 @@ import { useState } from 'react'
  * @param {string} [placeholder='未分类'] - 未选中时按钮显示文案（也是菜单第一项「清除」的文案）
  * @param {'default'|'sm'} [size='default'] - 尺寸：default 常规 / sm 小号（卡片等紧凑场景）
  * @param {boolean} [hideClear=false] - 为 true 时不显示菜单第一项「清除」入口（如必须选其一且不可清空的场景）
+ * @param {boolean} [closeOnSelect=false] - 为 true 时选中后立即收起菜单（鼠标离开后恢复 hover）
  *
  * 用法示例：
  *   <CategoryDropdown
@@ -20,15 +21,18 @@ import { useState } from 'react'
  *     placeholder="无"
  *   />
  */
-function CategoryDropdown({ value, onChange, options = [], placeholder = '未分类', size = 'default', hideClear = false }) {
+function CategoryDropdown({ value, onChange, options = [], placeholder = '未分类', size = 'default', hideClear = false, closeOnSelect = false }) {
   // 移动端选项列表开合
   const [open, setOpen] = useState(false)
+  // 选中后收起：桌面端 hover 菜单在选中后临时隐藏，鼠标离开后恢复可 hover
+  const [justPicked, setJustPicked] = useState(false)
 
   const pick = (v) => (e) => {
     e.preventDefault()
     e.stopPropagation()
     onChange(v)
     setOpen(false)
+    if (closeOnSelect) setJustPicked(true)
   }
 
   const toggle = () => {
@@ -36,7 +40,11 @@ function CategoryDropdown({ value, onChange, options = [], placeholder = '未分
   }
 
   return (
-    <div className={`nav-dropdown ${open ? 'mobile-open' : ''}`} onClick={e => e.stopPropagation()}>
+    <div
+      className={`nav-dropdown ${open ? 'mobile-open' : ''} ${justPicked ? 'just-picked' : ''}`}
+      onClick={e => e.stopPropagation()}
+      onMouseLeave={() => setJustPicked(false)}
+    >
       <button type="button" className={`category-btn${size === 'sm' ? ' category-btn-sm' : ''}`} onClick={toggle}>
         {options.find(o => o.value === value)?.label || value || placeholder}
         <span className="arrow-down">▾</span>

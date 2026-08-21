@@ -61,6 +61,8 @@
 - `check_db.sh` 含硬编码服务器密码，已 gitignore，勿提交 git。
 - models.py 勿新增仅序列化/零读写的字段（`User.email` 教训）；在 models.py 加列必须同步 `database.py` 的 `run_migrations()`。
 - 大型多步骤任务优先派子代理实施，主脑负责架构、接口约定与验证，保持上下文清洁。
+- **国外 AI 厂商文档读取**（Anthropic docs.anthropic.com / platform.openai.com / ai.google.dev 直接 webfetch 会超时/403，勿反复重试）：改用**国内可访问文档源**（阿里云 help.aliyun.com、千问 platform.qianwenai.com）或 **GitHub 官方 SDK 源码**（openai/openai-python、anthropics/anthropic-sdk-python、googleapis/python-genai 的 raw 源码/README）获取权威 API 配置。2026-08 实测有效。
+- **AI 设置（MyPage AI 设置 tab）**：思考深度选项按厂商文档差异化（`provider.thinking_levels`，后端 aisettings.py + 前端 aiProviders.js 双处同步），UI 用 CategoryDropdown 选择器（不是定死低/中/高三档）。Anthropic（Claude）不支持 temperature/top_k，配置 `sampling: false`，前端对 `sampling===false` 的厂商隐藏温度/Top-K 滑块。模型选择走「可用模型列表点击选中」，不单独放下拉。
 
 ## 运行注意事项（每次任务结束追加新发现）
 1. **本地后端端口必须是 8000**：`vite.config.js` 代理固定指向 `127.0.0.1:8000`，本地后端起 8000（18000 仅当 8000 被 Windows 排除区间占用时用，且必须同步 vite 代理）。用错端口 API 测试会 Connection refused。

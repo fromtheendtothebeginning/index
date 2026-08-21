@@ -1,6 +1,6 @@
 # models.py — SQLAlchemy 数据模型
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey, UniqueConstraint, JSON
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey, UniqueConstraint, JSON, Float
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import func
 from database import Base
@@ -244,6 +244,84 @@ class FriendLink(Base):
 
     def __repr__(self):
         return f"<FriendLink(id={self.id}, name='{self.name}')>"
+
+
+class AiKey(Base):
+    """用户 AI API Key —— 每个 Key 一条（同一用户可多个），Key 加密存储"""
+    __tablename__ = "ai_keys"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True, comment="所属用户 ID")
+    provider = Column(String(30), nullable=False, default="deepseek", comment="AI 提供商 ID（见 aisettings.PROVIDERS）")
+    label = Column(String(50), nullable=False, default="", server_default="", comment="备注名（如「工作账号」「备用」）")
+    api_key_enc = Column(Text, nullable=True, comment="加密后的 API Key（aisettings 加密，永不回传明文）")
+    custom_base_url = Column(String(500), nullable=True, comment="自定义 Base URL（留空用提供商默认）")
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), comment="创建时间")
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), comment="更新时间"
+    )
+
+    user = relationship("User")
+
+    def __repr__(self):
+        return f"<AiKey(id={self.id}, user_id={self.user_id}, provider='{self.provider}')>"
+
+
+class AiFavorite(Base):
+    """收藏的 AI 模型 —— 可用模型列表置顶展示"""
+    __tablename__ = "ai_favorites"
+    __table_args__ = (UniqueConstraint("user_id", "provider", "model", name="uq_ai_fav"),)
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True, comment="所属用户 ID")
+    provider = Column(String(30), nullable=False, comment="提供商 ID")
+    model = Column(String(100), nullable=False, comment="模型 ID")
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), comment="收藏时间")
+
+    user = relationship("User")
+
+    def __repr__(self):
+        return f"<AiFavorite(id={self.id}, user_id={self.user_id}, {self.provider}/{self.model})>"
+
+
+class AiModel(Base):
+    """用户手动新增/关注的 AI 模型 —— 出现在「可用模型」列表，记录添加时间用于排序"""
+    __tablename__ = "ai_models"
+    __table_args__ = (UniqueConstraint("user_id", "provider", "model", name="uq_ai_model"),)
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True, comment="所属用户 ID")
+    provider = Column(String(30), nullable=False, comment="提供商 ID")
+    model = Column(String(100), nullable=False, comment="模型 ID")
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), comment="添加时间")
+
+    user = relationship("User")
+
+    def __repr__(self):
+        return f"<AiModel(id={self.id}, user_id={self.user_id}, {self.provider}/{self.model})>"
+
+
+class AiSetting(Base):
+    """用户 AI 设置 —— 每用户一行：当前选中的 Key/模型 + 采样参数"""
+    __tablename__ = "ai_settings"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True, comment="所属用户 ID")
+    key_id = Column(Integer, ForeignKey("ai_keys.id", ondelete="SET NULL"), nullable=True, comment="当前选中的 AI Key")
+    model = Column(String(100), nullable=False, default="", server_default="", comment="当前模型 ID")
+    thinking_level = Column(String(10), nullable=False, default="medium", server_default="medium", comment="思考深度：low/medium/high")
+    temperature = Column(Float, nullable=False, default=0.7, server_default="0.7", comment="温度 0~2")
+    top_k = Column(Integer, nullable=False, default=40, server_default="40", comment="Top-K 1~100")
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), comment="创建时间")
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), comment="更新时间"
+    )
+
+    user = relationship("User")
+    key = relationship("AiKey")
+
+    def __repr__(self):
+        return f"<AiSetting(id={self.id}, user_id={self.user_id})>"
 
 
 class SiteSetting(Base):

@@ -222,6 +222,71 @@ def run_migrations():
                 typ = "TINYINT(1) NOT NULL DEFAULT 0" if col == "debug_mode" else "INT NULL"
                 conn.execute(text(f"ALTER TABLE leetcode_bindings ADD COLUMN {col} {typ}"))
                 conn.commit()
+        # AI 设置相关表：ai_keys（多 Key）/ ai_favorites（收藏模型）/ ai_settings（当前选择）
+        # 旧版 ai_settings（本会话早期创建、未部署、仅测试数据）含 provider/api_key_enc/custom_base_url 列，检测到即丢弃重建新结构
+        if insp.has_table("ai_settings"):
+            old_cols = {c["name"] for c in insp.get_columns("ai_settings")}
+            if "key_id" not in old_cols:
+                conn.execute(text("DROP TABLE ai_settings"))
+                conn.commit()
+
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS ai_keys (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                provider VARCHAR(30) NOT NULL DEFAULT 'deepseek',
+                label VARCHAR(50) NOT NULL DEFAULT '',
+                api_key_enc TEXT NULL,
+                custom_base_url VARCHAR(500) NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                KEY idx_ai_key_user (user_id),
+                CONSTRAINT fk_ai_key_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """))
+        conn.commit()
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS ai_favorites (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                provider VARCHAR(30) NOT NULL,
+                model VARCHAR(100) NOT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY uq_ai_fav (user_id, provider, model),
+                CONSTRAINT fk_ai_fav_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """))
+        conn.commit()
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS ai_models (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                provider VARCHAR(30) NOT NULL,
+                model VARCHAR(100) NOT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY uq_ai_model (user_id, provider, model),
+                CONSTRAINT fk_ai_model_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """))
+        conn.commit()
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS ai_settings (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                key_id INT NULL,
+                model VARCHAR(100) NOT NULL DEFAULT '',
+                thinking_level VARCHAR(10) NOT NULL DEFAULT 'medium',
+                temperature FLOAT NOT NULL DEFAULT 0.7,
+                top_k INT NOT NULL DEFAULT 40,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY uq_ai_user (user_id),
+                KEY idx_ai_settings_key (key_id),
+                CONSTRAINT fk_ai_setting_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                CONSTRAINT fk_ai_setting_key FOREIGN KEY (key_id) REFERENCES ai_keys(id) ON DELETE SET NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """))
+        conn.commit()
 
     # 为所有没有专属邀请码的已存在用户分配一个邀请码
     from sqlalchemy.orm import Session
