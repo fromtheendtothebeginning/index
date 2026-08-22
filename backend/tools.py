@@ -222,6 +222,9 @@ def download_video(url: str, mode: str = "merged", progress_cb=None) -> list:
     progress_cb: 可选回调，接收 0-99 的整数进度（yt-dlp 下载阶段实时回调）"""
     tmp = tempfile.mkdtemp(prefix="anticraft_tool_", dir=_DOWNLOAD_DIR)
     try:
+        if mode == "separate":
+            # 视频流 + 音频流分开两个文件：分别下载两次（yt-dlp 的 bv+ba 单次会合并）
+            return _download_separate(url, tmp, progress_cb)
         opts = _ydl_opts(tmp)
         if mode == "video_only":
             opts["format"] = "bv*[ext=mp4]/bv*"
@@ -233,11 +236,6 @@ def download_video(url: str, mode: str = "merged", progress_cb=None) -> list:
                 "preferredquality": "192",
             }]
             opts["outtmpl"] = os.path.join(tmp, "%(title).80B.%(ext)s")
-        elif mode == "separate":
-            # 视频流 + 音频流分开（不合并）：分别下载，产出两个文件
-            opts["format"] = "bv*[ext=mp4]+ba[ext=m4a]"
-            opts["merge_output_format"] = None
-            opts["postprocessors"] = []
         # merged 保持 _ydl_opts 默认（bv*+ba 合并 mp4）
         if progress_cb:
             def _hook(d):
@@ -259,6 +257,42 @@ def download_video(url: str, mode: str = "merged", progress_cb=None) -> list:
     except Exception:
         shutil.rmtree(tmp, ignore_errors=True)
         raise
+
+
+def _download_separate(url: str, tmp: str, progress_cb=None):
+    """分别下载视频流（无音频）和音频流（无视频），产出两个独立文件。"""
+    results = []
+    plans = [
+        ("bv*[ext=mp4]/bv*", "video"),
+        ("ba[ext=m4a]/ba/bestaudio", "audio"),
+    ]
+    for fmt, tag in plans:
+        opts = _ydl_opts(tmp)
+        opts["format"] = fmt
+        if tag == "video":
+            opts["outtmpl"] = os.path.join(tmp, "%(title).80B_video.%(ext)s")
+        else:
+            opts["outtmpl"] = os.path.join(tmp, "%(title).80B_audio.%(ext)s")
+        if progress_cb:
+            def _hook(d):
+                if d.get("status") == "downloading":
+                    total = d.get("total_bytes") or d.get("total_bytes_estimate") or 0
+                    done = d.get("downloaded_bytes") or 0
+                    if total:
+                        progress_cb(min(99, int(done / total * 100)))
+            opts["progress_hooks"] = [_hook]
+        with _download_slot:
+            _patch_bilibili_headers()
+            from yt_dlp import YoutubeDL
+            with YoutubeDL(opts) as ydl:
+                ydl.download([url])
+        files = [f for f in os.listdir(tmp) if not f.endswith((".part", ".ytdl", ".tmp"))]
+        if files:
+            f = files[0]
+            results.append((os.path.join(tmp, f), f))
+    if not results:
+        raise RuntimeError("下载失败：未生成文件")
+    return results
 
 
 def cleanup_download_dir(dirname: str):
