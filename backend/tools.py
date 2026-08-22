@@ -98,6 +98,7 @@ def _patch_bilibili_headers():
 
 def _cleanup_old_dirs():
     """清理 24 小时前的临时下载目录"""
+    os.makedirs(_DOWNLOAD_DIR, exist_ok=True)  # 临时目录可能被系统清理，先确保存在
     now = time.time()
     for name in os.listdir(_DOWNLOAD_DIR):
         p = os.path.join(_DOWNLOAD_DIR, name)
@@ -220,6 +221,7 @@ def download_video(url: str, mode: str = "merged", progress_cb=None) -> list:
       audio_only 仅音频（m4a 转 mp3）
       separate  视频流 + 音频流分开两个文件
     progress_cb: 可选回调，接收 0-99 的整数进度（yt-dlp 下载阶段实时回调）"""
+    os.makedirs(_DOWNLOAD_DIR, exist_ok=True)  # 运行中临时目录可能被系统清理，先确保存在
     tmp = tempfile.mkdtemp(prefix="anticraft_tool_", dir=_DOWNLOAD_DIR)
     try:
         if mode == "separate":
