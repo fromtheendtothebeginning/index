@@ -14,18 +14,49 @@ _download_slot = threading.BoundedSemaphore(1)
 
 
 def _patch_bilibili_headers():
-    """去掉 yt-dlp bilibili 提取器硬编码的 Referer（数据中心 IP 触发 B 站 412 风控）。
+    """绕 B 站对数据中心 IP 的 412 风控：剥离所有 bilibili 请求的 Referer/Origin 头。
 
-    B 站 view/playurl 等 API 对带 Referer 的数据中心 IP 请求返回 412 Precondition Failed，
-    纯 UA（不带 Referer）可正常访问。yt-dlp 的 Bilibili 提取器 _HEADERS 硬编码
-    {'Referer': 'https://www.bilibili.com/'}，故 monkey-patch 移除。
+    B 站网页/API 对带 Referer 的数据中心 IP 请求返回 412；纯 UA 可正常访问。
+    1) 移除各提取器类 _HEADERS 里的 Referer；
+    2) 包装 _download_json/_download_webpage_handle，剥离请求 headers 中的 Referer/Origin；
+    3) 网页 HTML 抓取遇 412 时返回空网页，让 yt-dlp 走 API fallback 分支。
     """
     from yt_dlp.extractor import bilibili as _bili_mod
     patched = 0
     for cls_name in dir(_bili_mod):
         obj = getattr(_bili_mod, cls_name)
-        if isinstance(obj, type) and hasattr(obj, "_HEADERS") and isinstance(obj._HEADERS, dict) and "Referer" in obj._HEADERS:
-            obj._HEADERS = {k: v for k, v in obj._HEADERS.items() if k != "Referer"}
+        if not (isinstance(obj, type) and hasattr(obj, "_HEADERS")):
+            continue
+        if isinstance(obj._HEADERS, dict) and any(k in obj._HEADERS for k in ("Referer", "Origin")):
+            obj._HEADERS = {k: v for k, v in obj._HEADERS.items() if k not in ("Referer", "Origin")}
+            patched += 1
+        # 包装下载方法：剥离内联 Referer/Origin；网页 412 → 返回空以走 API fallback
+        if not getattr(obj, "_anticraft_patched", False):
+            _orig_dj = obj._download_json
+            _orig_dwh = obj._download_webpage_handle
+
+            def _clean_headers(headers):
+                if isinstance(headers, dict):
+                    return {k: v for k, v in headers.items() if k not in ("Referer", "Origin")}
+                return headers
+
+            def _dj(self, url, *args, **kwargs):
+                kwargs["headers"] = _clean_headers(kwargs.get("headers"))
+                return _orig_dj(self, url, *args, **kwargs)
+
+            def _dwh(self, url, *args, **kwargs):
+                kwargs["headers"] = _clean_headers(kwargs.get("headers"))
+                try:
+                    return _orig_dwh(self, url, *args, **kwargs)
+                except Exception as e:
+                    # 网页 HTML 被 412 风控时，返回空网页让提取器走 API fallback
+                    if "412" in str(e) or "Precondition" in str(e):
+                        return "", None
+                    raise
+
+            obj._download_json = _dj
+            obj._download_webpage_handle = _dwh
+            obj._anticraft_patched = True
             patched += 1
     return patched
 
