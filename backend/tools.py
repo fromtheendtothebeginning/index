@@ -34,7 +34,18 @@ def _ydl_opts(download_dir=None):
         "no_warnings": True,
         "noplaylist": True,
         "socket_timeout": 20,
+        # 浏览器特征：数据中心 IP（如阿里云）被 B 站风控 412，需带 UA/Referer 降低拦截概率
+        "http_headers": {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+            "Referer": "https://www.bilibili.com/",
+            "Accept-Language": "zh-CN,zh;q=0.9",
+        },
     }
+    # 可选：环境变量配置 B 站 Cookie（登录态可绕过数据中心 IP 的 412 风控）
+    bili_cookie = os.getenv("BILIBILI_COOKIE")
+    if bili_cookie:
+        opts["cookiefile"] = None
+        opts["cookiejar"] = _build_cookiejar(bili_cookie)
     if download_dir:
         opts.update({
             "format": "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]/b",
@@ -42,6 +53,24 @@ def _ydl_opts(download_dir=None):
             "outtmpl": os.path.join(download_dir, "%(title).80B.%(ext)s"),
         })
     return opts
+
+
+def _build_cookiejar(cookie_str: str) -> str:
+    """把 'k=v; k2=v2' 形式的 Cookie 字符串写成 Netscape 格式 cookie 文件，返回文件路径"""
+    import tempfile
+    import time as _time
+    lines = ["# Netscape HTTP Cookie File"]
+    for pair in cookie_str.split(";"):
+        pair = pair.strip()
+        if "=" in pair:
+            name, _, value = pair.partition("=")
+            lines.append(
+                f".bilibili.com\tTRUE\t/\tTRUE\t{int(_time.time()) + 86400 * 180}\t{name.strip()}\t{value.strip()}"
+            )
+    fd = tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False)
+    fd.write("\n".join(lines) + "\n")
+    fd.close()
+    return fd.name
 
 
 def extract_video_info(url: str) -> dict:

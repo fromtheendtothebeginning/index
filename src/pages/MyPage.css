@@ -410,12 +410,15 @@
   border: 1px solid var(--border-color);
   border-radius: 10px;
   background: var(--bg-primary);
-  transition: border-color 0.2s, background 0.2s;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  user-select: none; /* 防快速连点触发文本选择干扰点击反馈 */
+  cursor: pointer; /* 整张卡片可点（热区=卡片） */
 }
 
 .ai-model-item.active {
   border-color: var(--accent-1);
   background: var(--accent-1-soft);
+  box-shadow: 0 0 0 1px var(--accent-1);
 }
 
 .ai-model-name {
@@ -487,30 +490,7 @@
   min-width: 0;
 }
 
-/* AI 设置页内的 CategoryDropdown：容器收缩为按钮宽度（避免占满整行导致按钮外 hover 即展开），菜单左对齐跟随按钮 */
-.ai-settings .nav-dropdown,
-.ai-modal-field .nav-dropdown {
-  display: inline-block;
-  align-self: flex-start;
-  width: fit-content;
-}
-
-.ai-settings .nav-dropdown-menu,
-.ai-modal-field .nav-dropdown-menu {
-  left: 0;
-  transform: translateX(0) translateY(-8px) scale(0.96);
-}
-
-.ai-settings .nav-dropdown:hover .nav-dropdown-menu,
-.ai-modal-field .nav-dropdown:hover .nav-dropdown-menu {
-  transform: translateX(0) translateY(0) scale(1);
-}
-
-/* AI 设置页内选中后收起：强制向上收回（translateY(-8px)），不向左偏移 */
-.ai-settings .nav-dropdown.just-picked .nav-dropdown-menu,
-.ai-modal-field .nav-dropdown.just-picked .nav-dropdown-menu {
-  transform: translateX(0) translateY(-8px) scale(0.96) !important;
-}
+/* AI 设置页的选择器已统一走 CategoryDropdown 的 .category-dropdown 组件级样式（App.css） */
 
 .ai-modal-err {
   padding: 8px 12px;

@@ -259,6 +259,32 @@
 /* ---------- 导航下拉菜单（B站风格） ---------- */
 .nav-dropdown {
   position: relative;
+  /* 热区向下扩展 8px（负 margin 抵消布局）：菜单 top:100% 随之下移，
+     不再遮挡 trigger 下方 -4px 的悬停下划线动画，且缝隙仍在 hover 热区内不断链 */
+  padding-bottom: 8px;
+  margin-bottom: -8px;
+}
+
+/* ── CategoryDropdown 表单选择器（与导航下拉同源抽象）──
+   博客分类筛选 / AI 提供商 / 思考深度等表单场景统一：
+   容器收缩为按钮宽度（hover 热区只覆盖按钮），菜单左对齐跟随按钮 */
+.category-dropdown {
+  display: inline-block;
+  align-self: flex-start;
+  width: fit-content;
+}
+
+.category-dropdown {
+  display: inline-block;
+  align-self: flex-start;
+  width: fit-content;
+}
+
+/* 菜单动画不覆盖：完全继承全局 .nav-dropdown-menu（与博客分类选择一致的居中弹出伸缩）
+   仅选中后收起时避免与 hover 冲突 */
+.category-dropdown.just-picked .nav-dropdown-menu {
+  opacity: 0 !important;
+  visibility: hidden !important;
 }
 
 .nav-dropdown-trigger {
@@ -656,6 +682,65 @@
   font-weight: 500;
   transition: all 0.3s ease;
   cursor: pointer;
+}
+
+/* ── ActionButton 统一操作按钮（仿 .btn-primary 渐变主色；颜色走主题变量，新主题自动适配）── */
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 20px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  border-radius: 10px;
+  cursor: pointer;
+  border: none;
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-1-light));
+  color: #fff;
+  box-shadow: 0 2px 10px var(--accent-1-border);
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.action-btn:hover:not(:disabled) {
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px var(--glow-accent-strong);
+}
+.action-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+/* 变体：次级描边（次要操作） */
+.action-btn-secondary {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  box-shadow: none;
+}
+.action-btn-secondary:hover:not(:disabled) {
+  border-color: var(--accent-1);
+  color: var(--accent-1);
+  box-shadow: none;
+}
+/* 变体：危险（删除/移除） */
+.action-btn-danger {
+  background: linear-gradient(135deg, var(--danger), var(--danger-hover));
+  color: #fff;
+  box-shadow: 0 2px 10px var(--danger-soft-strong);
+}
+.action-btn-danger:hover:not(:disabled) {
+  color: #fff;
+}
+/* 尺寸：紧凑（区块头工具行） */
+.action-btn-sm {
+  padding: 6px 14px;
+  font-size: 12px;
+  border-radius: 8px;
 }
 
 .btn-primary {

@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+﻿import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import { UiIcon } from '../components/Icons'
 import CategoryDropdown from '../components/CategoryDropdown'
 import Modal from '../components/Modal'
+import ActionButton from '../components/ActionButton'
 import { PROVIDERS, getProvider, getThinkingLevels, isValidThinkingLevel, AI_DEFAULTS } from '../utils/aiProviders'
 import './MyPage.css'
 
@@ -237,7 +238,9 @@ function MyPage() {
       const data = await res.json()
       if (!res.ok) { setAiError(data.detail || '添加失败'); return }
       setKeys(ks => [...ks, data])
-      if (!currentKeyId) setCurrentKeyId(data.id)
+      // 立即选中新 Key 并恢复其默认模型（创建时已写入 provider 默认模型为 last_model）
+      setCurrentKeyId(data.id)
+      restoreKey(data.id)
       setAddKeyOpen(false)
     } catch {
       setAiError('网络错误，请稍后重试')
@@ -298,14 +301,74 @@ function MyPage() {
     }
   }
 
-  const handleSetCurrentKey = (keyId) => {
+  // 切换 Key：restore 协议，后端恢复该 Key 上次的选择并返回完整设置
+  const restoreKey = async (keyId) => {
     setCurrentKeyId(keyId)
+    try {
+      const res = await fetch('/api/user/ai-settings', {
+        method: 'PUT',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key_id: keyId, restore: true }),
+      })
+      const data = await res.json()
+      if (!res.ok) return
+      // 用后端返回的该 Key 上次选择刷新 UI
+      if (data.model !== undefined) setModel(data.model || '')
+      if (data.thinking_level) setThinking(data.thinking_level)
+      if (typeof data.temperature === 'number') setTemperature(data.temperature)
+      if (data.top_k) setTopK(data.top_k)
+    } catch { /* 网络错误静默 */ }
+  }
+
+  const handleSetCurrentKey = (keyId) => {
+    restoreKey(keyId)
+  }
+
+  // 统一持久化当前选择（key/模型/采样参数）：立即提交（热区修复后点击已可靠）
+  const pendingRef = useRef({})
+  // 最新 state 快照：供原生事件监听/回调读取（避开渲染闭包过期问题）
+  const stateRef = useRef({})
+  stateRef.current = { currentKeyId, model, thinking, temperature, topK }
+  const persistSettings = (patch = {}) => {
+    pendingRef.current = { ...pendingRef.current, ...patch }
+    const p = { ...pendingRef.current }
+    pendingRef.current = {}
+    const s = stateRef.current
     fetch('/api/user/ai-settings', {
       method: 'PUT',
       headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key_id: keyId, model: model.trim() || null, thinking_level: thinking, temperature, top_k: topK }),
+      body: JSON.stringify({
+        key_id: p.key_id !== undefined ? p.key_id : s.currentKeyId,
+        model: p.model !== undefined ? (p.model || null) : (s.model.trim() || null),
+        thinking_level: p.thinking_level !== undefined ? p.thinking_level : s.thinking,
+        temperature: p.temperature !== undefined ? p.temperature : s.temperature,
+        top_k: p.top_k !== undefined ? p.top_k : s.topK,
+      }),
     }).catch(() => {})
   }
+
+  // 模型列表用原生 capture 监听切换（React 委托在快速连点+重渲染时会丢事件）。
+  // 依赖列表渲染条件，确保 <ul> 挂载后完成绑定。
+  const modelListRef = useRef(null)
+  useEffect(() => {
+    const el = modelListRef.current
+    if (!el) return
+    const onDown = (e) => {
+      const item = e.target.closest && e.target.closest('.ai-model-item')
+      if (!item || !item.dataset.model) return
+      e.preventDefault()
+      // 乐观高亮：纯 DOM 操作立即反馈（0ms），React 渲染放下一帧且结果幂等
+      el.querySelectorAll('.ai-model-item.active').forEach(x => x.classList.remove('active'))
+      item.classList.add('active')
+      const name = item.dataset.model
+      requestAnimationFrame(() => {
+        setModel(name)
+        persistSettings({ model: name })
+      })
+    }
+    el.addEventListener('mousedown', onDown, true)
+    return () => el.removeEventListener('mousedown', onDown, true)
+  }, [tab, aiLoading, currentKeyId, currentKey, sortedModels.length])
 
   // ── 模型弹窗 ──
 
@@ -475,7 +538,7 @@ function MyPage() {
                 <span>未读红点</span>
               </label>
               {unread > 0 && <span className="my-unread-count">{unread} 条未读</span>}
-              <button className="btn btn-sm my-read-all" onClick={handleReadAll}>全部已读</button>
+              <ActionButton size="sm" onClick={handleReadAll}>全部已读</ActionButton>
             </div>
             {error && <div className="my-error">{error}</div>}
             {loading ? (
@@ -522,7 +585,7 @@ function MyPage() {
                 <div className="ai-section">
                   <div className="ai-section-head">
                     <span className="ai-section-title">API Key 管理</span>
-                    <button className="btn btn-sm" onClick={openAddKey}>+ 新增 Key</button>
+                    <ActionButton size="sm" onClick={openAddKey}>+ 新增 Key</ActionButton>
                   </div>
 
                   {keys.length === 0 ? (
@@ -567,16 +630,15 @@ function MyPage() {
                     <span className="ai-section-title">选择当前模型</span>
                     {currentProv && <span className="ai-key-provider">{currentProv.label}</span>}
                     <div className="ai-section-ops">
-                      <button
-                        type="button"
-                        className="btn btn-sm"
+                      <ActionButton
+                        size="sm"
                         onClick={() => refreshModels(currentKeyId)}
                         disabled={modelsLoading || !currentKeyId}
                         title="刷新可用模型"
                       >
                         {modelsLoading ? '加载中...' : '刷新'}
-                      </button>
-                      <button className="btn btn-sm" onClick={openAddModel}>+ 新增模型</button>
+                      </ActionButton>
+                      <ActionButton size="sm" onClick={openAddModel}>+ 新增模型</ActionButton>
                     </div>
                   </div>
 
@@ -590,13 +652,16 @@ function MyPage() {
                           {modelsLoading ? '正在查询可用模型...' : '暂无可用模型，可手动新增'}
                         </div>
                       ) : (
-                        <ul className="ai-model-list">
+                        <ul className="ai-model-list" ref={modelListRef}>
                           {sortedModels.map(m => (
-                            <li key={m.model} className={`ai-model-item ${model === m.model ? 'active' : ''}`}>
+                            <li
+                              key={m.model}
+                              className={`ai-model-item ${model === m.model ? 'active' : ''}`}
+                              data-model={m.model}
+                            >
                               <button
                                 type="button"
                                 className="ai-model-name"
-                                onClick={() => setModel(m.model)}
                                 title="点击设为当前模型"
                               >
                                 {m.model}

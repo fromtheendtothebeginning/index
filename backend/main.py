@@ -350,6 +350,10 @@ def _ai_key_response(k: AiKey) -> AiKeyResponse:
         has_key=bool(k.api_key_enc),
         key_hint=key_hint,
         custom_base_url=k.custom_base_url,
+        last_model=k.last_model,
+        last_thinking_level=k.last_thinking_level,
+        last_temperature=k.last_temperature,
+        last_top_k=k.last_top_k,
         created_at=k.created_at,
     )
 
@@ -393,15 +397,46 @@ def update_ai_settings(
     db: Session = Depends(get_db),
 ):
     s = _get_or_create_ai_setting(db, current_user.id)
-    if req.key_id:
-        _get_key(db, req.key_id, current_user.id)  # 校验归属
-        s.key_id = req.key_id
-    elif req.key_id is not None:
-        s.key_id = None
-    s.model = (req.model or "").strip()[:100]
-    s.thinking_level = req.thinking_level
-    s.temperature = req.temperature
-    s.top_k = req.top_k
+
+    if req.restore:
+        # ── 切换 Key：恢复该 Key 上次的选择（忽略其余字段）──
+        if not req.key_id:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="restore 需要 key_id")
+        key = _get_key(db, req.key_id, current_user.id)
+        s.key_id = key.id
+        p = aisettings.get_provider(key.provider)
+        s.model = key.last_model or (p.get("default_model", "") if p else "") or ""
+        s.thinking_level = key.last_thinking_level or "medium"
+        s.temperature = key.last_temperature if key.last_temperature is not None else 0.7
+        s.top_k = key.last_top_k if key.last_top_k is not None else 40
+    else:
+        # ── 保存当前选择：写入 settings，并同步到当前 Key 的 last_*（下次切换恢复）──
+        current_key = db.query(AiKey).filter(AiKey.id == s.key_id).first() if s.key_id else None
+        if req.key_id is not None:
+            if req.key_id == 0:
+                s.key_id = None
+            elif req.key_id != s.key_id:
+                # 带了不同 key_id 但没带 restore：仅切换选中，不恢复（兼容旧调用）
+                _get_key(db, req.key_id, current_user.id)
+                s.key_id = req.key_id
+                current_key = db.query(AiKey).filter(AiKey.id == s.key_id).first()
+        if req.model is not None:
+            s.model = (req.model or "").strip()[:100]
+            if current_key:
+                current_key.last_model = s.model or None
+        if req.thinking_level is not None:
+            s.thinking_level = req.thinking_level
+            if current_key:
+                current_key.last_thinking_level = req.thinking_level
+        if req.temperature is not None:
+            s.temperature = req.temperature
+            if current_key:
+                current_key.last_temperature = req.temperature
+        if req.top_k is not None:
+            s.top_k = req.top_k
+            if current_key:
+                current_key.last_top_k = req.top_k
+
     db.commit()
     db.refresh(s)
     return AiSettingsResponse(
@@ -428,12 +463,18 @@ def create_ai_key(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="未知的 AI 提供商")
     if req.provider == "custom" and not req.custom_base_url:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="自定义提供商必须填写 Base URL")
+    # 默认模型：该提供商注册表的 default_model（作为此 Key 的初始 last_model）
+    p = aisettings.get_provider(req.provider)
     k = AiKey(
         user_id=current_user.id,
         provider=req.provider,
         label=(req.label or "").strip()[:50],
         api_key_enc=aisettings.encrypt_secret(req.api_key.strip()),
         custom_base_url=req.custom_base_url,
+        last_model=(p.get("default_model") or "") or None,
+        last_thinking_level=None,
+        last_temperature=None,
+        last_top_k=None,
     )
     db.add(k)
     db.commit()

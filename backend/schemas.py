@@ -618,6 +618,10 @@ class AiKeyResponse(BaseModel):
     has_key: bool = False
     key_hint: Optional[str] = None
     custom_base_url: Optional[str] = None
+    last_model: Optional[str] = None
+    last_thinking_level: Optional[str] = None
+    last_temperature: Optional[float] = None
+    last_top_k: Optional[int] = None
     created_at: Optional[datetime] = None
 
 
@@ -666,10 +670,11 @@ class AiFavoriteToggleResponse(BaseModel):
 
 class UpdateAiSettingsRequest(BaseModel):
     key_id: Optional[int] = Field(None, ge=0, description="当前选中的 AI Key ID（0=不选）")
-    model: str = Field("", max_length=100, description="当前模型 ID")
-    thinking_level: str = Field("medium", description="思考深度 off/low/medium/high/max")
-    temperature: float = Field(0.7, ge=0, le=2, description="温度 0~2")
-    top_k: int = Field(40, ge=1, le=100, description="Top-K 1~100")
+    restore: bool = Field(False, description="true=切换 Key 并恢复该 Key 上次的选择（忽略其余字段）")
+    model: Optional[str] = Field(None, max_length=100, description="当前模型 ID（None=不改）")
+    thinking_level: Optional[str] = Field(None, description="思考深度 off/low/medium/high/max（None=不改）")
+    temperature: Optional[float] = Field(None, ge=0, le=2, description="温度 0~2（None=不改）")
+    top_k: Optional[int] = Field(None, ge=1, le=100, description="Top-K 1~100（None=不改）")
 
     @field_validator("thinking_level")
     @classmethod

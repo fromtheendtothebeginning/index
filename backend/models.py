@@ -256,6 +256,10 @@ class AiKey(Base):
     label = Column(String(50), nullable=False, default="", server_default="", comment="备注名（如「工作账号」「备用」）")
     api_key_enc = Column(Text, nullable=True, comment="加密后的 API Key（aisettings 加密，永不回传明文）")
     custom_base_url = Column(String(500), nullable=True, comment="自定义 Base URL（留空用提供商默认）")
+    last_model = Column(String(100), nullable=True, comment="该 Key 上次选择的模型（切换 Key 时恢复）")
+    last_thinking_level = Column(String(10), nullable=True, comment="该 Key 上次思考深度")
+    last_temperature = Column(Float, nullable=True, comment="该 Key 上次温度")
+    last_top_k = Column(Integer, nullable=True, comment="该 Key 上次 Top-K")
     created_at = Column(DateTime(timezone=True), server_default=func.now(), comment="创建时间")
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), comment="更新时间"

@@ -41,7 +41,7 @@ function CategoryDropdown({ value, onChange, options = [], placeholder = '未分
 
   return (
     <div
-      className={`nav-dropdown ${open ? 'mobile-open' : ''} ${justPicked ? 'just-picked' : ''}`}
+      className={`nav-dropdown category-dropdown ${open ? 'mobile-open' : ''} ${justPicked ? 'just-picked' : ''}`}
       onClick={e => e.stopPropagation()}
       onMouseLeave={() => setJustPicked(false)}
     >

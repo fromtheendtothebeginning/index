@@ -245,6 +245,22 @@ def run_migrations():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """))
         conn.commit()
+        # ai_keys 补列：每个 Key 单独记住上次的选择（切换 Key 时恢复）
+        ak_cols = {row[0] for row in conn.execute(text(
+            "SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ai_keys'"
+        ))}
+        if "last_model" not in ak_cols:
+            conn.execute(text("ALTER TABLE ai_keys ADD COLUMN last_model VARCHAR(100) NULL"))
+            conn.commit()
+        if "last_thinking_level" not in ak_cols:
+            conn.execute(text("ALTER TABLE ai_keys ADD COLUMN last_thinking_level VARCHAR(10) NULL"))
+            conn.commit()
+        if "last_temperature" not in ak_cols:
+            conn.execute(text("ALTER TABLE ai_keys ADD COLUMN last_temperature FLOAT NULL"))
+            conn.commit()
+        if "last_top_k" not in ak_cols:
+            conn.execute(text("ALTER TABLE ai_keys ADD COLUMN last_top_k INT NULL"))
+            conn.commit()
         conn.execute(text("""
             CREATE TABLE IF NOT EXISTS ai_favorites (
                 id INT AUTO_INCREMENT PRIMARY KEY,
