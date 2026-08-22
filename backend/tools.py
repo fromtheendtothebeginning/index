@@ -13,6 +13,23 @@ os.makedirs(_DOWNLOAD_DIR, exist_ok=True)
 _download_slot = threading.BoundedSemaphore(1)
 
 
+def _patch_bilibili_headers():
+    """去掉 yt-dlp bilibili 提取器硬编码的 Referer（数据中心 IP 触发 B 站 412 风控）。
+
+    B 站 view/playurl 等 API 对带 Referer 的数据中心 IP 请求返回 412 Precondition Failed，
+    纯 UA（不带 Referer）可正常访问。yt-dlp 的 Bilibili 提取器 _HEADERS 硬编码
+    {'Referer': 'https://www.bilibili.com/'}，故 monkey-patch 移除。
+    """
+    from yt_dlp.extractor import bilibili as _bili_mod
+    patched = 0
+    for cls_name in dir(_bili_mod):
+        obj = getattr(_bili_mod, cls_name)
+        if isinstance(obj, type) and hasattr(obj, "_HEADERS") and isinstance(obj._HEADERS, dict) and "Referer" in obj._HEADERS:
+            obj._HEADERS = {k: v for k, v in obj._HEADERS.items() if k != "Referer"}
+            patched += 1
+    return patched
+
+
 def _cleanup_old_dirs():
     """清理 24 小时前的临时下载目录"""
     now = time.time()
@@ -34,11 +51,9 @@ def _ydl_opts(download_dir=None):
         "no_warnings": True,
         "noplaylist": True,
         "socket_timeout": 20,
-        # 浏览器特征：数据中心 IP（如阿里云）被 B 站风控 412，需带 UA/Referer 降低拦截概率
+        # 浏览器 UA 即可；勿带 Referer —— 数据中心 IP 带 Referer 请求 B 站会触发 412 风控
         "http_headers": {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-            "Referer": "https://www.bilibili.com/",
-            "Accept-Language": "zh-CN,zh;q=0.9",
         },
     }
     # 可选：环境变量配置 B 站 Cookie（登录态可绕过数据中心 IP 的 412 风控）
@@ -75,6 +90,7 @@ def _build_cookiejar(cookie_str: str) -> str:
 
 def extract_video_info(url: str) -> dict:
     """提取视频信息（不下载）。返回精简字段，供解析工具展示。"""
+    _patch_bilibili_headers()
     from yt_dlp import YoutubeDL
     with YoutubeDL(_ydl_opts()) as ydl:
         info = ydl.extract_info(url, download=False)
@@ -117,6 +133,7 @@ def download_video(url: str, progress_cb=None) -> tuple[str, str]:
                         progress_cb(min(99, int(done / total * 100)))
             opts["progress_hooks"] = [_hook]
         with _download_slot:
+            _patch_bilibili_headers()
             from yt_dlp import YoutubeDL
             with YoutubeDL(opts) as ydl:
                 ydl.download([url])
