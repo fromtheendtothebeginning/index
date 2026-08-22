@@ -76,3 +76,7 @@ log/
 # 任务完成提醒铃声（音频 + 播放脚本，本地专用）
 play_ring.py
 ringtone/
+restart-backend.bat
+restart-frontend.bat
+opencode.json
+

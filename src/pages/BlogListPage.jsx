@@ -5,10 +5,10 @@ import Modal from '../components/Modal'
 import Reveal from '../components/Reveal'
 import CategoryDropdown from '../components/CategoryDropdown'
 import { UiIcon } from '../components/Icons'
+import { ALL_CATEGORY, BLOG_CATEGORIES as CATEGORIES } from '../constants'
 import './Blog.css'
 
 const API_BASE = '/api'
-const CATEGORIES = ['技术讨论', '更新日志', '娱乐论坛']
 
 const readSavedState = () => {
   try {
@@ -259,7 +259,7 @@ function BlogListPage() {
         </div>
 
         <div className="blog-filters">
-          {['', '技术讨论', '更新日志', '娱乐论坛'].map(cat => (
+          {[ALL_CATEGORY, ...CATEGORIES].map(cat => (
             <button
               key={cat || 'all'}
               className={`blog-filter-btn ${filterCategory === cat ? 'active' : ''}`}

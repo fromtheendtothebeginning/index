@@ -6,6 +6,8 @@ from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import URL
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
+from constants import ROLE_ADMIN
+
 # 优先使用根目录的 .env（本机开发环境），
 # 回退到 backend/.env（服务器环境）
 _root_dotenv = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".env")
@@ -335,11 +337,11 @@ def run_migrations():
         # 将 end 用户提升为管理员（部署后初始化管理员账号）
         # 守卫：仅当系统当前没有任何管理员、且用户数 > 1 时才提升，
         # 防止全新库上抢注 end 即获管理员，也防止已有多管理员时反复提升
-        admin_count = db.query(User).filter(User.role == "admin").count()
+        admin_count = db.query(User).filter(User.role == ROLE_ADMIN).count()
         total = db.query(User).count()
         end_user = db.query(User).filter(User.username == "end").first()
-        if end_user and admin_count == 0 and total > 1 and end_user.role != "admin":
-            end_user.role = "admin"
+        if end_user and admin_count == 0 and total > 1 and end_user.role != ROLE_ADMIN:
+            end_user.role = ROLE_ADMIN
             db.commit()
             print("[migrations] user 'end' promoted to admin")
 

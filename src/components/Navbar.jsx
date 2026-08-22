@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useNavigate } from 'react-router-dom'
 import NavItem from './NavItem'
+import { navItems as featureNavItems } from '../appRoutes'
+import { BLOG_CATEGORIES } from '../constants'
 
 function Navbar({ activePage }) {
   const navigate = useNavigate()
@@ -126,9 +128,9 @@ function Navbar({ activePage }) {
     <>
       <NavItem label="博客" to="/blogs" active={activePage === 'blog'} onNavigate={closeMenu}>
         <Link to="/blogs">全部</Link>
-        <Link to="/blogs?category=技术讨论">技术讨论</Link>
-        <Link to="/blogs?category=更新日志">更新日志</Link>
-        <Link to="/blogs?category=娱乐论坛">娱乐论坛</Link>
+        {BLOG_CATEGORIES.map(c => (
+          <Link key={c} to={`/blogs?category=${encodeURIComponent(c)}`}>{c}</Link>
+        ))}
       </NavItem>
       <NavItem label="项目" to="/projects" active={activePage === 'project'} onNavigate={closeMenu} />
       <NavItem label="榜单" to="/leetcode" active={activePage === 'leetcode'} onNavigate={closeMenu} />
@@ -149,6 +151,9 @@ function Navbar({ activePage }) {
         <Link to="/" onClick={() => scrollToSection('friends')}>友情链接</Link>
         <Link to="/" onClick={() => scrollToSection('contact')}>联系</Link>
       </NavItem>
+      {featureNavItems.length > 0 && featureNavItems.map(item => (
+        <NavItem key={item.path} label={item.label} to={item.path} onNavigate={closeMenu} />
+      ))}
     </>
   )
 

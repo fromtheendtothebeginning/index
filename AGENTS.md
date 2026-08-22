@@ -5,6 +5,7 @@
 ## 常用命令
 - `npm run dev` — Vite 前端，端口 3000，`/api` 代理到 `127.0.0.1:8000`
 - `npm run back`（=`backend`）— 后端：`cmd /c "backend\.venv\Scripts\activate.bat && python backend\main.py"`，uvicorn `main:app` 端口 8000，`reload=False`（改后端代码后需手动重启）
+- `cmd /c restart-backend.bat` / `cmd /c restart-frontend.bat` — **后台重启对应服务（默认立即返回不等待）**；杀旧进程→分离启动→返回。`restart-backend.bat wait` 才轮询健康检查。**禁止前台直跑** `npm run dev` / `python backend\main.py`（长驻进程会挂住 agent 会话直到超时）。验证方式：隔几秒单独 curl；注意 Vite 只监听 IPv6 `[::1]:3000`，健康检查用 `http://localhost:3000` 而非 127.0.0.1。bat 文件必须纯 ASCII + CRLF（中文注释在 GBK 码页下会解析错乱），延时用 `ping -n 3 127.0.0.1 >nul`（`timeout /t` 在重定向 stdin 下报 Input redirection 错误）。
 - `npm run start` — 两个新窗口分别启动前后端
 - `npm run build` — 构建前端到 `dist/`
 - **没有测试框架、没有 linter/typecheck**。验证方式：启动后 `curl http://127.0.0.1:8000/api/health`，或 `npm run build` 确认构建通过。
@@ -63,6 +64,13 @@
 - 大型多步骤任务优先派子代理实施，主脑负责架构、接口约定与验证，保持上下文清洁。
 - **国外 AI 厂商文档读取**（Anthropic docs.anthropic.com / platform.openai.com / ai.google.dev 直接 webfetch 会超时/403，勿反复重试）：改用**国内可访问文档源**（阿里云 help.aliyun.com、千问 platform.qianwenai.com）或 **GitHub 官方 SDK 源码**（openai/openai-python、anthropics/anthropic-sdk-python、googleapis/python-genai 的 raw 源码/README）获取权威 API 配置。2026-08 实测有效。
 - **AI 设置（MyPage AI 设置 tab）**：思考深度选项按厂商文档差异化（`provider.thinking_levels`，后端 aisettings.py + 前端 aiProviders.js 双处同步），UI 用 CategoryDropdown 选择器（不是定死低/中/高三档）。Anthropic（Claude）不支持 temperature/top_k，配置 `sampling: false`，前端对 `sampling===false` 的厂商隐藏温度/Top-K 滑块。模型选择走「可用模型列表点击选中」，不单独放下拉。
+
+## 新功能开发流程（文件冻结制）
+- **后端**：新功能 = 新建 `backend/features/<名>.py`（模块级 `router = APIRouter()` 即被 main.py 自动发现挂载）；跨域共享助手放 `backend/deps.py`。旧文件一律不改。
+- **前端**：新功能 = 新建 `src/features/<kebab-name>/` 文件夹（页面 + css + `routes.js(x)`，default 导出 `{ path, element }[]`；可选导出 `nav` 自动追加进导航栏）。App.jsx / Navbar 零改动。约定见 `src/features/README.md`。
+- **字符串常量**集中在两处并开放权限：`backend/constants.py` / `src/constants.js`（博客分类、角色、CORS 默认值等两端同步项改这里，禁止散落硬编码）。
+- **权限规则**（项目根 `opencode.json`）：**逐功能逐文件登记，禁止目录通配批量放行**——所有既有文件默认 `edit: ask`；既有 features 模块逐个显式列 `"ask"`（受保护的存量代码）；开发中的新功能开工时为其单独加一条 `"allow"`（只放行该功能的文件）；两个 constants 文件 `allow`。opencode 配置不热加载，改完需重启 opencode 生效。
+- **竣工锁定**：新功能经用户确认完成后，把该功能在 `opencode.json` 里的 `"allow"` 条目改为 `"ask"`（last-match-wins），即冻结为受保护旧文件。
 
 ## 运行注意事项（每次任务结束追加新发现）
 1. **本地后端端口必须是 8000**：`vite.config.js` 代理固定指向 `127.0.0.1:8000`，本地后端起 8000（18000 仅当 8000 被 Windows 排除区间占用时用，且必须同步 vite 代理）。用错端口 API 测试会 Connection refused。

@@ -4,9 +4,9 @@ import Navbar from '../components/Navbar'
 import Modal from '../components/Modal'
 import CategoryDropdown from '../components/CategoryDropdown'
 import { CONTACT_ICON_OPTIONS, ContactIcon } from '../components/Icons'
+import { BLOG_CATEGORIES as CATEGORIES } from '../constants'
 import './AdminPage.css'
 
-const CATEGORIES = ['技术讨论', '更新日志', '娱乐论坛']
 function AdminPage() {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)

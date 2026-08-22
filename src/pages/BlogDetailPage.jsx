@@ -5,9 +5,8 @@ import Modal from '../components/Modal'
 import CategoryDropdown from '../components/CategoryDropdown'
 import { renderMd } from '../utils/markdown'
 import { UiIcon } from '../components/Icons'
+import { BLOG_CATEGORIES as CATEGORIES } from '../constants'
 import './Blog.css'
-
-const CATEGORIES = ['技术讨论', '更新日志', '娱乐论坛']
 
 // 单条评论卡片（主列表 / 回复链面板共用）
 function CommentCard({

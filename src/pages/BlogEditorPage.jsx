@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar'
 import CategoryDropdown from '../components/CategoryDropdown'
 import { renderMd } from '../utils/markdown'
 import { UiIcon } from '../components/Icons'
+import { BLOG_CATEGORIES } from '../constants'
 import './Blog.css'
 
 function BlogEditorPage() {
@@ -164,7 +165,7 @@ function BlogEditorPage() {
             <CategoryDropdown
               value={category}
               onChange={setCategory}
-              options={[{value:'技术讨论',label:'技术讨论'},{value:'更新日志',label:'更新日志'},{value:'娱乐论坛',label:'娱乐论坛'}]}
+              options={BLOG_CATEGORIES.map(c => ({ value: c, label: c }))}
               placeholder="无"
             />
             <CategoryDropdown
