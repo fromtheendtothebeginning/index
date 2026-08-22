@@ -115,10 +115,11 @@
 
 .tool-card-cover {
   width: 180px;
+  height: 101px; /* 180 × 9/16 ≈ 101，16:9 横向（与 B 站网页端封面一致） */
   flex-shrink: 0;
+  align-self: flex-start; /* 防止作为 flex item 被交叉轴 stretch 拉伸破坏长宽比 */
   border-radius: 10px;
   overflow: hidden;
-  aspect-ratio: 16 / 9;
   background: var(--bg-elevated);
 }
 
@@ -269,6 +270,8 @@
 
   .tool-card-cover {
     width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9; /* 移动端自适应 16:9 横向 */
   }
 
   .tool-input-row {
