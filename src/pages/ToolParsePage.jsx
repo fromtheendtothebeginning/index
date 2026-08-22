@@ -235,7 +235,9 @@ function ToolParsePage() {
                   <div className="tool-dl-bar">
                     <div className="tool-dl-fill" style={{ width: `${progress}%` }} />
                   </div>
-                  <span className="tool-dl-text">{saving ? `保存中 ${progress}%` : `下载中 ${progress}%`}</span>
+                  <span className="tool-dl-text">
+                    {saving ? '保存中...' : (progress >= 99 ? '正在合并视频，请稍候...' : `下载中 ${progress}%`)}
+                  </span>
                 </div>
               )}
               <a
