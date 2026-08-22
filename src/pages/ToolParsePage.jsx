@@ -93,15 +93,36 @@ function ToolParsePage() {
     finally { setLoading(false) }
   }
 
-  const download = async () => {
+  const download = async (mode) => {
     if (!token) { setErr('请先登录后使用工具'); return }
     setErr(''); setDownloading(true); setProgress(0); setSaving(false)
+
+    // 下载封面：直接通过代理取图保存（不走后台任务）
+    if (mode === 'cover') {
+      if (!info?.thumbnail) { setErr('无封面可下载'); setDownloading(false); return }
+      try {
+        const r = await fetch(`/api/tools/thumb?url=${encodeURIComponent(info.thumbnail)}`, { headers: authHeaders })
+        if (!r.ok) throw new Error('获取封面失败')
+        const blob = await r.blob()
+        const a = document.createElement('a')
+        const objUrl = URL.createObjectURL(blob)
+        a.href = objUrl
+        a.download = ((info && info.title) || 'cover').replace(/[\\/:*?"<>|]/g, '_') + '.jpg'
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        setTimeout(() => URL.revokeObjectURL(objUrl), 10000)
+        setDownloading(false)
+        return
+      } catch (e) { setErr(e.message); setDownloading(false); return }
+    }
+
     try {
-      // 1. 创建下载任务
+      // 1. 创建下载任务（mode: merged/video_only/audio_only/separate）
       const cr = await fetch('/api/tools/video/download-task', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders },
-        body: JSON.stringify({ url: url.trim() }),
+        body: JSON.stringify({ url: url.trim(), mode }),
       })
       if (!cr.ok) {
         const cd = await cr.json().catch(() => ({}))
@@ -123,10 +144,13 @@ function ToolParsePage() {
             const fr = await fetch(`/api/tools/video/download-file?task_id=${task_id}`, { headers: authHeaders })
             if (!fr.ok) throw new Error('获取文件失败')
             const blob = await fr.blob()
+            const isZip = fr.headers.get('Content-Type')?.includes('zip')
             const a = document.createElement('a')
             const objUrl = URL.createObjectURL(blob)
             a.href = objUrl
-            a.download = ((info && info.title) || 'video').replace(/[\\/:*?"<>|]/g, '_') + '.mp4'
+            const base = ((info && info.title) || 'video').replace(/[\\/:*?"<>|]/g, '_')
+            const ext = isZip ? 'zip' : (mode === 'audio_only' ? 'mp3' : 'mp4')
+            a.download = isZip ? `${base}.zip` : `${base}.${ext}`
             document.body.appendChild(a)
             a.click()
             a.remove()
@@ -222,12 +246,22 @@ function ToolParsePage() {
                   placeholder="选择清晰度下载"
                   hideClear
                 />
-                <button
-                  className="btn btn-primary tool-btn"
-                  onClick={download}
-                  disabled={downloading || !chosen || !token}
-                >
-                  {downloading ? (saving ? '保存中...' : `${progress}%`) : '下载'}
+              </div>
+              <div className="tool-dl-actions">
+                <button className="btn btn-primary tool-btn" onClick={() => download('merged')} disabled={downloading || !chosen || !token}>
+                  下载视频（带音频）
+                </button>
+                <button className="btn btn-secondary tool-btn" onClick={() => download('video_only')} disabled={downloading || !chosen || !token}>
+                  下载视频（无音频）
+                </button>
+                <button className="btn btn-secondary tool-btn" onClick={() => download('audio_only')} disabled={downloading || !token}>
+                  下载音频
+                </button>
+                <button className="btn btn-secondary tool-btn" onClick={() => download('separate')} disabled={downloading || !chosen || !token}>
+                  视频音频分开
+                </button>
+                <button className="btn btn-secondary tool-btn" onClick={() => download('cover')} disabled={downloading || !info?.thumbnail || !token}>
+                  下载封面
                 </button>
               </div>
               {downloading && (

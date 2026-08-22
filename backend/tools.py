@@ -176,7 +176,7 @@ def extract_video_info(url: str) -> dict:
         thumb = "https://" + thumb[7:]
     return {
         "title": info.get("title"),
-        "uploader": info.get("uploader"),
+        "uploader": _resolve_uploader(url, info.get("uploader")),
         "duration": info.get("duration"),  # 秒
         "thumbnail": thumb or None,
         "webpage_url": info.get("webpage_url") or url,
@@ -184,12 +184,61 @@ def extract_video_info(url: str) -> dict:
     }
 
 
-def download_video(url: str, progress_cb=None) -> tuple[str, str]:
-    """下载视频到临时目录，返回 (文件路径, 文件名)。并发限制 1。失败抛异常。
+def _resolve_uploader(url: str, fallback_uploader):
+    """解析 UP 主：B 站联合投稿（staff 多作者）时显示全部 UP 主，否则用 yt-dlp 的 uploader。
+
+    用纯 UA 调 x/web-interface/view（数据中心 IP 可用，无 Referer），拿 owner/staff。
+    失败时回退 yt-dlp 的 uploader。"""
+    import json as _json
+    import re as _re
+    import urllib.request as _ur
+    _UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+    m = _re.search(r'BV[0-9A-Za-z]+', url)
+    if not m:
+        return fallback_uploader
+    try:
+        req = _ur.Request(f'https://api.bilibili.com/x/web-interface/view?bvid={m.group(0)}', headers={'User-Agent': _UA})
+        with _ur.urlopen(req, timeout=15) as r:
+            data = _json.loads(r.read().decode())
+        d = data.get('data') or {}
+        staff = d.get('staff')
+        if staff:
+            names = [s.get('name') for s in staff if s.get('name')]
+            return '、'.join(names) if names else fallback_uploader
+        owner_name = (d.get('owner') or {}).get('name')
+        return owner_name or fallback_uploader
+    except Exception:
+        return fallback_uploader
+
+
+def download_video(url: str, mode: str = "merged", progress_cb=None) -> list:
+    """下载视频到临时目录，返回文件路径列表 [(path, filename), ...]。并发限制 1。失败抛异常。
+
+    mode:
+      merged    视频+音频合并 mp4（默认）
+      video_only 仅视频流（无音频）
+      audio_only 仅音频（m4a 转 mp3）
+      separate  视频流 + 音频流分开两个文件
     progress_cb: 可选回调，接收 0-99 的整数进度（yt-dlp 下载阶段实时回调）"""
     tmp = tempfile.mkdtemp(prefix="anticraft_tool_", dir=_DOWNLOAD_DIR)
     try:
         opts = _ydl_opts(tmp)
+        if mode == "video_only":
+            opts["format"] = "bv*[ext=mp4]/bv*"
+        elif mode == "audio_only":
+            opts["format"] = "ba/bestaudio"
+            opts["postprocessors"] = [{
+                "key": "FFmpegExtractAudio",
+                "preferredcodec": "mp3",
+                "preferredquality": "192",
+            }]
+            opts["outtmpl"] = os.path.join(tmp, "%(title).80B.%(ext)s")
+        elif mode == "separate":
+            # 视频流 + 音频流分开（不合并）：分别下载，产出两个文件
+            opts["format"] = "bv*[ext=mp4]+ba[ext=m4a]"
+            opts["merge_output_format"] = None
+            opts["postprocessors"] = []
+        # merged 保持 _ydl_opts 默认（bv*+ba 合并 mp4）
         if progress_cb:
             def _hook(d):
                 if d.get("status") == "downloading":
@@ -206,7 +255,7 @@ def download_video(url: str, progress_cb=None) -> tuple[str, str]:
         files = [f for f in os.listdir(tmp) if not f.endswith((".part", ".ytdl", ".tmp"))]
         if not files:
             raise RuntimeError("下载失败：未生成文件")
-        return os.path.join(tmp, files[0]), files[0]
+        return [(os.path.join(tmp, f), f) for f in files]
     except Exception:
         shutil.rmtree(tmp, ignore_errors=True)
         raise

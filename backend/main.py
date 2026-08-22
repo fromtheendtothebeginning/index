@@ -2455,33 +2455,39 @@ def video_download_task(
     req: dict,
     current_user: User = Depends(get_current_user_obj),
 ):
-    """创建下载任务，后台 yt-dlp 下载并实时更新进度（需登录）"""
+    """创建下载任务，后台 yt-dlp 下载并实时更新进度（需登录）
+    mode: merged/video_only/audio_only/separate（见 tools.download_video）"""
     url = (req.get("url") or "").strip()
     if not url:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="请输入视频链接")
+    mode = (req.get("mode") or "merged").strip()
+    if mode not in ("merged", "video_only", "audio_only", "separate"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="未知的下载模式")
     _require_http_url(url)
     task_id = secrets.token_urlsafe(16)
-    task = {"progress": 0, "status": "downloading", "path": None, "filename": None, "error": None}
+    task = {"progress": 0, "status": "downloading", "path": None, "filename": None, "files": None, "error": None}
     with _dl_lock:
         _dl_tasks[task_id] = task
-    _log(f"download-task created by {current_user.username} : {url[:80]} -> {task_id[:8]}")
+    _log(f"download-task created by {current_user.username} [{mode}] : {url[:60]} -> {task_id[:8]}")
 
     def _run():
         try:
             # progress 只增不减：yt-dlp 对音视频分离的源会分多路下载（视频流+音频流），
             # 每路的 progress_hooks 独立 0-100，直接覆盖会让进度条走完一遍又从 0 走一遍
-            path, filename = tools.download_video(
+            results = tools.download_video(
                 url,
-                lambda p: task.__setitem__("progress", max(task["progress"], p)),
+                mode=mode,
+                progress_cb=lambda p: task.__setitem__("progress", max(task["progress"], p)),
             )
-            task["path"] = path
-            task["filename"] = filename
+            task["files"] = results  # [(path, filename), ...]
+            task["path"] = results[0][0]
+            task["filename"] = results[0][1]
             task["status"] = "done"
-            _log(f"download-task done: {filename} ({os.path.getsize(path) / 1024 / 1024:.1f} MB)")
+            _log(f"download-task done [{mode}]: {len(results)} file(s)")
         except Exception as exc:
             task["status"] = "failed"
             task["error"] = str(exc)[:200]
-            _log(f"download-task FAILED: {str(exc)[:120]}")
+            _log(f"download-task FAILED [{mode}]: {str(exc)[:120]}")
 
     threading.Thread(target=_run, daemon=True).start()
     return {"task_id": task_id}
@@ -2504,20 +2510,39 @@ def video_download_file(
     task_id: str = Query(...),
     current_user: User = Depends(get_current_user_obj),
 ):
-    """下载任务完成后获取文件（需登录）"""
+    """下载任务完成后获取文件（需登录）。多文件（separate 模式）打包为 zip 返回。"""
     task = _dl_tasks.get(task_id)
     if not task:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="任务不存在")
     if task["status"] != "done":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="任务尚未完成")
-    path, filename = task["path"], task["filename"]
+    files = task["files"] or [(task["path"], task["filename"])]
     with _dl_lock:
         _dl_tasks.pop(task_id, None)
+
+    if len(files) == 1:
+        path, filename = files[0]
+        media_type = "video/mp4" if filename.lower().endswith((".mp4", ".mkv", ".webm", ".m4v")) else (
+            "audio/mpeg" if filename.lower().endswith((".mp3", ".m4a")) else "application/octet-stream"
+        )
+        return FileResponse(
+            path,
+            media_type=media_type,
+            filename=filename,
+            background=BackgroundTask(tools.cleanup_download_dir, os.path.dirname(path)),
+        )
+
+    # 多文件：打包 zip（不随响应删除，交给前端下载后由清理任务处理）
+    import zipfile
+    zpath = os.path.join(os.path.dirname(files[0][0]), "download.zip")
+    with zipfile.ZipFile(zpath, "w", zipfile.ZIP_DEFLATED) as zf:
+        for path, filename in files:
+            zf.write(path, filename)
     return FileResponse(
-        path,
-        media_type="video/mp4",
-        filename=filename,
-        background=BackgroundTask(tools.cleanup_download_dir, os.path.dirname(path)),
+        zpath,
+        media_type="application/zip",
+        filename="download.zip",
+        background=BackgroundTask(tools.cleanup_download_dir, os.path.dirname(zpath)),
     )
 
 

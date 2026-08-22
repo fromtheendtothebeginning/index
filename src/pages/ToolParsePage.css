@@ -94,6 +94,12 @@
   white-space: nowrap;
 }
 
+.tool-dl-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .tool-error {
   padding: 10px 14px;
   margin-bottom: 16px;
