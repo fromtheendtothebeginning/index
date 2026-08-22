@@ -14,14 +14,39 @@ _download_slot = threading.BoundedSemaphore(1)
 
 
 def _patch_bilibili_headers():
-    """绕 B 站对数据中心 IP 的 412 风控：剥离所有 bilibili 请求的 Referer/Origin 头。
+    """绕 B 站对数据中心 IP 的 412 风控：剥离 Referer/Origin + 网页 412 用 view API 构造 initial_state。
 
-    B 站网页/API 对带 Referer 的数据中心 IP 请求返回 412；纯 UA 可正常访问。
-    1) 移除各提取器类 _HEADERS 里的 Referer；
-    2) 包装 _download_json/_download_webpage_handle，剥离请求 headers 中的 Referer/Origin；
-    3) 网页 HTML 抓取遇 412 时返回空网页，让 yt-dlp 走 API fallback 分支。
+    B 站对数据中心 IP 带 Referer/Origin 的请求返回 412；wbi/view/detail 恒风控(-352)；
+    但 x/web-interface/view 纯 UA 可正常访问（200）。故：
+    1) 移除各提取器类 _HEADERS 的 Referer/Origin，并剥离内联请求头；
+    2) 网页 HTML 抓取遇 412 时，用纯 UA 调 view API 拿 videoData，构造含
+       window.__INITIAL_STATE__ 的假网页返回，让 yt-dlp 走正常解析分支。
     """
+    import json as _json
+    import re as _re
+    import types as _types
+    import urllib.request as _ur
     from yt_dlp.extractor import bilibili as _bili_mod
+
+    _UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+
+    def _view_via_api(url):
+        """从视频 URL 提取 bvid，用纯 UA 调 x/web-interface/view 返回 videoData dict"""
+        m = _re.search(r'BV[0-9A-Za-z]+', url)
+        if not m:
+            return None
+        bvid = m.group(0)
+        api = f'https://api.bilibili.com/x/web-interface/view?bvid={bvid}'
+        req = _ur.Request(api, headers={'User-Agent': _UA})
+        try:
+            with _ur.urlopen(req, timeout=20) as r:
+                data = _json.loads(r.read().decode())
+            if data.get('code') == 0 and data.get('data'):
+                return data['data']
+        except Exception:
+            return None
+        return None
+
     patched = 0
     for cls_name in dir(_bili_mod):
         obj = getattr(_bili_mod, cls_name)
@@ -30,7 +55,7 @@ def _patch_bilibili_headers():
         if isinstance(obj._HEADERS, dict) and any(k in obj._HEADERS for k in ("Referer", "Origin")):
             obj._HEADERS = {k: v for k, v in obj._HEADERS.items() if k not in ("Referer", "Origin")}
             patched += 1
-        # 包装下载方法：剥离内联 Referer/Origin；网页 412 → 返回空以走 API fallback
+        # 包装下载方法：剥离内联 Referer/Origin；网页 412 → view API 构造 initial_state 假网页
         if not getattr(obj, "_anticraft_patched", False):
             _orig_dj = obj._download_json
             _orig_dwh = obj._download_webpage_handle
@@ -49,10 +74,20 @@ def _patch_bilibili_headers():
                 try:
                     return _orig_dwh(self, url, *args, **kwargs)
                 except Exception as e:
-                    # 网页 HTML 被 412 风控时，返回空网页让提取器走 API fallback
-                    if "412" in str(e) or "Precondition" in str(e):
-                        return "", None
-                    raise
+                    if "412" not in str(e) and "Precondition" not in str(e):
+                        raise
+                    orig_url = url if isinstance(url, str) else (getattr(url, "url", "") or "")
+                    video_data = _view_via_api(orig_url)
+                    fake = _types.SimpleNamespace(url=orig_url)
+                    if video_data:
+                        # 构造含 __INITIAL_STATE__ 的假网页，yt-dlp 后续走正常解析
+                        fake_html = (
+                            '<script>window.__INITIAL_STATE__ = '
+                            + _json.dumps({'videoData': video_data}, ensure_ascii=False)
+                            + '</script>'
+                        )
+                        return fake_html, fake
+                    return "", fake
 
             obj._download_json = _dj
             obj._download_webpage_handle = _dwh
