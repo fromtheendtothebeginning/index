@@ -26,6 +26,7 @@ function ToolParsePage() {
   const [url, setUrl] = useState('')
   const [info, setInfo] = useState(null)
   const [chosen, setChosen] = useState('')
+  const [dlMode, setDlMode] = useState('merged')
   const [loading, setLoading] = useState(false)
   const [downloading, setDownloading] = useState(false)
   const [err, setErr] = useState('')
@@ -243,25 +244,28 @@ function ToolParsePage() {
                     value: String(f.height),
                     label: `${f.height}p${f.ext ? ` (${f.ext})` : ''}${f.size ? ` · ${fmtSize(f.size)}` : ''}`,
                   }))}
-                  placeholder="选择清晰度下载"
+                  placeholder="选择清晰度"
                   hideClear
                 />
-              </div>
-              <div className="tool-dl-actions">
-                <button className="btn btn-primary tool-btn" onClick={() => download('merged')} disabled={downloading || !chosen || !token}>
-                  下载视频（带音频）
-                </button>
-                <button className="btn btn-secondary tool-btn" onClick={() => download('video_only')} disabled={downloading || !chosen || !token}>
-                  下载视频（无音频）
-                </button>
-                <button className="btn btn-secondary tool-btn" onClick={() => download('audio_only')} disabled={downloading || !token}>
-                  下载音频
-                </button>
-                <button className="btn btn-secondary tool-btn" onClick={() => download('separate')} disabled={downloading || !chosen || !token}>
-                  视频音频分开
-                </button>
-                <button className="btn btn-secondary tool-btn" onClick={() => download('cover')} disabled={downloading || !info?.thumbnail || !token}>
-                  下载封面
+                <CategoryDropdown
+                  value={dlMode}
+                  onChange={setDlMode}
+                  options={[
+                    { value: 'merged', label: '下载视频（带音频）' },
+                    { value: 'video_only', label: '下载视频（无音频）' },
+                    { value: 'audio_only', label: '下载音频' },
+                    { value: 'separate', label: '视频音频分开' },
+                    { value: 'cover', label: '下载封面' },
+                  ]}
+                  placeholder="选择下载方式"
+                  hideClear
+                />
+                <button
+                  className="btn btn-primary tool-btn"
+                  onClick={() => download(dlMode)}
+                  disabled={downloading || !token || (dlMode === 'cover' && !info?.thumbnail) || (dlMode !== 'cover' && dlMode !== 'audio_only' && !chosen)}
+                >
+                  {downloading ? (saving ? '保存中...' : `${progress}%`) : '下载'}
                 </button>
               </div>
               {downloading && (
