@@ -1,10 +1,11 @@
 # features/ai_settings_api.py — AI 设置（多 Key 管理 + 动态模型 + 收藏 + 当前选择）
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 import aisettings
 
+from constants import SPEECH_MODEL_PATTERNS, VISION_MODEL_PATTERNS
 from database import get_db
 from deps import get_current_user_obj
 from models import AiFavorite, AiKey, AiModel, AiSetting, User
@@ -68,6 +69,10 @@ def get_ai_settings(current_user: User = Depends(get_current_user_obj), db: Sess
         thinking_level=s.thinking_level,
         temperature=float(s.temperature),
         top_k=int(s.top_k),
+        vision_key_id=s.vision_key_id,
+        vision_model=s.vision_model or "",
+        speech_key_id=s.speech_key_id,
+        speech_model=s.speech_model or "",
         updated_at=s.updated_at,
     )
 
@@ -118,12 +123,24 @@ def update_ai_settings(
             s.top_k = req.top_k
             if current_key:
                 current_key.last_top_k = req.top_k
+        # 识图 / 语音模型配置（独立于主 Key，0=清除）
+        if req.vision_key_id is not None:
+            s.vision_key_id = None if req.vision_key_id == 0 else _get_key(db, req.vision_key_id, current_user.id).id
+        if req.vision_model is not None:
+            s.vision_model = (req.vision_model or "").strip()[:100]
+        if req.speech_key_id is not None:
+            s.speech_key_id = None if req.speech_key_id == 0 else _get_key(db, req.speech_key_id, current_user.id).id
+        if req.speech_model is not None:
+            s.speech_model = (req.speech_model or "").strip()[:100]
 
     db.commit()
     db.refresh(s)
     return AiSettingsResponse(
         key_id=s.key_id, model=s.model or "", thinking_level=s.thinking_level,
-        temperature=float(s.temperature), top_k=int(s.top_k), updated_at=s.updated_at,
+        temperature=float(s.temperature), top_k=int(s.top_k),
+        vision_key_id=s.vision_key_id, vision_model=s.vision_model or "",
+        speech_key_id=s.speech_key_id, speech_model=s.speech_model or "",
+        updated_at=s.updated_at,
     )
 
 
@@ -201,15 +218,20 @@ def delete_ai_key(
 @router.get("/api/user/ai-keys/{key_id}/models", response_model=AiModelsResponse, tags=["AI 设置"])
 def list_ai_key_models(
     key_id: int,
+    capability: str = Query(None, description="可选：vision/speech 只返回支持该能力的模型"),
     current_user: User = Depends(get_current_user_obj),
     db: Session = Depends(get_db),
 ):
-    """用该 Key 调提供商 /models 列出可用模型（动态）"""
+    """用该 Key 调提供商 /models 列出可用模型（动态）；capability 按模型能力过滤"""
     k = _get_key(db, key_id, current_user.id)
     api_key = aisettings.decrypt_secret(k.api_key_enc) if k.api_key_enc else None
     if not api_key:
         return AiModelsResponse(provider=k.provider, models=[], error="该 Key 无有效凭证")
     ok, models, error = aisettings.list_models(k.provider, api_key, k.custom_base_url)
+    if capability in ("vision", "speech"):
+        patterns = VISION_MODEL_PATTERNS if capability == "vision" else SPEECH_MODEL_PATTERNS
+        low = [p.lower() for p in patterns]
+        models = [m for m in models if any(p in m.lower() for p in low)]
     return AiModelsResponse(provider=k.provider, models=models, error=None if ok else error)
 
 

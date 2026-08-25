@@ -136,6 +136,9 @@ function Navbar({ activePage }) {
       <NavItem label="榜单" to="/leetcode" active={activePage === 'leetcode'} onNavigate={closeMenu} />
       <NavItem label="工具" to="/tools" active={activePage === 'tools'} onNavigate={closeMenu}>
         <Link to="/tools/video-parse">视频解析</Link>
+        {featureNavItems.filter(i => i.parent === '/tools').map(item => (
+          <Link key={item.path} to={item.path}>{item.label}</Link>
+        ))}
       </NavItem>
       {user && (
         <NavItem
@@ -151,7 +154,7 @@ function Navbar({ activePage }) {
         <Link to="/" onClick={() => scrollToSection('friends')}>友情链接</Link>
         <Link to="/" onClick={() => scrollToSection('contact')}>联系</Link>
       </NavItem>
-      {featureNavItems.length > 0 && featureNavItems.map(item => (
+      {featureNavItems.filter(i => !i.parent).map(item => (
         <NavItem key={item.path} label={item.label} to={item.path} onNavigate={closeMenu} />
       ))}
     </>

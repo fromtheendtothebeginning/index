@@ -51,6 +51,13 @@ function MyPage() {
   const [aiSaved, setAiSaved] = useState(false)
   const [aiError, setAiError] = useState('')
   const [testResult, setTestResult] = useState(null)
+  // 识图 / 语音模型配置（视频总结等工具使用）
+  const [visionKeyId, setVisionKeyId] = useState(null)
+  const [visionModel, setVisionModel] = useState('')
+  const [visionModels, setVisionModels] = useState([])
+  const [speechKeyId, setSpeechKeyId] = useState(null)
+  const [speechModel, setSpeechModel] = useState('')
+  const [speechModels, setSpeechModels] = useState([])
 
   // ── 弹窗状态 ──
   const [addKeyOpen, setAddKeyOpen] = useState(false)
@@ -150,11 +157,39 @@ function MyPage() {
         setKeys(k.keys || [])
         setFavorites(f.favorites || [])
         setCustomModels((m.models || []).map(mm => ({ model: mm })))
+        setVisionKeyId(s.vision_key_id || null)
+        setVisionModel(s.vision_model || '')
+        setSpeechKeyId(s.speech_key_id || null)
+        setSpeechModel(s.speech_model || '')
+        if (s.vision_key_id) fetchKeyModelList(s.vision_key_id, setVisionModels, 'vision')
+        if (s.speech_key_id) fetchKeyModelList(s.speech_key_id, setSpeechModels, 'speech')
       })
       .catch(() => setAiError('网络错误，无法加载 AI 设置'))
       .finally(() => { if (!cancelled) setAiLoading(false) })
     return () => { cancelled = true }
   }, [tab])
+
+  // 拉取指定 Key 的可用模型列表（识图/语音配置用，带 localStorage 缓存；capability 过滤能力）
+  const fetchKeyModelList = (keyId, setter, capability = '') => {
+    if (!keyId) { setter([]); return }
+    const cacheKey = `ai_models_${keyId}${capability ? '_' + capability : ''}`
+    const cached = localStorage.getItem(cacheKey)
+    if (cached) {
+      try {
+        const arr = JSON.parse(cached)
+        if (Array.isArray(arr) && arr.length > 0) setter(arr)
+      } catch { /* 缓存损坏忽略 */ }
+    }
+    fetch(`/api/user/ai-keys/${keyId}/models${capability ? `?capability=${capability}` : ''}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => {
+        if (data && data.models && data.models.length > 0) {
+          setter(data.models)
+          try { localStorage.setItem(cacheKey, JSON.stringify(data.models)) } catch { /* 忽略 */ }
+        }
+      })
+      .catch(() => {})
+  }
 
   // 拉取动态模型（可复用：进入页面/切 key 自动，刷新按钮手动）
   // 先读 localStorage 缓存立即显示，再后台拉取更新并写缓存
@@ -442,6 +477,10 @@ function MyPage() {
     try {
       const body = { thinking_level: thinking, temperature, top_k: topK, model: model.trim() || null }
       if (currentKeyId) body.key_id = currentKeyId
+      body.vision_key_id = visionKeyId || 0
+      body.vision_model = visionModel || ''
+      body.speech_key_id = speechKeyId || 0
+      body.speech_model = speechModel || ''
       const res = await fetch('/api/user/ai-settings', {
         method: 'PUT',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
@@ -688,6 +727,66 @@ function MyPage() {
                       )}
                     </>
                   )}
+                </div>
+
+                {/* ═══ 识图 / 语音模型（视频总结等工具使用）═══ */}
+                <div className="ai-section">
+                  <div className="ai-section-head">
+                    <span className="ai-section-title">识图与语音模型</span>
+                    <span className="ai-section-sub">视频 AI 总结等工具使用</span>
+                  </div>
+
+                  <div className="ai-field">
+                    <label className="ai-label">识图模型（提取视频画面）</label>
+                    <div className="vs-config-row">
+                      <CategoryDropdown
+                        value={visionKeyId || ''}
+                        onChange={v => {
+                          const id = v ? Number(v) : null
+                          setVisionKeyId(id)
+                          setVisionModel('')
+                          fetchKeyModelList(id, setVisionModels, 'vision')
+                        }}
+                        options={keys.map(k => ({ value: k.id, label: `${k.provider} · ${k.label || k.key_hint || k.id}` }))}
+                        placeholder="选择 Key"
+                        closeOnSelect
+                      />
+                      <CategoryDropdown
+                        value={visionModel}
+                        onChange={setVisionModel}
+                        options={(visionKeyId ? visionModels : []).map(mm => ({ value: mm, label: mm }))}
+                        placeholder="识图模型"
+                        closeOnSelect
+                      />
+                    </div>
+                    <p className="ai-hint">需支持多模态图片输入的模型（如 *-vision-exp、qwen-vl 系列）</p>
+                  </div>
+
+                  <div className="ai-field">
+                    <label className="ai-label">语音模型（转写音频）</label>
+                    <div className="vs-config-row">
+                      <CategoryDropdown
+                        value={speechKeyId || ''}
+                        onChange={v => {
+                          const id = v ? Number(v) : null
+                          setSpeechKeyId(id)
+                          setSpeechModel('')
+                          fetchKeyModelList(id, setSpeechModels, 'speech')
+                        }}
+                        options={keys.map(k => ({ value: k.id, label: `${k.provider} · ${k.label || k.key_hint || k.id}` }))}
+                        placeholder="选择 Key"
+                        closeOnSelect
+                      />
+                      <CategoryDropdown
+                        value={speechModel}
+                        onChange={setSpeechModel}
+                        options={(speechKeyId ? speechModels : []).map(mm => ({ value: mm, label: mm }))}
+                        placeholder="语音模型"
+                        closeOnSelect
+                      />
+                    </div>
+                    <p className="ai-hint">需支持 OpenAI 兼容 /audio/transcriptions 接口的模型（如 whisper 系列、sensevoice 等）</p>
+                  </div>
                 </div>
 
                 {/* ═══ 采样参数（先选模型后呈现）═══ */}

@@ -7,3 +7,6 @@ bcrypt==5.0.0
 pyjwt==2.9.0
 pydantic==2.9.2
 python-dotenv==1.0.1
+yt-dlp==2026.8.19
+rapidocr==3.9.2
+onnxruntime

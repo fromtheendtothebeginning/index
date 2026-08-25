@@ -178,6 +178,21 @@ export const PROVIDERS = [
     topk: false,
   },
   {
+    id: 'mimo',
+    label: 'MiMo',
+    desc: '小米',
+    baseUrl: 'https://api.xiaomimimo.com/v1',
+    docs: 'https://platform.mimo.ai',
+    models: ['mimo-v2.5', 'mimo-v2.5-asr', 'mimo-v2.5-pro', 'mimo-v2.5-tts', 'mimo-v2.5-tts-voiceclone', 'mimo-v2.5-tts-voicedesign'],
+    defaultModel: 'mimo-v2.5',
+    thinking: true,
+    thinkingLevels: [
+      { value: 'off', label: 'Off' },
+      { value: 'high', label: 'On' },
+    ],
+    topk: false,
+  },
+  {
     id: 'custom',
     label: '自定义',
     desc: '任意 OpenAI 兼容服务',

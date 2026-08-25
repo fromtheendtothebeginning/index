@@ -675,6 +675,10 @@ class UpdateAiSettingsRequest(BaseModel):
     thinking_level: Optional[str] = Field(None, description="思考深度 off/low/medium/high/max（None=不改）")
     temperature: Optional[float] = Field(None, ge=0, le=2, description="温度 0~2（None=不改）")
     top_k: Optional[int] = Field(None, ge=1, le=100, description="Top-K 1~100（None=不改）")
+    vision_key_id: Optional[int] = Field(None, ge=0, description="识图模型使用的 AI Key ID（0=不选，None=不改）")
+    vision_model: Optional[str] = Field(None, max_length=100, description="识图模型 ID（None=不改）")
+    speech_key_id: Optional[int] = Field(None, ge=0, description="语音模型使用的 AI Key ID（0=不选，None=不改）")
+    speech_model: Optional[str] = Field(None, max_length=100, description="语音模型 ID（None=不改）")
 
     @field_validator("thinking_level")
     @classmethod
@@ -690,6 +694,10 @@ class AiSettingsResponse(BaseModel):
     thinking_level: str = "medium"
     temperature: float = 0.7
     top_k: int = 40
+    vision_key_id: Optional[int] = None
+    vision_model: Optional[str] = ""
+    speech_key_id: Optional[int] = None
+    speech_model: Optional[str] = ""
     updated_at: Optional[datetime] = None
 
 

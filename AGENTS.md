@@ -5,7 +5,7 @@
 ## 常用命令
 - `npm run dev` — Vite 前端，端口 3000，`/api` 代理到 `127.0.0.1:8000`
 - `npm run back`（=`backend`）— 后端：`cmd /c "backend\.venv\Scripts\activate.bat && python backend\main.py"`，uvicorn `main:app` 端口 8000，`reload=False`（改后端代码后需手动重启）
-- `cmd /c restart-backend.bat` / `cmd /c restart-frontend.bat` — **后台重启对应服务（默认立即返回不等待）**；杀旧进程→分离启动→返回。`restart-backend.bat wait` 才轮询健康检查。**禁止前台直跑** `npm run dev` / `python backend\main.py`（长驻进程会挂住 agent 会话直到超时）。验证方式：隔几秒单独 curl；注意 Vite 只监听 IPv6 `[::1]:3000`，健康检查用 `http://localhost:3000` 而非 127.0.0.1。bat 文件必须纯 ASCII + CRLF（中文注释在 GBK 码页下会解析错乱），延时用 `ping -n 3 127.0.0.1 >nul`（`timeout /t` 在重定向 stdin 下报 Input redirection 错误）。
+- **重启服务一律用 `cmd /c restart-backend.bat` / `cmd /c restart-frontend.bat`**（已 gitignore）：bat 内部用**一次性 schtasks 计划任务**拉起 `run-backend-hidden.cmd`（pythonw 直启、日志重定向到 log/），完全脱离调用方控制台/管道/进程树，bat 瞬间自我退出——绝不内联 Start-Process/cmd 包装（实测会被工具会话回收或挂住）。子进程（ffmpeg 等）必须带 `creationflags=CREATE_NO_WINDOW`，否则 pythonw 下反复闪黑窗。验证：隔几秒单独一条 curl http://127.0.0.1:8000/api/health；Vite 只监听 IPv6 `[::1]:3000`，探测用 `http://localhost:3000`。bat 必须纯 ASCII + CRLF；**不要在使用者跑后台任务时重启后端**（会中断在跑的任务）。
 - `npm run start` — 两个新窗口分别启动前后端
 - `npm run build` — 构建前端到 `dist/`
 - **没有测试框架、没有 linter/typecheck**。验证方式：启动后 `curl http://127.0.0.1:8000/api/health`，或 `npm run build` 确认构建通过。
@@ -73,6 +73,7 @@
 - **竣工锁定**：新功能经用户确认完成后，把该功能在 `opencode.json` 里的 `"allow"` 条目改为 `"ask"`（last-match-wins），即冻结为受保护旧文件。
 
 ## 运行注意事项（每次任务结束追加新发现）
+1. **单条 Bash 调用必须秒级返回（目标 <10 秒），严禁串联慢动作**：不要把「重启服务 + sleep + 验证 curl + 构建」写进同一条命令——用户会看到长时间无输出视为卡死。正确姿势：重启用 bat（默认立即返回）→ 单独一条 curl 验证 → 构建再单独一条。预计超 ~30 秒的操作（真实 AI 调用、批量测试）一律 `Start-Process` 分离进程重定向到 log 文件，随后用独立的 `Get-Content -Tail` 快速轮询结果。
 1. **本地后端端口必须是 8000**：`vite.config.js` 代理固定指向 `127.0.0.1:8000`，本地后端起 8000（18000 仅当 8000 被 Windows 排除区间占用时用，且必须同步 vite 代理）。用错端口 API 测试会 Connection refused。
 2. **Vite HMR 偶发失效**：改前端代码后浏览器仍显示旧代码/旧图标时，先杀 3000 端口进程重启 `npm run dev`，不要怀疑代码没改（2026-08-10 图标替换时踩坑）。
 3. **本地库 ≠ 服务器库**：本地库有测试数据（"测试博客 111"等），线上是真实数据；测试/示例用真实 id 前先查 API，勿按线上 id 假设本地存在（反之亦然）。

@@ -263,6 +263,19 @@ def run_migrations():
         if "last_top_k" not in ak_cols:
             conn.execute(text("ALTER TABLE ai_keys ADD COLUMN last_top_k INT NULL"))
             conn.commit()
+        # ai_settings 补列：识图模型 / 语音模型配置（视频总结工具使用）
+        as_cols = {row[0] for row in conn.execute(text(
+            "SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ai_settings'"
+        ))}
+        for col, typ in [
+            ("vision_key_id", "INT NULL"),
+            ("vision_model", "VARCHAR(100) NULL"),
+            ("speech_key_id", "INT NULL"),
+            ("speech_model", "VARCHAR(100) NULL"),
+        ]:
+            if col not in as_cols:
+                conn.execute(text(f"ALTER TABLE ai_settings ADD COLUMN {col} {typ}"))
+                conn.commit()
         conn.execute(text("""
             CREATE TABLE IF NOT EXISTS ai_favorites (
                 id INT AUTO_INCREMENT PRIMARY KEY,

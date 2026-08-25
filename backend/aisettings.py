@@ -212,6 +212,22 @@ PROVIDERS = {
         ],
         "topk": False,
     },
+    "mimo": {
+        "label": "MiMo (小米)",
+        "base_url": "https://api.xiaomimimo.com/v1",
+        "api": "openai",
+        "docs": "https://platform.mimo.ai",
+        "models": ["mimo-v2.5", "mimo-v2.5-asr", "mimo-v2.5-pro", "mimo-v2.5-tts", "mimo-v2.5-tts-voiceclone", "mimo-v2.5-tts-voicedesign"],
+        "default_model": "mimo-v2.5",
+        "thinking": True,
+        "thinking_levels": [
+            {"value": "off", "label": "Off"},
+            {"value": "high", "label": "On"},
+        ],
+        # 小米 ASR 不走 OpenAI /audio/transcriptions，而是 /chat/completions + input_audio 内容块
+        "asr_mode": "chat_audio",
+        "topk": False,
+    },
     "custom": {
         "label": "自定义 (OpenAI 兼容)",
         "base_url": "",  # 使用 Key 的 custom_base_url（必填）

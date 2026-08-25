@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
-import { ContactIcon } from '../components/Icons'
+import { ContactIcon, UiIcon } from '../components/Icons'
 import './ToolHomePage.css'
 
 function ToolHomePage() {
@@ -19,6 +19,15 @@ function ToolHomePage() {
             <div className="tool-card-info">
               <h2 className="tool-card-name">视频解析</h2>
               <p className="tool-card-desc">解析 B站视频信息与清晰度，并下载为 mp4</p>
+            </div>
+            <span className="tool-card-arrow">→</span>
+          </Link>
+
+          <Link to="/tools/video-summary" className="tool-card-link">
+            <div className="tool-card-icon"><UiIcon name="video-summary" size={28} className="tool-brand-icon" /></div>
+            <div className="tool-card-info">
+              <h2 className="tool-card-name">视频AI总结</h2>
+              <p className="tool-card-desc">提取视频字幕，用你自己的 AI Key 生成 Markdown 总结</p>
             </div>
             <span className="tool-card-arrow">→</span>
           </Link>

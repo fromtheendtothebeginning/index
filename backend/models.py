@@ -316,6 +316,10 @@ class AiSetting(Base):
     thinking_level = Column(String(10), nullable=False, default="medium", server_default="medium", comment="思考深度：low/medium/high")
     temperature = Column(Float, nullable=False, default=0.7, server_default="0.7", comment="温度 0~2")
     top_k = Column(Integer, nullable=False, default=40, server_default="40", comment="Top-K 1~100")
+    vision_key_id = Column(Integer, nullable=True, comment="识图模型使用的 AI Key ID（视频总结等）")
+    vision_model = Column(String(100), nullable=True, server_default="", comment="识图模型 ID（多模态 chat）")
+    speech_key_id = Column(Integer, nullable=True, comment="语音模型使用的 AI Key ID（ASR 转写）")
+    speech_model = Column(String(100), nullable=True, server_default="", comment="语音模型 ID（audio/transcriptions）")
     created_at = Column(DateTime(timezone=True), server_default=func.now(), comment="创建时间")
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), comment="更新时间"

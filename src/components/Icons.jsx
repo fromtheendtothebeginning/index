@@ -116,6 +116,15 @@ const UI_ICONS = {
   check: (
     <polyline points="20 6 9 17 4 12" />
   ),
+  'video-summary': (
+    <>
+      <rect x="2" y="6" width="14" height="12" rx="2" ry="2" />
+      <polygon points="8 9 13 12 8 15 8 9" />
+      <line x1="20" y1="9" x2="22" y2="9" />
+      <line x1="20" y1="13" x2="22" y2="13" />
+      <line x1="20" y1="17" x2="22" y2="17" />
+    </>
+  ),
 }
 
 export function UiIcon({ name, filled = false, size = 16, className }) {

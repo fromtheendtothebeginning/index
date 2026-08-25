@@ -648,3 +648,10 @@
     font-size: 22px;
   }
 }
+
+/* 识图/语音模型配置行 */
+.vs-config-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}

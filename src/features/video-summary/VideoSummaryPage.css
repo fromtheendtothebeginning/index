@@ -1,0 +1,260 @@
+/* VideoSummaryPage.css — 视频AI总结（基础布局复用 ToolParsePage.css 的 tool-* 体系） */
+
+.vs-submit {
+  min-width: 128px;
+}
+
+/* 音频转写开关行 */
+.vs-options-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.vs-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.vs-checkbox input {
+  accent-color: var(--accent-1);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
+.vs-loading-hint {
+  margin-top: 14px;
+}
+
+/* AI 流式输出预览 */
+.vs-streaming {
+  border-color: var(--accent-1-border) !important;
+}
+
+.vs-streaming-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent-1);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+.vs-streaming-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-1);
+  animation: vs-blink 1s infinite;
+}
+
+@keyframes vs-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* 历史记录 */
+.vs-history {
+  margin-top: 26px;
+}
+
+.vs-history-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.vs-history-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.vs-history-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* 双栏布局：左侧历史任务栏（DeepSeek 风格）+ 右侧内容 */
+.vs-main.tool-main {
+  max-width: min(1500px, 96vw);
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+.vs-layout {
+  display: grid;
+  grid-template-columns: clamp(200px, 22vw, 320px) 1fr;
+  gap: clamp(16px, 3vw, 36px);
+  align-items: start;
+}
+
+.vs-sidebar {
+  position: sticky;
+  top: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  overflow: hidden;
+  max-height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+}
+
+.vs-sidebar-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.vs-sidebar-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.vs-sidebar-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.vs-sidebar-list {
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vs-sidebar-empty {
+  padding: 18px 12px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.vs-sidebar-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 9px;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.vs-sidebar-item:hover {
+  background: var(--bg-elevated);
+}
+
+.vs-sidebar-item.active {
+  background: var(--accent-1-soft);
+}
+
+.vs-sidebar-item.failed {
+  opacity: 0.55;
+}
+
+.vs-sidebar-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vs-sidebar-meta {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vs-content {
+  min-width: 0;
+}
+
+@media (max-width: 860px) {
+  .vs-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .vs-sidebar {
+    position: static;
+    max-height: none;
+  }
+
+  .vs-sidebar-list {
+    max-height: 220px;
+  }
+}
+
+/* 结果卡片：与 .tool-card 同视觉语言 */
+.vs-result {
+  margin-top: 22px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: clamp(18px, 3vw, 32px);
+}
+
+.vs-result-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 18px;
+}
+
+.vs-result-title h2 {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.4;
+  margin: 0 0 6px;
+}
+
+.vs-meta {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.vs-copied {
+  color: var(--accent-2-hover) !important;
+  border-color: var(--accent-2) !important;
+}
+
+.vs-summary .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 0;
+}
+
+@media (max-width: 640px) {
+  .vs-result {
+    padding: 16px;
+  }
+
+  .vs-result-head {
+    flex-direction: column;
+  }
+}

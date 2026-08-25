@@ -212,13 +212,22 @@ export function renderMd(text) {
     codeStash.push(escapeHtml(code))
     return `\u0000CODE${codeStash.length - 1}\u0000`
   })
-  // 块级公式 $$...$$（必须先于行内公式提取）
+  // 块级公式 $$...$$ 与 \[...\]（必须先于行内公式提取）
   text = text.replace(/\$\$([\s\S]+?)\$\$/g, (_, latex) => {
     mathStash.push({ latex, display: true })
     return `\u0000MATHB${mathStash.length - 1}\u0000`
   })
-  // 行内公式 $...$（负向后行断言防 \$，开闭两侧禁空白，内容禁换行与 $）
-  text = text.replace(/(?<!\\)\$(?!\s)([^\n$]+?)(?<!\s)\$(?!\s)/g, (_, latex) => {
+  text = text.replace(/\\\[([\s\S]+?)\\\]/g, (_, latex) => {
+    mathStash.push({ latex, display: true })
+    return `\u0000MATHB${mathStash.length - 1}\u0000`
+  })
+  // 行内公式 $...$ 与 \(...\)（负向后行断言防 \$，开闭两侧禁空白，内容禁换行与 $；
+  // 闭合 $ 后允许空白——兼容 `$x$ 文本` 写法，仅禁止内容以空格结尾）
+  text = text.replace(/(?<!\\)\$(?!\s)([^\n$]+?)(?<!\s)\$(?!\$)/g, (_, latex) => {
+    mathStash.push({ latex, display: false })
+    return `\u0000MATH${mathStash.length - 1}\u0000`
+  })
+  text = text.replace(/\\\(([^\n]+?)\\\)/g, (_, latex) => {
     mathStash.push({ latex, display: false })
     return `\u0000MATH${mathStash.length - 1}\u0000`
   })
