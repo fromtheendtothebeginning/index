@@ -38,6 +38,7 @@ _OCR_MAX_FRAMES = 90            # 抽帧上限（每 max(10s, 时长/90) 一帧�
 _AI_TIMEOUT = 300               # 单次模型调用超时
 _BROWSER_UA = aisettings._BROWSER_UA
 _CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000) if os.name == "nt" else 0
+_ENABLE_OCR = os.environ.get("ANTICRAFT_ENABLE_OCR", "").strip().lower() in ("1", "true", "on", "yes")
 
 _SUB_LANGS = ["zh-Hans", "zh-CN", "zh", "ai-zh", "en"]
 
@@ -879,15 +880,16 @@ def _run_summary_job(task_id, url, use_asr, main_cfg, speech_cfg, user_id):
                     transcript = ""
                     source = ""
 
-            # ── 4) 抽帧 OCR（75%→91%）──
-            _set_task(task_id, stage="画面识别", percent=75)
-            frames = _extract_frames(video_path, tmp, duration)
-            if frames:
-                def _ocr_prog(done, total):
-                    _set_task(task_id, stage="画面识别", percent=min(90, 75 + int(15 * done / total)))
-                ocr_items = _ocr_frames(frames, on_progress=_ocr_prog)
-                visual = "\n".join(f"[{_fmt_ts(sec)}] {text}" for sec, text in ocr_items)
-                source = (source + "+ocr").lstrip("+")
+            # ── 4) 抽帧 OCR（75%→91%）；默认关闭（服务器内存小，避免 RapidOCR 打爆），设 ANTICRAFT_ENABLE_OCR=1 开启 ──
+            if _ENABLE_OCR:
+                _set_task(task_id, stage="画面识别", percent=75)
+                frames = _extract_frames(video_path, tmp, duration)
+                if frames:
+                    def _ocr_prog(done, total):
+                        _set_task(task_id, stage="画面识别", percent=min(90, 75 + int(15 * done / total)))
+                    ocr_items = _ocr_frames(frames, on_progress=_ocr_prog)
+                    visual = "\n".join(f"[{_fmt_ts(sec)}] {text}" for sec, text in ocr_items)
+                    source = (source + "+ocr").lstrip("+")
 
         if video_path is not None:
             material = ""
