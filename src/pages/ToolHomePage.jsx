@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import { ContactIcon, UiIcon } from '../components/Icons'
+import { t } from '../i18n'
 import './ToolHomePage.css'
 
 function ToolHomePage() {
@@ -9,16 +10,16 @@ function ToolHomePage() {
       <Navbar activePage="tools" />
       <div className="tool-main">
         <header className="tool-header">
-          <h1 className="tool-title">工具</h1>
-          <p className="tool-subtitle">实用小工具，助力效率与创作（需登录）</p>
+          <h1 className="tool-title">{t('toolHome.title')}</h1>
+          <p className="tool-subtitle">{t('toolHome.subtitle')}</p>
         </header>
 
         <div className="tool-cards">
           <Link to="/tools/video-parse" className="tool-card-link">
             <div className="tool-card-icon"><ContactIcon icon="bilibili" className="tool-brand-icon" /></div>
             <div className="tool-card-info">
-              <h2 className="tool-card-name">视频解析</h2>
-              <p className="tool-card-desc">解析 B站视频信息与清晰度，并下载为 mp4</p>
+              <h2 className="tool-card-name">{t('toolHome.videoParse.name')}</h2>
+              <p className="tool-card-desc">{t('toolHome.videoParse.desc')}</p>
             </div>
             <span className="tool-card-arrow">→</span>
           </Link>
@@ -26,8 +27,8 @@ function ToolHomePage() {
           <Link to="/tools/video-summary" className="tool-card-link">
             <div className="tool-card-icon"><UiIcon name="video-summary" size={28} className="tool-brand-icon" /></div>
             <div className="tool-card-info">
-              <h2 className="tool-card-name">视频AI总结</h2>
-              <p className="tool-card-desc">提取视频字幕，用你自己的 AI Key 生成 Markdown 总结</p>
+              <h2 className="tool-card-name">{t('toolHome.videoSummary.name')}</h2>
+              <p className="tool-card-desc">{t('toolHome.videoSummary.desc')}</p>
             </div>
             <span className="tool-card-arrow">→</span>
           </Link>

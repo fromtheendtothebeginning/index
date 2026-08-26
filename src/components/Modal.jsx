@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { t } from '../i18n'
 
 /**
  * 统一弹窗组件 —— 复用 App.css 中的 .modal-overlay / .modal-sheet 样式（全局共享）。
@@ -25,8 +26,8 @@ function Modal({
   title,
   message,
   children,
-  confirmText = '确认',
-  cancelText = '取消',
+  confirmText = t('modal.confirm'),
+  cancelText = t('modal.cancel'),
   danger = false,
   showConfirm = true,
   showCancel = true,

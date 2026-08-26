@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { t } from '../i18n'
 
 /**
  * 统一分类/选项下拉选择器（悬停展开 + 动画，复用 App.css 的 .nav-dropdown / .category-btn 体系）。
@@ -21,7 +22,7 @@ import { useState } from 'react'
  *     placeholder="无"
  *   />
  */
-function CategoryDropdown({ value, onChange, options = [], placeholder = '未分类', size = 'default', hideClear = false, closeOnSelect = false }) {
+function CategoryDropdown({ value, onChange, options = [], placeholder = t('categoryDropdown.placeholder'), size = 'default', hideClear = false, closeOnSelect = false }) {
   // 移动端选项列表开合
   const [open, setOpen] = useState(false)
   // 选中后收起：桌面端 hover 菜单在选中后临时隐藏，鼠标离开后恢复可 hover

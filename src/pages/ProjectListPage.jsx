@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import ProjectCover from '../components/ProjectCover'
 import Reveal from '../components/Reveal'
+import { t } from '../i18n'
 import './Project.css'
 
 const API_BASE = '/api'
@@ -34,20 +35,20 @@ function ProjectListPage() {
       <div className="project-main">
         <Reveal className="project-header">
           <div className="project-header-content">
-            <h1 className="project-title">项目</h1>
-            <p className="project-subtitle">每一个项目都是一次对边界的试探</p>
+            <h1 className="project-title">{t('projectList.title')}</h1>
+            <p className="project-subtitle">{t('projectList.subtitle')}</p>
           </div>
           {user && user.role === 'admin' && (
-            <Link to="/projects/new" className="btn btn-primary">新建项目</Link>
+            <Link to="/projects/new" className="btn btn-primary">{t('projectList.new')}</Link>
           )}
         </Reveal>
 
         {loading ? (
-          <div className="blog-loading">加载中...</div>
+          <div className="blog-loading">{t('projectList.loading')}</div>
         ) : projects.length === 0 ? (
           <div className="blog-empty">
-            <p>还没有项目</p>
-            {user && user.role === 'admin' && <Link to="/projects/new" className="btn btn-primary">创建第一个项目</Link>}
+            <p>{t('projectList.empty')}</p>
+            {user && user.role === 'admin' && <Link to="/projects/new" className="btn btn-primary">{t('projectList.createFirst')}</Link>}
           </div>
         ) : (
           <div className="project-grid">
@@ -67,12 +68,12 @@ function ProjectListPage() {
                   )}
                   <div className="project-card-meta">
                     <span className="project-card-author">
-                      {project.author?.nickname || project.author?.username || '匿名'}
+                      {project.author?.nickname || project.author?.username || t('projectList.anonymous')}
                     </span>
                     <span className="project-card-date">
                       {new Date(project.created_at).toLocaleDateString('zh-CN')}
                     </span>
-                    <span className="project-card-blogs">{project.blog_count || 0} 篇文章</span>
+                    <span className="project-card-blogs">{t('projectList.blogCount', { count: project.blog_count || 0 })}</span>
                   </div>
                 </div>
               </Reveal>

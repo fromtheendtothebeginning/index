@@ -45,18 +45,18 @@ const OUTLINE = {
 }
 
 export const CONTACT_ICON_OPTIONS = [
-  { key: 'github', label: 'GitHub' },
-  { key: 'wechat', label: '微信' },
-  { key: 'qq', label: 'QQ' },
-  { key: 'bilibili', label: '哔哩哔哩' },
-  { key: 'zhihu', label: '知乎' },
-  { key: 'weibo', label: '微博' },
-  { key: 'email', label: '邮箱' },
-  { key: 'phone', label: '电话' },
-  { key: 'website', label: '网站' },
-  { key: 'link', label: '链接' },
-  { key: 'text', label: '文本' },
-  { key: 'custom', label: '自定义图片 URL' },
+  { key: 'github' },
+  { key: 'wechat' },
+  { key: 'qq' },
+  { key: 'bilibili' },
+  { key: 'zhihu' },
+  { key: 'weibo' },
+  { key: 'email' },
+  { key: 'phone' },
+  { key: 'website' },
+  { key: 'link' },
+  { key: 'text' },
+  { key: 'custom' },
 ]
 
 const UI_ICONS = {

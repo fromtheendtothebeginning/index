@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { t } from '../i18n'
 import './Auth.css'
 
 function ResetPasswordPage() {
@@ -21,7 +22,7 @@ function ResetPasswordPage() {
 
   const handleVerify = async () => {
     const errs = {}
-    if (!form.username.trim()) errs.username = '请输入用户名'
+    if (!form.username.trim()) errs.username = t('reset.validate.usernameRequired')
     setErrors(errs)
     if (Object.keys(errs).length > 0) return
 
@@ -32,14 +33,14 @@ function ResetPasswordPage() {
       const checkRes = await fetch(`/api/user/check-username?username=${encodeURIComponent(form.username)}`)
 
       if (!checkRes.ok) {
-        setServerError('用户不存在')
+        setServerError(t('reset.error.userNotFound'))
         setLoading(false)
         return
       }
 
       setStep(2)
     } catch {
-      setServerError('网络错误，请检查 API 服务是否启动')
+      setServerError(t('reset.error.networkError'))
     } finally {
       setLoading(false)
     }
@@ -49,10 +50,10 @@ function ResetPasswordPage() {
     e.preventDefault()
 
     const errs = {}
-    if (!form.newPassword) errs.newPassword = '请输入新密码'
-    if (form.newPassword && form.newPassword.length < 6) errs.newPassword = '密码至少6位'
-    if (form.newPassword !== form.confirm) errs.confirm = '两次密码不一致'
-    if (!form.inviteCode.trim()) errs.inviteCode = '请输入邀请码'
+    if (!form.newPassword) errs.newPassword = t('reset.validate.newPasswordRequired')
+    if (form.newPassword && form.newPassword.length < 6) errs.newPassword = t('reset.validate.passwordMin')
+    if (form.newPassword !== form.confirm) errs.confirm = t('reset.validate.confirmMismatch')
+    if (!form.inviteCode.trim()) errs.inviteCode = t('reset.validate.inviteRequired')
     setErrors(errs)
     if (Object.keys(errs).length > 0) return
 
@@ -73,13 +74,13 @@ function ResetPasswordPage() {
       const data = await res.json()
 
       if (!res.ok) {
-        setServerError(data.detail || '重置失败，请稍后重试')
+        setServerError(data.detail || t('reset.error.resetFailed'))
         return
       }
 
       setSuccess(true)
     } catch {
-      setServerError('网络错误，请检查 API 服务是否启动')
+      setServerError(t('reset.error.networkError'))
     } finally {
       setLoading(false)
     }
@@ -95,10 +96,10 @@ function ResetPasswordPage() {
           <div className="auth-form-wrap" style={{ flex: 'none', width: '100%' }}>
             <div className="auth-success">
               <div className="success-icon">&#10003;</div>
-              <h3>密码重置成功</h3>
-              <p>请使用新密码登录你的账户</p>
+              <h3>{t('reset.success.title')}</h3>
+              <p>{t('reset.success.desc')}</p>
               <Link to="/login" className="btn btn-primary auth-submit" style={{ display: 'inline-flex', width: 'auto', textDecoration: 'none' }}>
-                前往登录 &rarr;
+                {t('reset.success.gotoLogin')} &rarr;
               </Link>
             </div>
           </div>
@@ -127,11 +128,11 @@ function ResetPasswordPage() {
           <div className="auth-form-card">
             <div className="auth-form-header">
               <div className="auth-form-title-row">
-                <h2 className="auth-form-title">重置密码</h2>
-                <Link to="/login" className="auth-back-link">&larr; 返回登录</Link>
+                <h2 className="auth-form-title">{t('reset.title')}</h2>
+                <Link to="/login" className="auth-back-link">&larr; {t('reset.backToLogin')}</Link>
               </div>
               <p className="auth-form-hint">
-                {step === 1 ? '请输入你的用户名以开始重置' : '设置你的新密码'}
+                {step === 1 ? t('reset.step1.hint') : t('reset.step2.hint')}
               </p>
             </div>
 
@@ -142,14 +143,14 @@ function ResetPasswordPage() {
                 )}
 
                 <div className="form-group">
-                  <label className="form-label">用户名</label>
+                  <label className="form-label">{t('reset.step1.usernameLabel')}</label>
                   <div className="form-input-wrap">
                     <span className="form-input-icon">&#128100;</span>
                     <input
                       type="text"
                       name="username"
                       className={`form-input ${errors.username ? 'error' : ''}`}
-                      placeholder="输入你的用户名"
+                      placeholder={t('reset.step1.usernamePlaceholder')}
                       value={form.username}
                       onChange={handleChange}
                       autoFocus
@@ -164,13 +165,13 @@ function ResetPasswordPage() {
                   onClick={handleVerify}
                   disabled={loading}
                 >
-                  {loading ? '验证中...' : '下一步'}
+                  {loading ? t('reset.step1.verifying') : t('reset.step1.next')}
                   {!loading && <span className="btn-arrow">&rarr;</span>}
                 </button>
 
                 <p className="auth-switch">
-                  想起密码了？
-                  <Link to="/login" className="auth-switch-btn">返回登录</Link>
+                  {t('reset.step1.remembered')}
+                  <Link to="/login" className="auth-switch-btn">{t('reset.step1.backToLogin')}</Link>
                 </p>
               </div>
             ) : (
@@ -180,14 +181,14 @@ function ResetPasswordPage() {
                 )}
 
                 <div className="form-group">
-                  <label className="form-label">新密码</label>
+                  <label className="form-label">{t('reset.step2.newPwdLabel')}</label>
                   <div className="form-input-wrap">
                     <span className="form-input-icon">&#128274;</span>
                     <input
                       type={showNewPwd ? 'text' : 'password'}
                       name="newPassword"
                       className={`form-input ${errors.newPassword ? 'error' : ''}`}
-                      placeholder="输入新密码（至少6位）"
+                      placeholder={t('reset.step2.newPwdPlaceholder')}
                       value={form.newPassword}
                       onChange={handleChange}
                       autoFocus
@@ -197,7 +198,7 @@ function ResetPasswordPage() {
                       className="pwd-toggle"
                       onClick={() => setShowNewPwd(!showNewPwd)}
                       tabIndex={-1}
-                      aria-label={showNewPwd ? '隐藏密码' : '显示密码'}
+                      aria-label={showNewPwd ? t('reset.form.hidePwd') : t('reset.form.showPwd')}
                     >
                       {showNewPwd ? (
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -218,14 +219,14 @@ function ResetPasswordPage() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">确认新密码</label>
+                  <label className="form-label">{t('reset.step2.confirmLabel')}</label>
                   <div className="form-input-wrap">
                     <span className="form-input-icon">&#128274;</span>
                     <input
                       type={showConfirm ? 'text' : 'password'}
                       name="confirm"
                       className={`form-input ${errors.confirm ? 'error' : ''}`}
-                      placeholder="再次输入新密码"
+                      placeholder={t('reset.step2.confirmPlaceholder')}
                       value={form.confirm}
                       onChange={handleChange}
                     />
@@ -234,7 +235,7 @@ function ResetPasswordPage() {
                       className="pwd-toggle"
                       onClick={() => setShowConfirm(!showConfirm)}
                       tabIndex={-1}
-                      aria-label={showConfirm ? '隐藏密码' : '显示密码'}
+                      aria-label={showConfirm ? t('reset.form.hidePwd') : t('reset.form.showPwd')}
                     >
                       {showConfirm ? (
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -255,14 +256,14 @@ function ResetPasswordPage() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">邀请码</label>
+                  <label className="form-label">{t('reset.step2.inviteLabel')}</label>
                   <div className="form-input-wrap">
                     <span className="form-input-icon">&#127873;</span>
                     <input
                       type="text"
                       name="inviteCode"
                       className={`form-input ${errors.inviteCode ? 'error' : ''}`}
-                      placeholder="输入邀请码以验证身份"
+                      placeholder={t('reset.step2.invitePlaceholder')}
                       value={form.inviteCode}
                       onChange={handleChange}
                     />
@@ -271,13 +272,13 @@ function ResetPasswordPage() {
                 </div>
 
                 <button type="submit" className="btn btn-primary auth-submit" disabled={loading}>
-                  {loading ? '重置中...' : '确认重置'}
+                  {loading ? t('reset.step2.resetting') : t('reset.step2.confirmReset')}
                   {!loading && <span className="btn-arrow">&rarr;</span>}
                 </button>
 
                 <p className="auth-switch">
                   <button type="button" className="auth-switch-btn" onClick={() => setStep(1)}>
-                    &larr; 更换用户名
+                    &larr; {t('reset.step2.changeUsername')}
                   </button>
                 </p>
               </form>

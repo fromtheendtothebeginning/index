@@ -1,0 +1,781 @@
+# anticraft 前端文案字典 zh
+# 键名规则: <页面/组件>.<区块>.<条目>，例如 nav.blog、modal.confirm
+# 变量插值用 {变量名}，例如 "已复制：{text}"
+modal:
+  confirm: 确认
+  cancel: 取消
+categoryDropdown:
+  placeholder: 未分类
+nav:
+  blog: 博客
+  all: 全部
+  project: 项目
+  ranking: 榜单
+  tools: 工具
+  videoParse: 视频解析
+  my: 我的
+  home: 首页
+  start: 开始
+  friends: 友情链接
+  contact: 联系
+  editProfile: 编辑资料
+  login: 登录
+  openMenu: 打开菜单
+icons:
+  contact:
+    github: GitHub
+    wechat: 微信
+    qq: QQ
+    bilibili: 哔哩哔哩
+    zhihu: 知乎
+    weibo: 微博
+    email: 邮箱
+    phone: 电话
+    website: 网站
+    link: 链接
+    text: 文本
+    custom: 自定义图片 URL
+golden:
+  slogan1: 真是段美妙的旅程啊，马哈特。
+  slogan2: 我也是这么想的，格鲁克大人
+  slogan3: 万物成金魔法
+  prompt: 你是激励分数超过 0 的玩家，是否将一切变成黄金？（5 分钟）
+  enter: 进入黄金模式
+  cancel: 算了
+  effect: 万物成金魔法生效中
+home:
+  hero:
+    explore: 探索项目
+    scroll: 滚动浏览
+  projects:
+    title: 近期项目
+    desc: 每一个项目都是一次对边界的试探。
+    loading: 加载中...
+    emptyTitle: 暂无项目
+    emptyDesc: 敬请期待
+  friends:
+    title: 友情链接
+    desc: 值得推荐的伙伴站点
+  contact:
+    title: 保持连接
+    desc: 无论你是想合作、交流想法，还是单纯打个招呼——我们都在。
+  footer:
+    motto: 以匠心破常规
+toolHome:
+  title: 工具
+  subtitle: 实用小工具，助力效率与创作（需登录）
+  videoParse:
+    name: 视频解析
+    desc: 解析 B站视频信息与清晰度，并下载为 mp4
+  videoSummary:
+    name: 视频AI总结
+    desc: 提取视频字幕，用你自己的 AI Key 生成 Markdown 总结
+videoParse:
+  loginRequired: 请先登录后使用工具
+  inputUrlRequired: 请输入视频链接
+  parseFailed: 解析失败
+  noCover: 无封面可下载
+  fetchCoverFailed: 获取封面失败
+  createTaskFailed: 创建任务失败
+  fetchFileFailed: 获取文件失败
+  downloadFailed: 下载失败
+  backToTools: 返回工具主页
+  title: 视频解析
+  subtitle: 解析 B站视频信息与清晰度，并可下载为 mp4（需登录）
+  loginHint: 工具需要登录后使用。
+  goLogin: 去登录
+  inputPlaceholder: 粘贴视频链接，如 https://www.bilibili.com/video/BVxxxx
+  parsing: 解析中...
+  parse: 解析
+  uploader: UP 主
+  duration: 时长
+  formats: 可用清晰度
+  selectFormat: 选择清晰度
+  selectDlMode: 选择下载方式
+  dlMerged: 下载视频（带音频）
+  dlVideoOnly: 下载视频（无音频）
+  dlAudioOnly: 下载音频
+  dlSeparate: 视频音频分开
+  dlCover: 下载封面
+  saving: 保存中...
+  download: 下载
+  merging: 正在合并视频，请稍候...
+  downloading: 下载中 {progress}%
+  originLink: 前往原视频页
+  disclaimer: 仅供个人学习与研究使用，请遵守相关平台条款与版权法规。
+blogList:
+  anonymous: 匿名
+  networkError: 网络错误
+  featuredUpdateFailed: 精选设置失败
+  withdrawFailed: 撤回失败
+  categoryUpdateFailed: 分类修改失败
+  title: 博客
+  subtitle: 记录思考，分享创造
+  write: 写文章
+  searchPlaceholder: 搜索博客标题或内容…
+  loading: 加载中...
+  empty: 还没有文章
+  writeFirst: 写第一篇
+  featured: 精选
+  unfeatured: 取消精选
+  setFeatured: 设为精选
+  uncategorized: 未分类
+  withdraw: 撤回
+  withdrawTitle: 管理员撤回博客
+  withdrawMessage: 确认撤回《{title}》？撤回后博客将被删除，无法恢复。
+  withdrawConfirm: 确认撤回
+  prevPage: 上一页
+  nextPage: 下一页
+  category:
+    all: 全部
+  time:
+    all: 全部时间
+    last7d: 近7天
+    last30d: 近30天
+    year: 今年
+  sort:
+    comprehensive: 综合排序
+    created: 最新发布
+    likes: 最多点赞
+  view:
+    grid: ▦ 网格
+    list: ☰ 列表
+    gridTitle: 网格视图
+    listTitle: 列表视图
+blogDetail:
+  anonymous: 匿名
+  loading: 加载中...
+  notFound: 博客不存在
+  networkError: 网络错误
+  operationFailed: 操作失败
+  deleteFail: 删除失败
+  backToBlogs: ← 返回博客列表
+  backToList: ← 返回列表
+  author: 作者：{name}
+  edit: 编辑
+  adminSetCategory: 管理员设置分类
+  uncategorized: 未分类
+  deleting: 删除中...
+  delete: 删除
+  withdraw: 撤回
+  projectLabel: 所属项目
+  likeAriaLabel: 点赞
+  commentCount: "{count} 条评论"
+  commentsTitle: 评论
+  confirmDelete: 确认删除
+  deleteMessage: 这篇博客将被永久删除，无法恢复。确定继续吗？
+  deleteAdminMessage: 管理员将撤回这篇博客，操作不可恢复。确定继续吗？
+  categoryUpdateFailed: 分类修改失败
+  close: 关闭
+  comment:
+    likeAriaLabel: 评论点赞
+    reply: 回复
+    chain: ↗ 回复链
+    replyPlaceholder: 回复 @{name}
+    sending: 发送中...
+    send: 发送
+    cancel: 取消
+    delete: 删除
+    contentRequired: 评论内容不能为空
+    postFailed: 发表失败
+    replyContentRequired: 回复内容不能为空
+    replyFailed: 回复失败
+    placeholder: 写下你的评论...
+    posting: 发表中...
+    submit: 发表评论
+    login: 登录
+    loginHint: 后参与评论
+    loading: 加载评论中...
+    empty: 还没有评论，来说点什么吧
+    viewAllReplies: 查看全部 {count} 条回复
+    deleteTitle: 删除评论
+    deleteMessage: 确认删除这条评论？删除后无法恢复。
+    chainTitle: 回复链
+blogEditor:
+  loadFailed: 加载失败
+  imagePrompt: 输入图片 URL（支持图床链接）：
+  titleRequired: 请输入标题
+  contentRequired: 请输入内容
+  saveFailed: 保存失败
+  networkError: 网络错误
+  loading: 加载中...
+  backToList: 返回列表
+  editTitle: 编辑文章
+  newTitle: 写文章
+  titlePlaceholder: 输入文章标题...
+  insertImage: 插入图片
+  imageBed: 图床
+  markdownHint: 支持 Markdown 语法，图片使用图床链接
+  contentPlaceholder: 使用 Markdown 语法写文章...
+  preview: 预览
+  previewEmpty: 预览区域
+  noCategory: 无
+  noProject: 不关联
+  saving: 保存中...
+  saveChanges: 保存修改
+  publish: 发布文章
+projectList:
+  title: 项目
+  subtitle: 每一个项目都是一次对边界的试探
+  new: 新建项目
+  loading: 加载中...
+  empty: 还没有项目
+  createFirst: 创建第一个项目
+  anonymous: 匿名
+  blogCount: "{count} 篇文章"
+projectDetail:
+  notFound: 项目不存在
+  deleteFailed: 删除失败
+  operationFailed: 操作失败
+  networkError: 网络错误
+  loading: 加载中...
+  backToList: ← 返回项目列表
+  authorLabel: 作者：{name}
+  anonymous: 匿名
+  edit: 编辑
+  delete: 删除
+  deleting: 删除中...
+  linkGithub: GitHub ↗
+  linkDefault: 项目链接 ↗
+  relatedBlogs: 相关博客
+  noRelatedBlogs: 该项目暂无关联博客
+  followed: 已关注
+  follow: 关注
+  confirmDelete: 确认删除
+  deleteConfirmMessage: 确认删除这个项目？删除后无法恢复。
+  comment:
+    title: 评论
+    placeholder: 写下你的评论...
+    posting: 发表中...
+    post: 发表评论
+    login: 登录
+    loginHint: " 后参与评论"
+    loading: 加载评论中...
+    empty: 还没有评论，来说点什么吧
+    contentRequired: 评论内容不能为空
+    postFailed: 发表失败
+    replyContentRequired: 回复内容不能为空
+    replyFailed: 回复失败
+    anonymous: 匿名
+    likeLabel: 评论点赞
+    reply: 回复
+    replyPlaceholder: 回复 @{name}
+    sending: 发送中...
+    send: 发送
+    cancel: 取消
+    delete: 删除
+    deleteTitle: 删除评论
+    deleteConfirmMessage: 确认删除这条评论？删除后无法恢复。
+leetcode:
+  title: "LeetCode 刷题榜"
+  subtitle: "绑定 LeetCode 账号后的刷题量 · 简单 2 分 / 中等 4 分 / 困难 8 分 · 困难模式减半 · 严肃模式简单不计分 · 激励模式初始 -100 分（3/6/9）"
+  loading: "加载中..."
+  empty: "暂无用户绑定 LeetCode"
+  updated: "数据已更新"
+  updatedAt: "更新于 {time}"
+  heartbeat: "自动同步中"
+  heartbeatHint: "后台每 60 秒自动同步所有绑定用户的 LeetCode 数据"
+  rank: "第 {n} 名"
+  networkError: "网络错误"
+  link:
+    viewProfile: "在 LeetCode 查看主页"
+  bind:
+    title: "绑定 LeetCode 账号"
+    hint: "绑定 leetcode.cn 账号后，榜单将展示你从绑定时刻起的刷题增量（简单 2 分 / 中等 4 分 / 困难 8 分）"
+    usernamePlaceholder: "LeetCode 用户名"
+    usernameRequired: "请输入 LeetCode 用户名"
+    bind: "绑定"
+    binding: "绑定中..."
+    failed: "绑定失败"
+  mine:
+    myRank: "我的排名"
+    statsIncrement: "增量：简单 {easy} · 中等 {medium} · 困难 {hard} · 合计 {total}"
+    statsCumulative: "力扣累计：简单 {easy} · 中等 {medium} · 困难 {hard} · <b>总刷题量 {total}</b>"
+    score: "{score} 分"
+  refresh:
+    label: "刷新数据"
+    syncing: "同步中..."
+  col:
+    rank: "排名"
+    user: "用户"
+    easy: "简单"
+    medium: "中等"
+    hard: "困难"
+    total: "总数"
+    score: "得分"
+  mode:
+    difficulty: "困难模式"
+    difficultyHint: "困难模式下得分减半"
+    serious: "严肃模式"
+    seriousHint: "严肃模式下简单题不计入分数"
+    boost: "激励模式"
+    boostHint: "激励模式：初始 -100 分，3/6/9 计分"
+    boostToggleHint: "激励模式：初始 -100 分，简单 3 分 / 中等 6 分 / 困难 9 分，与困难/严肃模式互斥"
+    debug: "调试"
+    debugHint: "调试模式：手动调整刷题量，不读取 LeetCode"
+  unbind:
+    title: "解绑"
+    confirmText: "确认解绑"
+    unbinding: "解绑中..."
+    cancel: "取消"
+    tip: "解绑后榜单将不再展示你的刷题量，且重新绑定将重新计算（从新绑定时刻起算）。输入「确认解绑」以解绑："
+  boost:
+    title: "开启激励模式"
+    message: "开启激励模式后将清零当前刷题量（已自动备份），退出激励模式时自动恢复。激励模式初始 -100 分，简单 3 分 / 中等 6 分 / 困难 9 分，且与困难、严肃模式互斥。确定开启？"
+    confirm: "确认开启"
+  boostExit:
+    title: "退出激励模式"
+    confirm: "确认退出"
+    messageWithTarget: "激励模式与{mode}互斥。退出激励模式后将恢复之前备份的刷题量（含激励期间新刷的题一并算回），并开启{targetDesc}。确定？"
+    targetDifficulty: "困难模式（得分减半）"
+    targetSerious: "严肃模式（简单题不计分）"
+    messageDefault: "退出激励模式后将恢复之前备份的刷题量（含激励期间新刷的题一并算回），并恢复普通计分（简单 2 / 中等 4 / 困难 8）。确定退出？"
+auth:
+  validate:
+    usernameRequired: 请输入用户名
+    passwordRequired: 请输入密码
+    passwordMin: 密码至少6位
+    confirmMismatch: 两次密码不一致
+    inviteRequired: 请输入邀请码
+  error:
+    requestFailed: 请求失败，请稍后重试
+    networkError: 网络错误，请检查 API 服务是否启动
+  brand:
+    desc: 以匠心为刃，破常规之笼。
+    quote1: 在秩序中寻找裂痕，
+    quote2: 在裂痕中创造可能。
+    backHome: 返回首页
+  tab:
+    login: 登录
+    register: 注册
+  form:
+    hintLogin: 欢迎回来，请登录你的账户
+    hintRegister: 创建一个新账户，开始探索
+    usernameLabel: 用户名
+    usernamePlaceholder: 输入用户名
+    passwordLabel: 密码
+    passwordPlaceholder: 输入密码
+    showPwd: 显示密码
+    hidePwd: 隐藏密码
+    forgotPassword: 忘记密码？
+    confirmLabel: 确认密码
+    confirmPlaceholder: 再次输入密码
+    inviteLabel: 邀请码
+    invitePlaceholder: 输入管理员发放的邀请码
+    processing: 处理中...
+  success:
+    login: 登录成功
+    register: 注册成功
+    redirecting: 正在跳转到首页...
+  switch:
+    noAccount: 还没有账户？
+    toRegister: 立即注册
+    hasAccount: 已有账户？
+    toLogin: 立即登录
+reset:
+  validate:
+    usernameRequired: 请输入用户名
+    newPasswordRequired: 请输入新密码
+    passwordMin: 密码至少6位
+    confirmMismatch: 两次密码不一致
+    inviteRequired: 请输入邀请码
+  error:
+    userNotFound: 用户不存在
+    networkError: 网络错误，请检查 API 服务是否启动
+    resetFailed: 重置失败，请稍后重试
+  success:
+    title: 密码重置成功
+    desc: 请使用新密码登录你的账户
+    gotoLogin: 前往登录
+  title: 重置密码
+  backToLogin: 返回登录
+  step1:
+    hint: 请输入你的用户名以开始重置
+    usernameLabel: 用户名
+    usernamePlaceholder: 输入你的用户名
+    verifying: 验证中...
+    next: 下一步
+    remembered: 想起密码了？
+    backToLogin: 返回登录
+  step2:
+    hint: 设置你的新密码
+    newPwdLabel: 新密码
+    newPwdPlaceholder: 输入新密码（至少6位）
+    confirmLabel: 确认新密码
+    confirmPlaceholder: 再次输入新密码
+    inviteLabel: 邀请码
+    invitePlaceholder: 输入邀请码以验证身份
+    resetting: 重置中...
+    confirmReset: 确认重置
+    changeUsername: 更换用户名
+  form:
+    showPwd: 显示密码
+    hidePwd: 隐藏密码
+profile:
+  title: 编辑个人资料
+  backBlogs: 返回博客
+  backProjects: 返回项目
+  back: 返回
+  backHome: 返回首页
+  nickname: 昵称
+  nicknamePlaceholder: 输入昵称
+  avatarUrl: 头像链接
+  avatarUrlPlaceholder: 输入图片 URL（可选）
+  avatarHint: 输入在线图片链接作为头像，留空使用默认首字母头像
+  saving: 保存中...
+  save: 保存
+  saveSuccess: 保存成功
+  admin: 进入管理后台
+  logout: 退出登录
+  deleteAccount: 注销账号
+  deleteTip: 注销后账号与所有内容将被永久删除，且需输入账号和密码验证
+  username: 用户名
+  password: 密码
+  deleting: 注销中...
+  confirmDelete: 确认注销
+  cancel: 取消
+  deleteFailed: 注销失败
+  enterAccountPassword: 请输入账号和密码
+  saveFailed: 保存失败
+  networkError: 网络错误，请稍后重试
+  theme:
+    label: 主题模式
+    system: 跟随系统
+    light: 浅色
+    dark: 深色
+projectEditor:
+  defaultLinkName: 项目链接
+  loadFailed: 加载失败
+  enterName: 请输入项目名
+  link: 链接
+  saveFailed: 保存失败
+  networkError: 网络错误
+  loading: 加载中...
+  backProjects: 返回项目
+  editTitle: 编辑项目
+  newTitle: 新建项目
+  name: 项目名
+  namePlaceholder: 输入项目名称...
+  coverUrl: 封面链接
+  coverUrlPlaceholder: 输入图床封面 URL
+  coverPreviewAlt: 封面预览
+  noCoverPreview: 暂无封面预览
+  description: 项目简介
+  descriptionPlaceholder: 使用 Markdown 语法写项目简介（可空）...
+  tags: 标签
+  tagsPlaceholder: 自定义标签，用逗号分隔，如 React, AI, 开源
+  bgColor: 封面背景色（可选）
+  links: 项目链接（GitHub / 下载 / 官网，可选）
+  linkNamePlaceholder: GitHub / 下载 / 官网
+  deleteLink: 删除链接
+  addLink: 添加链接
+  linkBlogs: 关联博客
+  linkBlogsHint: 勾选要加入该项目的博客
+  noBlogs: 还没有博客
+  linkBlogsAfterSave: 保存项目后，可在编辑页关联博客
+  saving: 保存中...
+  saveChanges: 保存修改
+  create: 创建项目
+admin:
+  title: 管理后台
+  backProfile: 返回个人资料
+  loading: 加载中...
+  edit: 编辑
+  delete: 删除
+  save: 保存
+  cancel: 取消
+  anonymous: 匿名
+  modal:
+    confirm: 确认
+  error:
+    network: 网络错误
+    operationFailed: 操作失败
+    deleteFailed: 删除失败
+    saveFailed: 保存失败
+    generateFailed: 生成失败
+    fillNameAndUrl: 请填写名称和链接
+  tabs:
+    users: 用户管理
+    comments: 评论管理
+    blogs: 博客管理
+    codes: 邀请码
+    links: 友情链接
+    settings: 站点设置
+    leetcode: LeetCode 调试
+  users:
+    all: 所有用户（{count}）
+    colId: ID
+    colUsername: 用户名
+    colNickname: 昵称
+    colRole: 角色
+    colRegistered: 注册时间
+    colActions: 操作
+    admin: 管理员
+    user: 普通用户
+    demote: 降为普通用户
+    promote: 升为管理员
+    currentAccount: 当前账户
+    deleteTitle: 删除用户
+    deleteConfirm: 确认删除用户「{name}」？该用户的博客/评论/点赞/项目将一并删除，且无法恢复。
+    deleteConfirmText: 确认删除
+    editNickname: 昵称
+    editAvatar: 头像 URL（可空）
+    editPassword: 新密码（留空不改）
+  comments:
+    all: 所有评论（{count}）
+    empty: 暂无评论
+    replyTo: 回复 @{name}
+    deleteTitle: 删除评论
+    deleteModalTitle: 删除评论
+    deleteConfirm: 确认删除这条评论？删除后无法恢复。
+    deleteConfirmText: 确认删除
+  blogs:
+    all: 所有博客（{count}）
+    empty: 暂无博客
+    colId: ID
+    colTitle: 标题
+    colAuthor: 作者
+    colCategory: 分类
+    colPublished: 发布时间
+    colActions: 操作
+    uncategorized: 未分类
+    recallTitle: 撤回博客
+    recallConfirm: 确认撤回《{title}》？撤回后无法恢复。
+    recallConfirmText: 确认撤回
+    recall: 撤回
+  links:
+    all: 友情链接（{count}）
+    name: 名称
+    url: URL（https://...）
+    description: 简介（可选）
+    add: 添加
+    empty: 暂无友情链接
+    colName: 名称
+    colUrl: 链接
+    colDescription: 简介
+    colActions: 操作
+    deleteTitle: 删除友情链接
+    deleteConfirm: 确认删除友情链接「{name}」？删除后无法恢复。
+    deleteConfirmText: 确认删除
+    copied: 已复制：{code}
+    inviteCode: 邀请码：{code}
+  codes:
+    manage: 邀请码管理（{count}）
+    generate: 生成邀请码
+    new: 新邀请码：
+    copy: 复制
+    empty: 暂无邀请码，点击上方按钮生成
+    colId: ID
+    colCode: 邀请码
+    colOwner: 专属用户
+    colUsed: 已使用
+    colReusable: 可重复
+    colCreated: 生成时间
+    colActions: 操作
+    used: 已使用
+    unused: 未使用
+    deleteTitle: 删除邀请码
+    deleteConfirm: 确认删除邀请码 {code}？删除后无法恢复。
+    deleteConfirmText: 确认删除
+  site:
+    all: 站点设置（首页"保持联系"区块）
+    cardHint: 联系项卡片：显示「图标 + 标题 + 简介」，链接不显示在卡片上，点击卡片跳转
+    addItem: 添加联系项
+    noItems: 暂无联系项，点击上方按钮添加
+    customIcon: 自定义图标图片 URL
+    label: 标题，如 邮箱 / GitHub
+    description: 简介，显示在卡片上（可空）
+    value: 链接或文本
+    saving: 保存中...
+    saved: 保存成功
+    hint: 保存后首页"保持连接"区块即时生效；卡片显示「图标 + 标题 + 简介」，链接不显示在卡片上，点击卡片跳转
+  leetcode:
+    title: LeetCode 调试模式
+    notBound: 你尚未绑定 LeetCode 账号，请先到「榜单」页绑定
+    hint: 调试模式开启后，该账号不再读取 LeetCode 数据，可手动调整刷题量；开启前会记录当前数据，关闭后自动恢复。
+    mode: 调试模式（@{name}）
+    off: 关闭调试
+    on: 开启调试
+    amountHint: 设置各难度刷题量（增量，基于调试开启时保存的数据）：
+    easy: 简单题
+    medium: 中等题
+    hard: 困难题
+    apply: 应用刷题量
+myPage:
+  title: 我的
+  loading: 加载中...
+  tab:
+    notifications: 通知
+    aiSettings: AI 设置
+  notify:
+    unreadBadge: 未读红点
+    unreadCount: '{n} 条未读'
+    readAll: 全部已读
+    empty: 暂无通知
+    loadError: 网络错误
+    type:
+      commentReply: 回复
+      commentLike: 点赞
+      blogCommentLike: 评论获赞
+      projectNewBlog: 项目新博客
+      blogLike: 博客点赞
+      blogNewComment: 博客新评论
+  ai:
+    loadError: 网络错误，无法加载 AI 设置
+  key:
+    manage: API Key 管理
+    addButton: 新增 Key
+    noKeys: 还没有 API Key，点击「新增 Key」添加
+    current: 当前使用
+    noKey: 无 Key
+    setCurrent: 设为当前
+    editTitle: 编辑
+    deleteTitle: 删除
+    add:
+      needApiKey: 请填写 API Key
+      unknownProvider: 未知的提供商
+      needBaseUrl: 自定义提供商必须填写 Base URL
+      failed: 添加失败
+      networkError: 网络错误，请稍后重试
+    edit:
+      failed: 保存失败
+      networkError: 网络错误，请稍后重试
+    delete:
+      failed: 删除失败
+      networkError: 网络错误，请稍后重试
+    addModal:
+      title: 新增 API Key
+      confirm: 添加
+      provider: AI 提供商
+      selectProvider: 选择提供商
+      apiKey: API Key
+      apiKeyPlaceholder: 输入 API Key *
+      label: 备注名
+      labelPlaceholder: 可选，如「工作账号」
+      baseUrlRequired: Base URL（必填）
+      baseUrlPlaceholder: 如 https://my-custom-endpoint.com/v1
+    editModal:
+      title: 编辑 Key「{label}」
+      confirm: 保存
+      label: 备注名
+      labelPlaceholder: 备注名
+      apiKey: API Key
+      overwriteHint: 已保存 {hint}，输入新 Key 覆盖
+      baseUrl: Base URL
+    deleteModal:
+      title: 删除 API Key
+      message: 确定删除 Key「{name}」？此操作不可撤销。
+      confirm: 删除
+      cancel: 取消
+  model:
+    select: 选择当前模型
+    refreshTitle: 刷新可用模型
+    refresh: 刷新
+    addButton: 新增模型
+    needKey: 请先在「API Key 管理」选择或添加一个 Key
+    sortHint: 收藏的模型排在最前，其余按添加时间排序；点星标收藏/取消
+    querying: 正在查询可用模型...
+    none: 暂无可用模型，可手动新增
+    setCurrent: 点击设为当前模型
+    custom: 自定义
+    fav: 收藏
+    unfav: 取消收藏
+    removeTitle: 移除
+    add:
+      needKey: 请先选择或添加一个 Key
+      failed: 添加失败
+      networkError: 网络错误，请稍后重试
+    remove:
+      failed: 删除失败
+      networkError: 网络错误，请稍后重试
+    addModal:
+      title: 新增模型
+      confirm: 添加
+      modelId: 模型 ID
+      modelIdPlaceholder: 如 my-custom-v1
+      hint: 手动添加一个模型到「可用模型」列表，供当前 Key 选择
+  visionSpeech:
+    title: 识图与语音模型
+    sub: 视频 AI 总结等工具使用
+    visionLabel: 识图模型（提取视频画面）
+    speechLabel: 语音模型（转写音频）
+    selectKey: 选择 Key
+    visionModel: 识图模型
+    speechModel: 语音模型
+    visionHint: 需支持多模态图片输入的模型（如 *-vision-exp、qwen-vl 系列）
+    speechHint: 需支持 OpenAI 兼容 /audio/transcriptions 接口的模型（如 whisper 系列、sensevoice 等）
+  sampling:
+    title: 采样参数
+    currentModel: 当前模型：{model}
+    thinking: 思考深度
+    selectThinking: 选择思考深度
+    thinkingHint: 根据所选厂商支持的思考档位调整
+    temperature: 温度 Temperature
+    temperatureHint: 越低越确定，越高越发散（默认 0.7）
+    topK: Top-K
+    topKHint: 采样时考虑的候选数量（默认 40）
+    needModel: 请先在「选择当前模型」中点击一个模型，再设置采样参数
+  save:
+    title: 保存设置
+    saving: 保存中...
+    done: 已保存
+    failed: 保存失败
+    networkError: 网络错误，请稍后重试
+  test:
+    title: 测试连接
+    testing: 测试中...
+    needKey: 请先选择一个 Key
+    ok: 连接成功（{latency}ms）
+    err: 连接失败：{error}
+    unknownError: 未知错误
+    failed: 测试失败
+    networkError: 网络错误，请稍后重试
+videoSummary:
+  navLabel: 视频总结
+  title: 视频 AI 总结
+  subtitle: 语音转写 + 画面 OCR 提取内容，用你在「AI 设置」中选择的模型生成结构化 Markdown 总结（需登录）
+  backToTools: ← 返回工具主页
+  loginHint: 工具需要登录后使用。
+  goLogin: 去登录
+  generate: 生成总结
+  generating: 生成中…
+  loadingHint: 正在提取字幕并调用 AI 总结，长视频可能需要一分钟以上…
+  streamingGenerating: 正在生成
+  streamingProofreading: （排版校对中…）
+  copyMd: 复制 MD
+  copied: ✓ 已复制
+  copyFailed: 复制失败，请手动选中文本复制
+  disclaimer: 总结由 AI 生成，可能存在偏差；仅供个人学习与研究使用。
+  useAsr: 转写音频（使用「AI 设置」中配置的语音模型）
+  stage:
+    preparing: 准备中
+  input:
+    invalidUrl: 请输入有效的视频链接（支持 B 站、YouTube 等 yt-dlp 兼容站点）
+  error:
+    request: 请求失败
+    requestWithStatus: 请求失败（{status}）
+  source:
+    placeholder: 粘贴视频链接，如 https://www.bilibili.com/video/BVxxxx
+    asr: 语音转写
+    ocr: 画面OCR
+    asrOcr: 语音转写+画面OCR
+    subtitle: 手写字幕
+    autoSubtitle: 自动字幕
+    metadata: 仅元信息（未获取到字幕）
+  history:
+    title: 历史记录
+    empty: 暂无历史记录
+    unnamed: （未命名视频）
+    loadError: 加载历史失败
+  status:
+    failed: 失败
+  meta:
+    source: 来源：
+    duration: '{minutes} 分 {seconds} 秒'
+    transcript: 转录 {chars} 字
+    truncated: （已截断）
+  configModal:
+    title: AI 模型不可用
+    message: 当前使用的模型无法完成总结。请前往「我的 → AI 设置」检查 API Key 与模型配置后重试。
+    goToSettings: 前往 AI 设置
+    cancel: 取消

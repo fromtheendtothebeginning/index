@@ -4,16 +4,17 @@ import Navbar from '../../components/Navbar'
 import ActionButton from '../../components/ActionButton'
 import Modal from '../../components/Modal'
 import { renderMd } from '../../utils/markdown'
+import { t } from '../../i18n'
 import '../../pages/ToolParsePage.css'
 import './VideoSummaryPage.css'
 
 const SOURCE_LABEL = {
-  asr: '语音转写',
-  ocr: '画面OCR',
-  'asr+ocr': '语音转写+画面OCR',
-  subtitle: '手写字幕',
-  auto_subtitle: '自动字幕',
-  metadata: '仅元信息（未获取到字幕）',
+  asr: 'videoSummary.source.asr',
+  ocr: 'videoSummary.source.ocr',
+  'asr+ocr': 'videoSummary.source.asrOcr',
+  subtitle: 'videoSummary.source.subtitle',
+  auto_subtitle: 'videoSummary.source.autoSubtitle',
+  metadata: 'videoSummary.source.metadata',
 }
 
 function fmtTime(iso) {
@@ -84,7 +85,7 @@ export default function VideoSummaryPage() {
     fetch(`/api/tools/video-summary/history/${id}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
       .then(r => r.json())
       .then(d => { setResult(d); setCopied(false) })
-      .catch(e => setError('加载历史失败'))
+      .catch(e => setError(t('videoSummary.history.loadError')))
   }
 
   // 关闭流式连接
@@ -131,9 +132,9 @@ export default function VideoSummaryPage() {
     setError('')
     setResult(null)
     setCopied(false)
-    setProgress({ percent: 1, stage: '准备中' })
+    setProgress({ percent: 1, stage: t('videoSummary.stage.preparing') })
     if (!/^https?:\/\//.test(url.trim())) {
-      setError('请输入有效的视频链接（支持 B 站、YouTube 等 yt-dlp 兼容站点）')
+      setError(t('videoSummary.input.invalidUrl'))
       return
     }
     setLoading(true)
@@ -148,14 +149,14 @@ export default function VideoSummaryPage() {
         try { d = JSON.parse(raw) } catch { d = null }
         if (!r.ok || d == null || !d.task_id) {
           const detail = d && typeof d === 'object' ? d.detail : null
-          throw detail || (d && typeof d === 'string' ? d : null) || new Error(`请求失败（${r.status}）`)
+          throw detail || (d && typeof d === 'string' ? d : null) || new Error(t('videoSummary.error.requestWithStatus', { status: r.status }))
         }
         return d.task_id
       })
       .then(taskId => pollTask(taskId))
       .catch(e => {
         if (e && e.code === 'ai_config') setShowConfigModal(true)
-        else setError(typeof e === 'string' ? e : (e.message || '请求失败'))
+        else setError(typeof e === 'string' ? e : (e.message || t('videoSummary.error.request')))
         setProgress(null)
         setLoading(false)
       })
@@ -214,7 +215,7 @@ export default function VideoSummaryPage() {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      setError('复制失败，请手动选中文本复制')
+      setError(t('videoSummary.copyFailed'))
     }
   }
 
@@ -232,12 +233,12 @@ export default function VideoSummaryPage() {
           {/* 左侧：历史任务栏（DeepSeek 风格） */}
           <aside className="vs-sidebar">
             <div className="vs-sidebar-head">
-              <span className="vs-sidebar-title">历史记录</span>
+              <span className="vs-sidebar-title">{t('videoSummary.history.title')}</span>
               <span className="vs-sidebar-sub">{history.length}/20</span>
             </div>
             <div className="vs-sidebar-list">
               {history.length === 0 ? (
-                <div className="vs-sidebar-empty">暂无历史记录</div>
+                <div className="vs-sidebar-empty">{t('videoSummary.history.empty')}</div>
               ) : (
                 history.map(h => (
                   <button
@@ -246,9 +247,9 @@ export default function VideoSummaryPage() {
                     className={`vs-sidebar-item ${h.status === 'failed' ? 'failed' : ''} ${viewingId === h.id ? 'active' : ''}`}
                     onClick={() => viewHistory(h.id)}
                   >
-                    <span className="vs-sidebar-name">{h.title || '（未命名视频）'}</span>
+                    <span className="vs-sidebar-name">{h.title || t('videoSummary.history.unnamed')}</span>
                     <span className="vs-sidebar-meta">
-                      {h.status === 'failed' ? '失败' : `${SOURCE_LABEL[h.source] || h.source} · ${h.model || ''}`}
+                      {h.status === 'failed' ? t('videoSummary.status.failed') : `${t(SOURCE_LABEL[h.source]) || h.source} · ${h.model || ''}`}
                       {' · '}{fmtTime(h.created_at)}
                     </span>
                   </button>
@@ -260,21 +261,21 @@ export default function VideoSummaryPage() {
           {/* 右侧：表单 + 结果 */}
           <section className="vs-content">
             <header className="tool-header">
-              <Link to="/tools" className="tool-back">← 返回工具主页</Link>
-              <h1 className="tool-title">视频 AI 总结</h1>
-              <p className="tool-subtitle">语音转写 + 画面 OCR 提取内容，用你在「AI 设置」中选择的模型生成结构化 Markdown 总结（需登录）</p>
+              <Link to="/tools" className="tool-back">{t('videoSummary.backToTools')}</Link>
+              <h1 className="tool-title">{t('videoSummary.title')}</h1>
+              <p className="tool-subtitle">{t('videoSummary.subtitle')}</p>
             </header>
 
             {!token && (
               <div className="tool-login-hint">
-                工具需要登录后使用。<Link to="/login">去登录</Link>
+                {t('videoSummary.loginHint')}<Link to="/login">{t('videoSummary.goLogin')}</Link>
               </div>
             )}
 
             <div className="tool-input-row">
               <input
                 className="tool-input"
-                placeholder="粘贴视频链接，如 https://www.bilibili.com/video/BVxxxx"
+                placeholder={t('videoSummary.source.placeholder')}
                 value={url}
                 onChange={e => setUrl(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && !loading && token) handleSummarize() }}
@@ -285,10 +286,10 @@ export default function VideoSummaryPage() {
             <div className="vs-options-row">
               <label className="vs-checkbox">
                 <input type="checkbox" checked={useAsr} onChange={e => setUseAsr(e.target.checked)} disabled={loading || !token} />
-                <span>转写音频（使用「AI 设置」中配置的语音模型）</span>
+                <span>{t('videoSummary.useAsr')}</span>
               </label>
               <ActionButton variant="accent" onClick={handleSummarize} disabled={loading || !token} className="vs-submit">
-                {loading ? '生成中…' : '生成总结'}
+                {loading ? t('videoSummary.generating') : t('videoSummary.generate')}
               </ActionButton>
             </div>
 
@@ -303,7 +304,7 @@ export default function VideoSummaryPage() {
             )}
             {loading && (
               <div className="tool-login-hint vs-loading-hint">
-                正在提取字幕并调用 AI 总结，长视频可能需要一分钟以上…
+                {t('videoSummary.loadingHint')}
               </div>
             )}
 
@@ -311,7 +312,7 @@ export default function VideoSummaryPage() {
               <div className="vs-result vs-streaming">
                 <div className="vs-streaming-head">
                   <span className="vs-streaming-dot" />
-                  正在生成{progress?.stage === '排版校对' ? '（排版校对中…）' : ''}
+                  {t('videoSummary.streamingGenerating')}{progress?.stage === '排版校对' ? t('videoSummary.streamingProofreading') : ''}
                 </div>
                 <div className="markdown-body vs-summary" dangerouslySetInnerHTML={{ __html: streamSafeMd(liveText) }} />
               </div>
@@ -324,18 +325,18 @@ export default function VideoSummaryPage() {
                     <h2>{result.video?.title}</h2>
                     <span className="vs-meta">
                       {result.video?.uploader}
-                      {result.video?.duration ? ` · ${Math.floor(result.video.duration / 60)} 分 ${result.video.duration % 60} 秒` : ''}
-                      {' · '}来源：{SOURCE_LABEL[result.source] || result.source}
-                      {' · '}转录 {result.transcript_chars} 字{result.truncated ? '（已截断）' : ''}
+                      {result.video?.duration ? ` · ${t('videoSummary.meta.duration', { minutes: Math.floor(result.video.duration / 60), seconds: result.video.duration % 60 })}` : ''}
+                      {' · '}{t('videoSummary.meta.source')}{t(SOURCE_LABEL[result.source]) || result.source}
+                      {' · '}{t('videoSummary.meta.transcript', { chars: result.transcript_chars })}{result.truncated ? t('videoSummary.meta.truncated') : ''}
                       {' · '}{result.model}
                     </span>
                   </div>
                   <ActionButton variant="accent" onClick={copyMd} className={copied ? 'vs-copied' : ''}>
-                    {copied ? '✓ 已复制' : '复制 MD'}
+                    {copied ? t('videoSummary.copied') : t('videoSummary.copyMd')}
                   </ActionButton>
                 </div>
                 <div className="markdown-body vs-summary" dangerouslySetInnerHTML={{ __html: renderMd(result.summary_md) }} />
-                <p className="tool-disclaimer">总结由 AI 生成，可能存在偏差；仅供个人学习与研究使用。</p>
+                <p className="tool-disclaimer">{t('videoSummary.disclaimer')}</p>
               </div>
             )}
           </section>
@@ -344,10 +345,10 @@ export default function VideoSummaryPage() {
 
       <Modal
         open={showConfigModal}
-        title="AI 模型不可用"
-        message="当前使用的模型无法完成总结。请前往「我的 → AI 设置」检查 API Key 与模型配置后重试。"
-        confirmText="前往 AI 设置"
-        cancelText="取消"
+        title={t('videoSummary.configModal.title')}
+        message={t('videoSummary.configModal.message')}
+        confirmText={t('videoSummary.configModal.goToSettings')}
+        cancelText={t('videoSummary.configModal.cancel')}
         showCancel
         onConfirm={gotoAiSettings}
         onCancel={() => setShowConfigModal(false)}

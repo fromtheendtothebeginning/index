@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import ProjectCover from '../components/ProjectCover'
 import Reveal from '../components/Reveal'
+import { t } from '../i18n'
 import './Project.css'
 
 function ProjectEditorPage() {
@@ -52,10 +53,10 @@ function ProjectEditorPage() {
         setBgColor(data.bg_color || '')
         setLinks(data.links && data.links.length
           ? data.links
-          : (data.link_url ? [{ name: '项目链接', url: data.link_url }] : []))
+          : (data.link_url ? [{ name: t('projectEditor.defaultLinkName'), url: data.link_url }] : []))
         setSelectedBlogIds((data.blogs || []).map(b => b.id))
       })
-      .catch(() => setError('加载失败'))
+      .catch(() => setError(t('projectEditor.loadFailed')))
       .finally(() => setLoading(false))
 
     setBlogsLoading(true)
@@ -83,7 +84,7 @@ function ProjectEditorPage() {
   }
 
   const handleSave = async () => {
-    if (!name.trim()) { setError('请输入项目名'); return }
+    if (!name.trim()) { setError(t('projectEditor.enterName')); return }
     const token = localStorage.getItem('token')
     setSaving(true)
     setError('')
@@ -104,12 +105,12 @@ function ProjectEditorPage() {
           tags: tags.split(/[,，]/).map(s => s.trim()).filter(Boolean),
           bg_color: bgColor || null,
           links: links
-            .map(l => ({ name: (l.name || '').trim() || '链接', url: (l.url || '').trim() }))
+            .map(l => ({ name: (l.name || '').trim() || t('projectEditor.link'), url: (l.url || '').trim() }))
             .filter(l => l.url),
         }),
       })
       const data = await res.json()
-      if (!res.ok) { setError(data.detail || '保存失败'); return }
+      if (!res.ok) { setError(data.detail || t('projectEditor.saveFailed')); return }
       if (isEdit) {
         try {
           await fetch(`/api/projects/${id}/blogs`, {
@@ -126,7 +127,7 @@ function ProjectEditorPage() {
       }
       navigate(`/projects/${data.id}`)
     } catch {
-      setError('网络错误')
+      setError(t('projectEditor.networkError'))
     } finally {
       setSaving(false)
     }
@@ -135,7 +136,7 @@ function ProjectEditorPage() {
   if (loading) {
     return (
       <div className="project-page">
-        <div className="project-main"><div className="blog-loading">加载中...</div></div>
+        <div className="project-main"><div className="blog-loading">{t('projectEditor.loading')}</div></div>
       </div>
     )
   }
@@ -147,46 +148,46 @@ function ProjectEditorPage() {
       <div className="project-main">
         <div className="project-editor">
           <Reveal className="editor-header">
-            <Link to={isEdit ? `/projects/${id}` : '/projects'} className="blog-back-link">&larr; 返回项目</Link>
+            <Link to={isEdit ? `/projects/${id}` : '/projects'} className="blog-back-link">&larr; {t('projectEditor.backProjects')}</Link>
           </Reveal>
-          <Reveal as="h1" className="editor-title">{isEdit ? '编辑项目' : '新建项目'}</Reveal>
+          <Reveal as="h1" className="editor-title">{isEdit ? t('projectEditor.editTitle') : t('projectEditor.newTitle')}</Reveal>
 
           {error && <div className="form-server-error">{error}</div>}
 
           <div className="editor-field">
-            <label className="editor-label">项目名</label>
+            <label className="editor-label">{t('projectEditor.name')}</label>
             <input
               type="text"
               className="editor-title-input"
-              placeholder="输入项目名称..."
+              placeholder={t('projectEditor.namePlaceholder')}
               value={name}
               onChange={e => setName(e.target.value)}
             />
           </div>
 
           <div className="editor-field">
-            <label className="editor-label">封面链接</label>
+            <label className="editor-label">{t('projectEditor.coverUrl')}</label>
             <input
               type="text"
               className="editor-title-input"
-              placeholder="输入图床封面 URL"
+              placeholder={t('projectEditor.coverUrlPlaceholder')}
               value={coverUrl}
               onChange={e => setCoverUrl(e.target.value)}
             />
             <div className="cover-preview">
               {coverUrl ? (
-                <ProjectCover src={coverUrl} alt="封面预览" className="cover-preview-img" bgColor={bgColor} />
+                <ProjectCover src={coverUrl} alt={t('projectEditor.coverPreviewAlt')} className="cover-preview-img" bgColor={bgColor} />
               ) : (
-                <span className="cover-preview-placeholder">暂无封面预览</span>
+                <span className="cover-preview-placeholder">{t('projectEditor.noCoverPreview')}</span>
               )}
             </div>
           </div>
 
           <div className="editor-field">
-            <label className="editor-label">项目简介</label>
+            <label className="editor-label">{t('projectEditor.description')}</label>
             <textarea
               className="project-desc-input"
-              placeholder="使用 Markdown 语法写项目简介（可空）..."
+              placeholder={t('projectEditor.descriptionPlaceholder')}
               value={description}
               onChange={e => setDescription(e.target.value)}
               rows={8}
@@ -194,18 +195,18 @@ function ProjectEditorPage() {
           </div>
 
           <div className="editor-field">
-            <label className="editor-label">标签</label>
+            <label className="editor-label">{t('projectEditor.tags')}</label>
             <input
               type="text"
               className="editor-title-input"
-              placeholder="自定义标签，用逗号分隔，如 React, AI, 开源"
+              placeholder={t('projectEditor.tagsPlaceholder')}
               value={tags}
               onChange={e => setTags(e.target.value)}
             />
           </div>
 
           <div className="editor-field">
-            <label className="editor-label">封面背景色（可选）</label>
+            <label className="editor-label">{t('projectEditor.bgColor')}</label>
             <div className="editor-bg-color-row">
               <input
                 type="color"
@@ -216,14 +217,14 @@ function ProjectEditorPage() {
           </div>
 
           <div className="editor-field">
-            <label className="editor-label">项目链接（GitHub / 下载 / 官网，可选）</label>
+            <label className="editor-label">{t('projectEditor.links')}</label>
             <div className="project-links-editor">
               {links.map((l, i) => (
                 <div className="project-link-row" key={i}>
                   <input
                     type="text"
                     className="editor-title-input project-link-name"
-                    placeholder="GitHub / 下载 / 官网"
+                    placeholder={t('projectEditor.linkNamePlaceholder')}
                     value={l.name}
                     onChange={e => updateLink(i, 'name', e.target.value)}
                   />
@@ -238,22 +239,22 @@ function ProjectEditorPage() {
                     type="button"
                     className="project-link-del"
                     onClick={() => removeLink(i)}
-                    title="删除链接"
+                    title={t('projectEditor.deleteLink')}
                   >×</button>
                 </div>
               ))}
             </div>
-            <button type="button" className="project-link-add" onClick={addLink}>+ 添加链接</button>
+            <button type="button" className="project-link-add" onClick={addLink}>+ {t('projectEditor.addLink')}</button>
           </div>
 
           {isEdit ? (
             <div className="editor-field">
-              <div className="editor-label">关联博客</div>
-              <p className="editor-hint">勾选要加入该项目的博客</p>
+              <div className="editor-label">{t('projectEditor.linkBlogs')}</div>
+              <p className="editor-hint">{t('projectEditor.linkBlogsHint')}</p>
               {blogsLoading ? (
-                <p className="editor-hint">加载中...</p>
+                <p className="editor-hint">{t('projectEditor.loading')}</p>
               ) : allBlogs.length === 0 ? (
-                <p className="editor-hint">还没有博客</p>
+                <p className="editor-hint">{t('projectEditor.noBlogs')}</p>
               ) : (
                 <div className="project-blog-select">
                   {allBlogs.map(b => (
@@ -274,7 +275,7 @@ function ProjectEditorPage() {
             </div>
           ) : (
             <div className="editor-field">
-              <p className="editor-hint">保存项目后，可在编辑页关联博客</p>
+              <p className="editor-hint">{t('projectEditor.linkBlogsAfterSave')}</p>
             </div>
           )}
 
@@ -284,7 +285,7 @@ function ProjectEditorPage() {
               onClick={handleSave}
               disabled={saving}
             >
-              {saving ? '保存中...' : (isEdit ? '保存修改' : '创建项目')}
+              {saving ? t('projectEditor.saving') : (isEdit ? t('projectEditor.saveChanges') : t('projectEditor.create'))}
             </button>
           </div>
         </div>

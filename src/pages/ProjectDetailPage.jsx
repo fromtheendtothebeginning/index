@@ -6,6 +6,7 @@ import ProjectCover from '../components/ProjectCover'
 import Reveal from '../components/Reveal'
 import { renderMd } from '../utils/markdown'
 import { UiIcon } from '../components/Icons'
+import { t } from '../i18n'
 import './Project.css'
 
 // 单条项目评论卡片（顶层 / 子回复共用）
@@ -43,7 +44,7 @@ function ProjectCommentItem({
       <div className="comment-body">
         <div className="comment-header">
           <span className="comment-author">
-            {c.user?.nickname || c.user?.username || '匿名'}
+            {c.user?.nickname || c.user?.username || t('projectDetail.comment.anonymous')}
           </span>
           <span className="comment-time">
             {new Date(c.created_at).toLocaleString('zh-CN', {
@@ -58,18 +59,18 @@ function ProjectCommentItem({
             className={`comment-like-btn ${c.liked_by_me ? 'liked' : ''}`}
             onClick={() => handleLike(c)}
             disabled={likePending.has(c.id)}
-            aria-label="评论点赞"
+            aria-label={t('projectDetail.comment.likeLabel')}
           >
             <span className="comment-like-icon"><UiIcon name="heart" filled={c.liked_by_me} size={14} /></span>
             <span className="comment-like-count">{c.like_count || 0}</span>
           </button>
-          <button className="comment-reply-btn" onClick={() => onOpenReply(c)}>回复</button>
+          <button className="comment-reply-btn" onClick={() => onOpenReply(c)}>{t('projectDetail.comment.reply')}</button>
         </div>
         {showReplyBox && (
           <form className="comment-inline-reply" onSubmit={onPostReply}>
             <textarea
               className="comment-input"
-              placeholder={`回复 @${c.user?.nickname || c.user?.username || '匿名'}`}
+              placeholder={t('projectDetail.comment.replyPlaceholder', { name: c.user?.nickname || c.user?.username || t('projectDetail.comment.anonymous') })}
               value={replyText}
               onChange={e => setReplyText(e.target.value)}
               rows={2}
@@ -79,9 +80,9 @@ function ProjectCommentItem({
             {replyError && <div className="form-server-error">{replyError}</div>}
             <div className="comment-form-actions">
               <button type="submit" className="btn btn-primary" disabled={replyPosting}>
-                {replyPosting ? '发送中...' : '发送'}
+                {replyPosting ? t('projectDetail.comment.sending') : t('projectDetail.comment.send')}
               </button>
-              <button type="button" className="btn btn-secondary" onClick={onCancelReply}>取消</button>
+              <button type="button" className="btn btn-secondary" onClick={onCancelReply}>{t('projectDetail.comment.cancel')}</button>
             </div>
           </form>
         )}
@@ -90,7 +91,7 @@ function ProjectCommentItem({
         <button
           className="comment-delete-btn"
           onClick={() => onDelete(c.id)}
-          title="删除"
+          title={t('projectDetail.comment.delete')}
         >
           ×
         </button>
@@ -138,7 +139,7 @@ function ProjectDetailPage() {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
       .then(r => {
-        if (!r.ok) throw new Error('项目不存在')
+        if (!r.ok) throw new Error(t('projectDetail.notFound'))
         return r.json()
       })
       .then(data => setProject(data))
@@ -173,12 +174,12 @@ function ProjectDetailPage() {
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        alert(data.detail || '删除失败')
+        alert(data.detail || t('projectDetail.deleteFailed'))
         return
       }
       navigate('/projects')
     } catch {
-      alert('网络错误')
+      alert(t('projectDetail.networkError'))
     } finally {
       setDeleting(false)
     }
@@ -208,14 +209,14 @@ function ProjectDetailPage() {
       if (!res.ok) {
         setProject({ ...project, liked_by_me: prevLiked, like_count: prevCount })
         const data = await res.json().catch(() => ({}))
-        alert(data.detail || '操作失败')
+        alert(data.detail || t('projectDetail.operationFailed'))
         return
       }
       const data = await res.json()
       setProject(p => p ? { ...p, liked_by_me: data.liked, like_count: data.like_count } : p)
     } catch {
       setProject({ ...project, liked_by_me: prevLiked, like_count: prevCount })
-      alert('网络错误')
+      alert(t('projectDetail.networkError'))
     } finally {
       setProjectLikePending(false)
     }
@@ -245,14 +246,14 @@ function ProjectDetailPage() {
       if (!res.ok) {
         setProject({ ...project, followed_by_me: prevFollowed, follow_count: prevCount })
         const data = await res.json().catch(() => ({}))
-        alert(data.detail || '操作失败')
+        alert(data.detail || t('projectDetail.operationFailed'))
         return
       }
       const data = await res.json()
       setProject(p => p ? { ...p, followed_by_me: data.followed, follow_count: data.follow_count } : p)
     } catch {
       setProject({ ...project, followed_by_me: prevFollowed, follow_count: prevCount })
-      alert('网络错误')
+      alert(t('projectDetail.networkError'))
     } finally {
       setProjectFollowPending(false)
     }
@@ -262,7 +263,7 @@ function ProjectDetailPage() {
     e.preventDefault()
     const text = projCommentText.trim()
     if (!text) {
-      setProjCommentError('评论内容不能为空')
+      setProjCommentError(t('projectDetail.comment.contentRequired'))
       return
     }
     if (!user) {
@@ -283,13 +284,13 @@ function ProjectDetailPage() {
       })
       const data = await res.json()
       if (!res.ok) {
-        setProjCommentError(data.detail || '发表失败')
+        setProjCommentError(data.detail || t('projectDetail.comment.postFailed'))
         return
       }
       setProjectComments(prev => [...prev, data])
       setProjCommentText('')
     } catch {
-      setProjCommentError('网络错误')
+      setProjCommentError(t('projectDetail.networkError'))
     } finally {
       setProjCommentPosting(false)
     }
@@ -318,7 +319,7 @@ function ProjectDetailPage() {
           ? { ...x, liked_by_me: prevLiked, like_count: c.like_count }
           : x))
         const data = await res.json().catch(() => ({}))
-        alert(data.detail || '操作失败')
+        alert(data.detail || t('projectDetail.operationFailed'))
         return
       }
       const data = await res.json()
@@ -329,7 +330,7 @@ function ProjectDetailPage() {
       setProjectComments(prev => prev.map(x => x.id === c.id
         ? { ...x, liked_by_me: prevLiked, like_count: c.like_count }
         : x))
-      alert('网络错误')
+      alert(t('projectDetail.networkError'))
     } finally {
       setProjCommentLikePending(prev => {
         const s = new Set(prev)
@@ -359,7 +360,7 @@ function ProjectDetailPage() {
     e.preventDefault()
     const text = projReplyText.trim()
     if (!text) {
-      setProjReplyError('回复内容不能为空')
+      setProjReplyError(t('projectDetail.comment.replyContentRequired'))
       return
     }
     if (!projReplyToId) return
@@ -377,7 +378,7 @@ function ProjectDetailPage() {
       })
       const data = await res.json()
       if (!res.ok) {
-        setProjReplyError(data.detail || '回复失败')
+        setProjReplyError(data.detail || t('projectDetail.comment.replyFailed'))
         return
       }
       // 重新拉取列表，刷新树与回复数
@@ -385,7 +386,7 @@ function ProjectDetailPage() {
       setProjReplyToId(null)
       setProjReplyText('')
     } catch {
-      setProjReplyError('网络错误')
+      setProjReplyError(t('projectDetail.networkError'))
     } finally {
       setProjReplyPosting(false)
     }
@@ -401,12 +402,12 @@ function ProjectDetailPage() {
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        alert(data.detail || '删除失败')
+        alert(data.detail || t('projectDetail.deleteFailed'))
         return
       }
       setProjectComments(prev => prev.filter(c => c.id !== projCommentToDelete))
     } catch {
-      alert('网络错误')
+      alert(t('projectDetail.networkError'))
     } finally {
       setProjCommentToDelete(null)
     }
@@ -442,7 +443,7 @@ function ProjectDetailPage() {
   if (loading) {
     return (
       <div className="project-page">
-        <div className="project-main"><div className="blog-loading">加载中...</div></div>
+        <div className="project-main"><div className="blog-loading">{t('projectDetail.loading')}</div></div>
       </div>
     )
   }
@@ -453,7 +454,7 @@ function ProjectDetailPage() {
         <div className="project-main">
           <div className="blog-error">
             <h2>{error}</h2>
-            <Link to="/projects" className="btn btn-primary">&larr; 返回项目列表</Link>
+            <Link to="/projects" className="btn btn-primary">{t('projectDetail.backToList')}</Link>
           </div>
         </div>
       </div>
@@ -466,7 +467,7 @@ function ProjectDetailPage() {
       <div className="project-main">
         <div className="project-detail">
           <div className="blog-detail-nav">
-            <Link to="/projects" className="blog-back-link">&larr; 返回项目列表</Link>
+            <Link to="/projects" className="blog-back-link">{t('projectDetail.backToList')}</Link>
           </div>
 
           <Reveal>
@@ -487,7 +488,7 @@ function ProjectDetailPage() {
           )}
           <Reveal className="blog-detail-meta">
             <span className="blog-detail-author">
-              作者：{project.author?.nickname || project.author?.username || '匿名'}
+              {t('projectDetail.authorLabel', { name: project.author?.nickname || project.author?.username || t('projectDetail.anonymous') })}
             </span>
             <span className="blog-detail-date">
               {new Date(project.created_at).toLocaleDateString('zh-CN', {
@@ -498,9 +499,9 @@ function ProjectDetailPage() {
 
           {(isAuthor || isAdmin) && (
             <div className="project-actions">
-              <Link to={`/projects/${project.id}/edit`} className="btn-edit">编辑</Link>
+              <Link to={`/projects/${project.id}/edit`} className="btn-edit">{t('projectDetail.edit')}</Link>
               <button className="btn-delete" onClick={() => setShowDeleteModal(true)} disabled={deleting}>
-                {deleting ? '删除中...' : '删除'}
+                {deleting ? t('projectDetail.deleting') : t('projectDetail.delete')}
               </button>
             </div>
           )}
@@ -515,7 +516,7 @@ function ProjectDetailPage() {
                   rel="noopener noreferrer"
                   className="project-link-btn"
                 >
-                  {/github\.com/i.test(l.url) ? `GitHub ↗` : `${l.name} ↗`}
+                  {/github\.com/i.test(l.url) ? t('projectDetail.linkGithub') : `${l.name} ↗`}
                 </a>
               ))}
             </div>
@@ -528,7 +529,7 @@ function ProjectDetailPage() {
                 rel="noopener noreferrer"
                 className="project-link-btn"
               >
-                {/github\.com/i.test(project.link_url) ? 'GitHub ↗' : '项目链接 ↗'}
+                {/github\.com/i.test(project.link_url) ? t('projectDetail.linkGithub') : t('projectDetail.linkDefault')}
               </a>
             </div>
           )}
@@ -541,9 +542,9 @@ function ProjectDetailPage() {
           )}
 
           <section className="project-blogs">
-            <h3 className="project-blogs-title">相关博客</h3>
+            <h3 className="project-blogs-title">{t('projectDetail.relatedBlogs')}</h3>
             {project.blogs && project.blogs.length === 0 ? (
-              <div className="project-blogs-empty">该项目暂无关联博客</div>
+              <div className="project-blogs-empty">{t('projectDetail.noRelatedBlogs')}</div>
             ) : (
               <div className="project-blogs-list">
                 {project.blogs.map(blog => (
@@ -577,7 +578,7 @@ function ProjectDetailPage() {
                 onClick={handleProjectFollow}
                 disabled={projectFollowPending}
               >
-                {project.followed_by_me ? '已关注' : '关注'} {project.follow_count > 0 ? `(${project.follow_count})` : ''}
+                {project.followed_by_me ? t('projectDetail.followed') : t('projectDetail.follow')} {project.follow_count > 0 ? `(${project.follow_count})` : ''}
               </button>
             )}
           </div>
@@ -585,14 +586,14 @@ function ProjectDetailPage() {
           {/* 评论区 */}
           <section className="project-comments comments-section">
             <h3 className="comments-title">
-              评论 {projectComments.length > 0 && <span className="comments-count">({projectComments.length})</span>}
+              {t('projectDetail.comment.title')} {projectComments.length > 0 && <span className="comments-count">({projectComments.length})</span>}
             </h3>
 
             {user ? (
               <form className="comment-form" onSubmit={handleProjPostComment}>
                 <textarea
                   className="comment-input"
-                  placeholder="写下你的评论..."
+                  placeholder={t('projectDetail.comment.placeholder')}
                   value={projCommentText}
                   onChange={e => setProjCommentText(e.target.value)}
                   rows={3}
@@ -601,21 +602,21 @@ function ProjectDetailPage() {
                 {projCommentError && <div className="form-server-error">{projCommentError}</div>}
                 <div className="comment-form-actions">
                   <button type="submit" className="btn btn-primary" disabled={projCommentPosting}>
-                    {projCommentPosting ? '发表中...' : '发表评论'}
+                    {projCommentPosting ? t('projectDetail.comment.posting') : t('projectDetail.comment.post')}
                   </button>
                 </div>
               </form>
             ) : (
               <div className="comment-login-hint">
-                <Link to="/auth">登录</Link> 后参与评论
+                <Link to="/auth">{t('projectDetail.comment.login')}</Link>{t('projectDetail.comment.loginHint')}
               </div>
             )}
 
             <div className="comments-list">
               {projCommentsLoading ? (
-                <div className="comments-empty">加载评论中...</div>
+                <div className="comments-empty">{t('projectDetail.comment.loading')}</div>
               ) : projTopLevel.length === 0 ? (
-                <div className="comments-empty">还没有评论，来说点什么吧</div>
+                <div className="comments-empty">{t('projectDetail.comment.empty')}</div>
               ) : (
                 projTopLevel.map(c => {
                   const descendants = collectDescendants(c)
@@ -670,18 +671,18 @@ function ProjectDetailPage() {
 
       <Modal
         open={showDeleteModal}
-        title="确认删除"
-        message="确认删除这个项目？删除后无法恢复。"
-        confirmText={deleting ? '删除中...' : '确认删除'}
+        title={t('projectDetail.confirmDelete')}
+        message={t('projectDetail.deleteConfirmMessage')}
+        confirmText={deleting ? t('projectDetail.deleting') : t('projectDetail.confirmDelete')}
         danger
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteModal(false)}
       />
       <Modal
         open={!!projCommentToDelete}
-        title="删除评论"
-        message="确认删除这条评论？删除后无法恢复。"
-        confirmText="确认删除"
+        title={t('projectDetail.comment.deleteTitle')}
+        message={t('projectDetail.comment.deleteConfirmMessage')}
+        confirmText={t('projectDetail.confirmDelete')}
         danger
         onConfirm={handleProjDeleteComment}
         onCancel={() => setProjCommentToDelete(null)}

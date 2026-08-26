@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { t } from '../i18n'
 import './Auth.css'
 
 function AuthPage() {
@@ -21,11 +22,11 @@ function AuthPage() {
 
   const validate = () => {
     const errs = {}
-    if (!form.username.trim()) errs.username = '请输入用户名'
-    if (!form.password) errs.password = '请输入密码'
-    if (form.password && form.password.length < 6) errs.password = '密码至少6位'
-    if (mode === 'register' && form.password !== form.confirm) errs.confirm = '两次密码不一致'
-    if (mode === 'register' && !form.inviteCode.trim()) errs.inviteCode = '请输入邀请码'
+    if (!form.username.trim()) errs.username = t('auth.validate.usernameRequired')
+    if (!form.password) errs.password = t('auth.validate.passwordRequired')
+    if (form.password && form.password.length < 6) errs.password = t('auth.validate.passwordMin')
+    if (mode === 'register' && form.password !== form.confirm) errs.confirm = t('auth.validate.confirmMismatch')
+    if (mode === 'register' && !form.inviteCode.trim()) errs.inviteCode = t('auth.validate.inviteRequired')
     return errs
   }
 
@@ -55,7 +56,7 @@ function AuthPage() {
       const data = await res.json()
 
       if (!res.ok) {
-        setServerError(data.detail || '请求失败，请稍后重试')
+        setServerError(data.detail || t('auth.error.requestFailed'))
         return
       }
 
@@ -66,7 +67,7 @@ function AuthPage() {
       // 注册成功后同样直接跳转首页（后端已返回 token）
       setTimeout(() => navigate('/'), 1500)
     } catch (err) {
-      setServerError('网络错误，请检查 API 服务是否启动')
+      setServerError(t('auth.error.networkError'))
     } finally {
       setLoading(false)
     }
@@ -96,13 +97,13 @@ function AuthPage() {
               <span className="brand-title-cn">anticraft</span>
             </h1>
             <p className="auth-brand-desc">
-              以匠心为刃，破常规之笼。
+              {t('auth.brand.desc')}
             </p>
             <blockquote className="auth-brand-quote">
-              &ldquo;在秩序中寻找裂痕，<br />在裂痕中创造可能。&rdquo;
+              &ldquo;{t('auth.brand.quote1')}<br />{t('auth.brand.quote2')}&rdquo;
             </blockquote>
             <Link to="/" className="auth-back-link">
-              &larr; 返回首页
+              &larr; {t('auth.brand.backHome')}
             </Link>
           </div>
         </div>
@@ -116,28 +117,28 @@ function AuthPage() {
                   onClick={() => switchMode()}
                   disabled={mode === 'login'}
                 >
-                  登录
+                  {t('auth.tab.login')}
                 </button>
                 <button
                   className={`auth-tab ${mode === 'register' ? 'active' : ''}`}
                   onClick={() => switchMode()}
                   disabled={mode === 'register'}
                 >
-                  注册
+                  {t('auth.tab.register')}
                 </button>
               </div>
               <p className="auth-form-hint">
                 {mode === 'login'
-                  ? '欢迎回来，请登录你的账户'
-                  : '创建一个新账户，开始探索'}
+                  ? t('auth.form.hintLogin')
+                  : t('auth.form.hintRegister')}
               </p>
             </div>
 
             {submitted ? (
               <div className="auth-success">
                 <div className="success-icon">&#10003;</div>
-                <h3>{mode === 'login' ? '登录成功' : '注册成功'}</h3>
-                <p>正在跳转到首页...</p>
+                <h3>{mode === 'login' ? t('auth.success.login') : t('auth.success.register')}</h3>
+                <p>{t('auth.success.redirecting')}</p>
               </div>
             ) : (
               <form className="auth-form" onSubmit={handleSubmit} noValidate>
@@ -146,14 +147,14 @@ function AuthPage() {
                 )}
 
                 <div className="form-group">
-                  <label className="form-label">用户名</label>
+                  <label className="form-label">{t('auth.form.usernameLabel')}</label>
                   <div className="form-input-wrap">
                     <span className="form-input-icon">&#128100;</span>
                     <input
                       type="text"
                       name="username"
                       className={`form-input ${errors.username ? 'error' : ''}`}
-                      placeholder="输入用户名"
+                      placeholder={t('auth.form.usernamePlaceholder')}
                       value={form.username}
                       onChange={handleChange}
                       autoFocus
@@ -163,14 +164,14 @@ function AuthPage() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">密码</label>
+                  <label className="form-label">{t('auth.form.passwordLabel')}</label>
                   <div className="form-input-wrap">
                     <span className="form-input-icon">&#128274;</span>
                     <input
                       type={showPwd ? 'text' : 'password'}
                       name="password"
                       className={`form-input ${errors.password ? 'error' : ''}`}
-                      placeholder="输入密码"
+                      placeholder={t('auth.form.passwordPlaceholder')}
                       value={form.password}
                       onChange={handleChange}
                     />
@@ -179,7 +180,7 @@ function AuthPage() {
                       className="pwd-toggle"
                       onClick={() => setShowPwd(!showPwd)}
                       tabIndex={-1}
-                      aria-label={showPwd ? '隐藏密码' : '显示密码'}
+                      aria-label={showPwd ? t('auth.form.hidePwd') : t('auth.form.showPwd')}
                     >
                       {showPwd ? (
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -201,20 +202,20 @@ function AuthPage() {
 
                 {mode === 'login' && (
                   <div className="form-group form-forgot">
-                    <Link to="/reset-password" className="forgot-password-link">忘记密码？</Link>
+                    <Link to="/reset-password" className="forgot-password-link">{t('auth.form.forgotPassword')}</Link>
                   </div>
                 )}
 
                 {mode === 'register' && (
                   <div className="form-group">
-                    <label className="form-label">确认密码</label>
+                    <label className="form-label">{t('auth.form.confirmLabel')}</label>
                     <div className="form-input-wrap">
                       <span className="form-input-icon">&#128274;</span>
                       <input
                         type={showConfirm ? 'text' : 'password'}
                         name="confirm"
                         className={`form-input ${errors.confirm ? 'error' : ''}`}
-                        placeholder="再次输入密码"
+                        placeholder={t('auth.form.confirmPlaceholder')}
                         value={form.confirm}
                         onChange={handleChange}
                       />
@@ -223,7 +224,7 @@ function AuthPage() {
                         className="pwd-toggle"
                         onClick={() => setShowConfirm(!showConfirm)}
                         tabIndex={-1}
-                        aria-label={showConfirm ? '隐藏密码' : '显示密码'}
+                        aria-label={showConfirm ? t('auth.form.hidePwd') : t('auth.form.showPwd')}
                       >
                         {showConfirm ? (
                           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -246,14 +247,14 @@ function AuthPage() {
 
                 {mode === 'register' && (
                   <div className="form-group">
-                    <label className="form-label">邀请码</label>
+                    <label className="form-label">{t('auth.form.inviteLabel')}</label>
                     <div className="form-input-wrap">
                       <span className="form-input-icon">&#127873;</span>
                       <input
                         type="text"
                         name="inviteCode"
                         className={`form-input ${errors.inviteCode ? 'error' : ''}`}
-                        placeholder="输入管理员发放的邀请码"
+                        placeholder={t('auth.form.invitePlaceholder')}
                         value={form.inviteCode}
                         onChange={handleChange}
                       />
@@ -263,18 +264,18 @@ function AuthPage() {
                 )}
 
                 <button type="submit" className="btn btn-primary auth-submit" disabled={loading}>
-                  {loading ? '处理中...' : (mode === 'login' ? '登录' : '注册')}
+                  {loading ? t('auth.form.processing') : (mode === 'login' ? t('auth.tab.login') : t('auth.tab.register'))}
                   {!loading && <span className="btn-arrow">&rarr;</span>}
                 </button>
 
                 <p className="auth-switch">
                   {mode === 'login' ? (
-                    <>还没有账户？
-                      <button type="button" className="auth-switch-btn" onClick={switchMode}>立即注册</button>
+                    <>{t('auth.switch.noAccount')}
+                      <button type="button" className="auth-switch-btn" onClick={switchMode}>{t('auth.switch.toRegister')}</button>
                     </>
                   ) : (
-                    <>已有账户？
-                      <button type="button" className="auth-switch-btn" onClick={switchMode}>立即登录</button>
+                    <>{t('auth.switch.hasAccount')}
+                      <button type="button" className="auth-switch-btn" onClick={switchMode}>{t('auth.switch.toLogin')}</button>
                     </>
                   )}
                 </p>

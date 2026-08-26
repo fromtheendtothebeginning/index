@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import CategoryDropdown from '../components/CategoryDropdown'
 import { UiIcon, ContactIcon } from '../components/Icons'
+import { t } from '../i18n'
 import './ToolParsePage.css'
 
 function fmtDur(sec) {
@@ -76,14 +77,14 @@ function ToolParsePage() {
   }
 
   const parse = async () => {
-    if (!token) { setErr('请先登录后使用工具'); return }
+    if (!token) { setErr(t('videoParse.loginRequired')); return }
     const u = url.trim()
-    if (!u) { setErr('请输入视频链接'); return }
+    if (!u) { setErr(t('videoParse.inputUrlRequired')); return }
     setErr(''); setLoading(true); setInfo(null); setChosen(''); setCoverUrl('')
     try {
       const r = await fetch(`/api/tools/video/info?url=${encodeURIComponent(u)}`, { headers: authHeaders })
       const d = await r.json()
-      if (!r.ok) throw new Error(d.detail || '解析失败')
+      if (!r.ok) throw new Error(d.detail || t('videoParse.parseFailed'))
       const formats = d.info.formats || []
       setInfo(d.info)
       // 默认选中倒数第二清晰度（次高画质），没有则选最后一项
@@ -95,15 +96,15 @@ function ToolParsePage() {
   }
 
   const download = async (mode) => {
-    if (!token) { setErr('请先登录后使用工具'); return }
+    if (!token) { setErr(t('videoParse.loginRequired')); return }
     setErr(''); setDownloading(true); setProgress(0); setSaving(false)
 
     // 下载封面：直接通过代理取图保存（不走后台任务）
     if (mode === 'cover') {
-      if (!info?.thumbnail) { setErr('无封面可下载'); setDownloading(false); return }
+      if (!info?.thumbnail) { setErr(t('videoParse.noCover')); setDownloading(false); return }
       try {
         const r = await fetch(`/api/tools/thumb?url=${encodeURIComponent(info.thumbnail)}`, { headers: authHeaders })
-        if (!r.ok) throw new Error('获取封面失败')
+        if (!r.ok) throw new Error(t('videoParse.fetchCoverFailed'))
         const blob = await r.blob()
         const a = document.createElement('a')
         const objUrl = URL.createObjectURL(blob)
@@ -127,7 +128,7 @@ function ToolParsePage() {
       })
       if (!cr.ok) {
         const cd = await cr.json().catch(() => ({}))
-        throw new Error(cd.detail || '创建任务失败')
+        throw new Error(cd.detail || t('videoParse.createTaskFailed'))
       }
       const { task_id } = await cr.json()
 
@@ -143,7 +144,7 @@ function ToolParsePage() {
             // 3. 下载完成，拉取文件保存（进度条满，按钮显示保存中）
             setSaving(true)
             const fr = await fetch(`/api/tools/video/download-file?task_id=${task_id}`, { headers: authHeaders })
-            if (!fr.ok) throw new Error('获取文件失败')
+            if (!fr.ok) throw new Error(t('videoParse.fetchFileFailed'))
             const blob = await fr.blob()
             const isZip = fr.headers.get('Content-Type')?.includes('zip')
             const a = document.createElement('a')
@@ -161,7 +162,7 @@ function ToolParsePage() {
             setDownloading(false)
           } else if (pd.status === 'failed') {
             clearInterval(timer)
-            throw new Error(pd.error || '下载失败')
+            throw new Error(pd.error || t('videoParse.downloadFailed'))
           }
         } catch (e) {
           clearInterval(timer)
@@ -178,27 +179,27 @@ function ToolParsePage() {
       <Navbar activePage="tools" />
       <div className="tool-main">
         <header className="tool-header">
-          <Link to="/tools" className="tool-back">← 返回工具主页</Link>
-          <h1 className="tool-title">视频解析</h1>
-          <p className="tool-subtitle">解析 B站视频信息与清晰度，并可下载为 mp4（需登录）</p>
+          <Link to="/tools" className="tool-back">← {t('videoParse.backToTools')}</Link>
+          <h1 className="tool-title">{t('videoParse.title')}</h1>
+          <p className="tool-subtitle">{t('videoParse.subtitle')}</p>
         </header>
 
         {!token && (
           <div className="tool-login-hint">
-            工具需要登录后使用。<Link to="/login">去登录</Link>
+            {t('videoParse.loginHint')}<Link to="/login">{t('videoParse.goLogin')}</Link>
           </div>
         )}
 
         <div className="tool-input-row">
           <input
             className="tool-input"
-            placeholder="粘贴视频链接，如 https://www.bilibili.com/video/BVxxxx"
+            placeholder={t('videoParse.inputPlaceholder')}
             value={url}
             onChange={e => setUrl(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') parse() }}
           />
           <button className="btn btn-primary tool-btn" onClick={parse} disabled={loading || !token}>
-            {loading ? '解析中...' : '解析'}
+            {loading ? t('videoParse.parsing') : t('videoParse.parse')}
           </button>
         </div>
 
@@ -217,16 +218,16 @@ function ToolParsePage() {
               <h2 className="tool-card-title">{info.title}</h2>
               <div className="tool-meta-grid">
                 <div className="tool-meta-item">
-                  <span className="tool-meta-label">UP 主</span>
+                  <span className="tool-meta-label">{t('videoParse.uploader')}</span>
                   <span>{info.uploader || '-'}</span>
                 </div>
                 <div className="tool-meta-item">
-                  <span className="tool-meta-label">时长</span>
+                  <span className="tool-meta-label">{t('videoParse.duration')}</span>
                   <span>{fmtDur(info.duration)}</span>
                 </div>
               </div>
               <div className="tool-formats">
-                <div className="tool-formats-label">可用清晰度</div>
+                <div className="tool-formats-label">{t('videoParse.formats')}</div>
                 <div className="tool-format-list">
                   {(info.formats || []).map(f => (
                     <span key={f.height} className="tool-format-chip">
@@ -244,20 +245,20 @@ function ToolParsePage() {
                     value: String(f.height),
                     label: `${f.height}p${f.ext ? ` (${f.ext})` : ''}${f.size ? ` · ${fmtSize(f.size)}` : ''}`,
                   }))}
-                  placeholder="选择清晰度"
+                  placeholder={t('videoParse.selectFormat')}
                   hideClear
                 />
                 <CategoryDropdown
                   value={dlMode}
                   onChange={setDlMode}
                   options={[
-                    { value: 'merged', label: '下载视频（带音频）' },
-                    { value: 'video_only', label: '下载视频（无音频）' },
-                    { value: 'audio_only', label: '下载音频' },
-                    { value: 'separate', label: '视频音频分开' },
-                    { value: 'cover', label: '下载封面' },
+                    { value: 'merged', label: t('videoParse.dlMerged') },
+                    { value: 'video_only', label: t('videoParse.dlVideoOnly') },
+                    { value: 'audio_only', label: t('videoParse.dlAudioOnly') },
+                    { value: 'separate', label: t('videoParse.dlSeparate') },
+                    { value: 'cover', label: t('videoParse.dlCover') },
                   ]}
-                  placeholder="选择下载方式"
+                  placeholder={t('videoParse.selectDlMode')}
                   hideClear
                 />
                 <button
@@ -265,7 +266,7 @@ function ToolParsePage() {
                   onClick={() => download(dlMode)}
                   disabled={downloading || !token || (dlMode === 'cover' && !info?.thumbnail) || (dlMode !== 'cover' && dlMode !== 'audio_only' && !chosen)}
                 >
-                  {downloading ? (saving ? '保存中...' : `${progress}%`) : '下载'}
+                  {downloading ? (saving ? t('videoParse.saving') : `${progress}%`) : t('videoParse.download')}
                 </button>
               </div>
               {downloading && (
@@ -274,7 +275,7 @@ function ToolParsePage() {
                     <div className="tool-dl-fill" style={{ width: `${progress}%` }} />
                   </div>
                   <span className="tool-dl-text">
-                    {saving ? '保存中...' : (progress >= 99 ? '正在合并视频，请稍候...' : `下载中 ${progress}%`)}
+                    {saving ? t('videoParse.saving') : (progress >= 99 ? t('videoParse.merging') : t('videoParse.downloading', { progress }))}
                   </span>
                 </div>
               )}
@@ -284,10 +285,10 @@ function ToolParsePage() {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                前往原视频页
+                {t('videoParse.originLink')}
                 <UiIcon name="link" size={14} />
               </a>
-              <p className="tool-disclaimer">仅供个人学习与研究使用，请遵守相关平台条款与版权法规。</p>
+              <p className="tool-disclaimer">{t('videoParse.disclaimer')}</p>
             </div>
           </div>
         )}

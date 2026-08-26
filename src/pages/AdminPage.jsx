@@ -5,6 +5,7 @@ import Modal from '../components/Modal'
 import CategoryDropdown from '../components/CategoryDropdown'
 import { CONTACT_ICON_OPTIONS, ContactIcon } from '../components/Icons'
 import { BLOG_CATEGORIES as CATEGORIES } from '../constants'
+import { t } from '../i18n'
 import './AdminPage.css'
 
 function AdminPage() {
@@ -68,7 +69,7 @@ function AdminPage() {
       if (res.status === 403) { navigate('/profile'); return }
       const data = await res.json()
       setUsers(data.users || [])
-    } catch { setError('网络错误') }
+    } catch { setError(t('admin.error.network')) }
     finally { setLoading(false) }
   }, [navigate])
 
@@ -79,7 +80,7 @@ function AdminPage() {
       const res = await fetch('/api/admin/comments', { headers: authHeaders() })
       const data = await res.json()
       setComments(data.comments || [])
-    } catch { setError('网络错误') }
+    } catch { setError(t('admin.error.network')) }
     finally { setLoading(false) }
   }, [])
 
@@ -90,7 +91,7 @@ function AdminPage() {
       const res = await fetch('/api/admin/blogs', { headers: authHeaders() })
       const data = await res.json()
       setBlogs(data.blogs || [])
-    } catch { setError('网络错误') }
+    } catch { setError(t('admin.error.network')) }
     finally { setLoading(false) }
   }, [])
 
@@ -101,7 +102,7 @@ function AdminPage() {
       const res = await fetch('/api/admin/invite-codes', { headers: authHeaders() })
       const data = await res.json()
       setCodes(data.codes || [])
-    } catch { setError('网络错误') }
+    } catch { setError(t('admin.error.network')) }
     finally { setLoading(false) }
   }, [])
 
@@ -112,7 +113,7 @@ function AdminPage() {
       const res = await fetch('/api/admin/friend-links', { headers: authHeaders() })
       const data = await res.json()
       setLinks(data.links || [])
-    } catch { setError('网络错误') }
+    } catch { setError(t('admin.error.network')) }
     finally { setLoading(false) }
   }, [])
 
@@ -135,7 +136,7 @@ function AdminPage() {
           description: it.description || '',
         })),
       })
-    } catch { setError('网络错误') }
+    } catch { setError(t('admin.error.network')) }
     finally { setLoading(false) }
   }, [])
 
@@ -158,9 +159,9 @@ function AdminPage() {
         body: JSON.stringify({ role }),
       })
       const data = await res.json()
-      if (!res.ok) { alert(data.detail || '操作失败'); return }
+      if (!res.ok) { alert(data.detail || t('admin.error.operationFailed')); return }
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, role } : u))
-    } catch { alert('网络错误') }
+    } catch { alert(t('admin.error.network')) }
   }
 
   // 编辑用户
@@ -186,10 +187,10 @@ function AdminPage() {
         }),
       })
       const data = await res.json()
-      if (!res.ok) { alert(data.detail || '保存失败'); return }
+      if (!res.ok) { alert(data.detail || t('admin.error.saveFailed')); return }
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...data } : u))
       handleCancelEditUser()
-    } catch { alert('网络错误') }
+    } catch { alert(t('admin.error.network')) }
   }
 
   // 删除用户
@@ -200,9 +201,9 @@ function AdminPage() {
         method: 'DELETE',
         headers: authHeaders(),
       })
-      if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.detail || '删除失败'); return }
+      if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.detail || t('admin.error.deleteFailed')); return }
       setUsers(prev => prev.filter(u => u.id !== userId))
-    } catch { alert('网络错误') }
+    } catch { alert(t('admin.error.network')) }
     finally { setModal(null) }
   }
 
@@ -214,9 +215,9 @@ function AdminPage() {
         method: 'DELETE',
         headers: authHeaders(),
       })
-      if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.detail || '删除失败'); return }
+      if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.detail || t('admin.error.deleteFailed')); return }
       setComments(prev => prev.filter(c => c.id !== commentId))
-    } catch { alert('网络错误') }
+    } catch { alert(t('admin.error.network')) }
     finally { setModal(null) }
   }
 
@@ -228,9 +229,9 @@ function AdminPage() {
         method: 'DELETE',
         headers: authHeaders(),
       })
-      if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.detail || '操作失败'); return }
+      if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.detail || t('admin.error.operationFailed')); return }
       setBlogs(prev => prev.filter(b => b.id !== blogId))
-    } catch { alert('网络错误') }
+    } catch { alert(t('admin.error.network')) }
     finally { setModal(null) }
   }
 
@@ -243,9 +244,9 @@ function AdminPage() {
         body: JSON.stringify({ category: category || null }),
       })
       const data = await res.json()
-      if (!res.ok) { alert(data.detail || '操作失败'); return }
+      if (!res.ok) { alert(data.detail || t('admin.error.operationFailed')); return }
       setBlogs(prev => prev.map(b => b.id === blogId ? { ...b, category: data.category } : b))
-    } catch { alert('网络错误') }
+    } catch { alert(t('admin.error.network')) }
   }
 
   // 生成邀请码
@@ -256,10 +257,10 @@ function AdminPage() {
         headers: authHeaders(),
       })
       const data = await res.json()
-      if (!res.ok) { alert(data.detail || '生成失败'); return }
+      if (!res.ok) { alert(data.detail || t('admin.error.generateFailed')); return }
       setNewCode(data.code)
       loadCodes()
-    } catch { alert('网络错误') }
+    } catch { alert(t('admin.error.network')) }
   }
 
   // 删除邀请码
@@ -270,9 +271,9 @@ function AdminPage() {
         method: 'DELETE',
         headers: authHeaders(),
       })
-      if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.detail || '删除失败'); return }
+      if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.detail || t('admin.error.deleteFailed')); return }
       setCodes(prev => prev.filter(c => c.id !== codeId))
-    } catch { alert('网络错误') }
+    } catch { alert(t('admin.error.network')) }
     finally { setModal(null) }
   }
 
@@ -285,14 +286,14 @@ function AdminPage() {
         body: JSON.stringify({ is_reusable: !currentReusable }),
       })
       const data = await res.json()
-      if (!res.ok) { alert(data.detail || '操作失败'); return }
+      if (!res.ok) { alert(data.detail || t('admin.error.operationFailed')); return }
       setCodes(prev => prev.map(c => c.id === codeId ? { ...c, is_reusable: !currentReusable } : c))
-    } catch { alert('网络错误') }
+    } catch { alert(t('admin.error.network')) }
   }
 
   // 保存 / 更新友情链接
   const handleSaveLink = async () => {
-    if (!linkForm.name.trim() || !linkForm.url.trim()) { alert('请填写名称和链接'); return }
+    if (!linkForm.name.trim() || !linkForm.url.trim()) { alert(t('admin.error.fillNameAndUrl')); return }
     try {
       const url = linkEditingId ? `/api/admin/friend-links/${linkEditingId}` : '/api/admin/friend-links'
       const method = linkEditingId ? 'PUT' : 'POST'
@@ -306,11 +307,11 @@ function AdminPage() {
         }),
       })
       const data = await res.json()
-      if (!res.ok) { alert(data.detail || '保存失败'); return }
+      if (!res.ok) { alert(data.detail || t('admin.error.saveFailed')); return }
       setLinkForm({ name: '', url: '', description: '' })
       setLinkEditingId(null)
       loadLinks()
-    } catch { alert('网络错误') }
+    } catch { alert(t('admin.error.network')) }
   }
 
   const handleStartEditLink = (link) => {
@@ -325,17 +326,17 @@ function AdminPage() {
         method: 'DELETE',
         headers: authHeaders(),
       })
-      if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.detail || '删除失败'); return }
+      if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.detail || t('admin.error.deleteFailed')); return }
       setLinks(prev => prev.filter(l => l.id !== linkId))
-    } catch { alert('网络错误') }
+    } catch { alert(t('admin.error.network')) }
     finally { setModal(null) }
   }
 
   const copyCode = (code) => {
     navigator.clipboard?.writeText(code).then(() => {
-      alert(`已复制：${code}`)
+      alert(t('admin.links.copied', { code }))
     }).catch(() => {
-      alert(`邀请码：${code}`)
+      alert(t('admin.links.inviteCode', { code }))
     })
   }
 
@@ -381,10 +382,10 @@ function AdminPage() {
         body: JSON.stringify({ debug_mode: on }),
       })
       const d = await res.json()
-      if (!res.ok) { alert(d.detail || '操作失败'); return }
+      if (!res.ok) { alert(d.detail || t('admin.error.operationFailed')); return }
       setLcDebug(d)
       setLcDebugInput({ easy: d.inc.easy, medium: d.inc.medium, hard: d.inc.hard })
-    } catch { alert('网络错误') }
+    } catch { alert(t('admin.error.network')) }
     finally { setLcDebugBusy(false) }
   }
 
@@ -397,9 +398,9 @@ function AdminPage() {
         body: JSON.stringify({ easy: Number(lcDebugInput.easy) || 0, medium: Number(lcDebugInput.medium) || 0, hard: Number(lcDebugInput.hard) || 0 }),
       })
       const d = await res.json()
-      if (!res.ok) { alert(d.detail || '操作失败'); return }
+      if (!res.ok) { alert(d.detail || t('admin.error.operationFailed')); return }
       setLcDebug(d)
-    } catch { alert('网络错误') }
+    } catch { alert(t('admin.error.network')) }
     finally { setLcDebugBusy(false) }
   }
 
@@ -425,10 +426,10 @@ function AdminPage() {
         }),
       })
       const data = await res.json()
-      if (!res.ok) { alert(data.detail || '保存失败'); return }
+      if (!res.ok) { alert(data.detail || t('admin.error.saveFailed')); return }
       setSettingsSaved(true)
       setTimeout(() => setSettingsSaved(false), 2500)
-    } catch { alert('网络错误') }
+    } catch { alert(t('admin.error.network')) }
     finally { setSettingsSaving(false) }
   }
 
@@ -443,37 +444,37 @@ function AdminPage() {
       <Navbar activePage="" />
       <div className="admin-container">
         <div className="admin-header">
-          <Link to="/profile" className="admin-back">&larr; 返回个人资料</Link>
-          <h1 className="admin-title">管理后台</h1>
+          <Link to="/profile" className="admin-back">&larr; {t('admin.backProfile')}</Link>
+          <h1 className="admin-title">{t('admin.title')}</h1>
         </div>
 
         <div className="admin-tabs">
-          <button className={`admin-tab ${tab === 'users' ? 'active' : ''}`} onClick={() => setTab('users')}>用户管理</button>
-          <button className={`admin-tab ${tab === 'comments' ? 'active' : ''}`} onClick={() => setTab('comments')}>评论管理</button>
-          <button className={`admin-tab ${tab === 'blogs' ? 'active' : ''}`} onClick={() => setTab('blogs')}>博客管理</button>
-          <button className={`admin-tab ${tab === 'codes' ? 'active' : ''}`} onClick={() => setTab('codes')}>邀请码</button>
-          <button className={`admin-tab ${tab === 'links' ? 'active' : ''}`} onClick={() => setTab('links')}>友情链接</button>
-          <button className={`admin-tab ${tab === 'settings' ? 'active' : ''}`} onClick={() => setTab('settings')}>站点设置</button>
-          <button className={`admin-tab ${tab === 'leetcode' ? 'active' : ''}`} onClick={() => setTab('leetcode')}>LeetCode 调试</button>
+          <button className={`admin-tab ${tab === 'users' ? 'active' : ''}`} onClick={() => setTab('users')}>{t('admin.tabs.users')}</button>
+          <button className={`admin-tab ${tab === 'comments' ? 'active' : ''}`} onClick={() => setTab('comments')}>{t('admin.tabs.comments')}</button>
+          <button className={`admin-tab ${tab === 'blogs' ? 'active' : ''}`} onClick={() => setTab('blogs')}>{t('admin.tabs.blogs')}</button>
+          <button className={`admin-tab ${tab === 'codes' ? 'active' : ''}`} onClick={() => setTab('codes')}>{t('admin.tabs.codes')}</button>
+          <button className={`admin-tab ${tab === 'links' ? 'active' : ''}`} onClick={() => setTab('links')}>{t('admin.tabs.links')}</button>
+          <button className={`admin-tab ${tab === 'settings' ? 'active' : ''}`} onClick={() => setTab('settings')}>{t('admin.tabs.settings')}</button>
+          <button className={`admin-tab ${tab === 'leetcode' ? 'active' : ''}`} onClick={() => setTab('leetcode')}>{t('admin.tabs.leetcode')}</button>
         </div>
 
         {error && <div className="admin-error">{error}</div>}
-        {loading && <div className="admin-loading">加载中...</div>}
+        {loading && <div className="admin-loading">{t('admin.loading')}</div>}
 
         {/* 用户管理 */}
         {tab === 'users' && !loading && (
           <div className="admin-section">
             <div className="admin-section-head">
-              <h2>所有用户（{users.length}）</h2>
+              <h2>{t('admin.users.all', { count: users.length })}</h2>
             </div>
             <div className="admin-table">
               <div className="admin-row admin-row-head">
-                <span>ID</span>
-                <span>用户名</span>
-                <span>昵称</span>
-                <span>角色</span>
-                <span>注册时间</span>
-                <span>操作</span>
+                <span>{t('admin.users.colId')}</span>
+                <span>{t('admin.users.colUsername')}</span>
+                <span>{t('admin.users.colNickname')}</span>
+                <span>{t('admin.users.colRole')}</span>
+                <span>{t('admin.users.colRegistered')}</span>
+                <span>{t('admin.users.colActions')}</span>
               </div>
               {users.map(u => (
                 <div key={u.id} className="admin-row">
@@ -481,7 +482,7 @@ function AdminPage() {
                   <span className="admin-cell-user">{u.username}</span>
                   <span>{u.nickname || '-'}</span>
                   <span>
-                    <span className={`role-badge ${u.role}`}>{u.role === 'admin' ? '管理员' : '普通用户'}</span>
+                    <span className={`role-badge ${u.role}`}>{u.role === 'admin' ? t('admin.users.admin') : t('admin.users.user')}</span>
                   </span>
                   <span className="admin-cell-time">{fmtTime(u.created_at)}</span>
                   <span className="admin-user-actions">
@@ -490,23 +491,23 @@ function AdminPage() {
                         className="btn-role-toggle"
                         onClick={() => handleSetRole(u.id, u.role === 'admin' ? 'user' : 'admin')}
                       >
-                        {u.role === 'admin' ? '降为普通用户' : '升为管理员'}
+                        {u.role === 'admin' ? t('admin.users.demote') : t('admin.users.promote')}
                       </button>
                     )}
-                    {u.id === user.id && <span className="admin-self">（当前账户）</span>}
-                    <button className="btn-role-toggle" onClick={() => handleStartEditUser(u)}>编辑</button>
+                    {u.id === user.id && <span className="admin-self">（{t('admin.users.currentAccount')}）</span>}
+                    <button className="btn-role-toggle" onClick={() => handleStartEditUser(u)}>{t('admin.edit')}</button>
                     {u.id !== user.id && (
                       <button
                         className="btn btn-danger btn-sm"
                         onClick={() => setModal({
                           id: u.id,
-                          title: '删除用户',
-                          message: `确认删除用户「${u.nickname || u.username}」？该用户的博客/评论/点赞/项目将一并删除，且无法恢复。`,
-                          confirmText: '确认删除',
+                          title: t('admin.users.deleteTitle'),
+                          message: t('admin.users.deleteConfirm', { name: u.nickname || u.username }),
+                          confirmText: t('admin.users.deleteConfirmText'),
                           onConfirm: () => handleDeleteUser(u.id),
                         })}
                       >
-                        删除
+                        {t('admin.delete')}
                       </button>
                     )}
                     </span>
@@ -514,14 +515,14 @@ function AdminPage() {
                   <div className="admin-user-edit">
                     <input
                       className="admin-link-input"
-                      placeholder="昵称"
+                      placeholder={t('admin.users.editNickname')}
                       value={editForm.nickname}
                       onChange={e => setEditForm({ ...editForm, nickname: e.target.value })}
                       maxLength={50}
                     />
                     <input
                       className="admin-link-input"
-                      placeholder="头像 URL（可空）"
+                      placeholder={t('admin.users.editAvatar')}
                       value={editForm.avatar_url}
                       onChange={e => setEditForm({ ...editForm, avatar_url: e.target.value })}
                       maxLength={500}
@@ -529,12 +530,12 @@ function AdminPage() {
                     <input
                       className="admin-link-input"
                       type="password"
-                      placeholder="新密码（留空不改）"
+                      placeholder={t('admin.users.editPassword')}
                       value={editForm.password}
                       onChange={e => setEditForm({ ...editForm, password: e.target.value })}
                     />
-                    <button className="btn btn-primary btn-sm" onClick={() => handleSaveUser(u.id)}>保存</button>
-                    <button className="btn btn-secondary btn-sm" onClick={handleCancelEditUser}>取消</button>
+                    <button className="btn btn-primary btn-sm" onClick={() => handleSaveUser(u.id)}>{t('admin.save')}</button>
+                    <button className="btn btn-secondary btn-sm" onClick={handleCancelEditUser}>{t('admin.cancel')}</button>
                   </div>
                 )}
               </div>
@@ -547,35 +548,35 @@ function AdminPage() {
         {tab === 'comments' && !loading && (
           <div className="admin-section">
             <div className="admin-section-head">
-              <h2>所有评论（{comments.length}）</h2>
+              <h2>{t('admin.comments.all', { count: comments.length })}</h2>
             </div>
             {comments.length === 0 ? (
-              <div className="admin-empty">暂无评论</div>
+              <div className="admin-empty">{t('admin.comments.empty')}</div>
             ) : (
               <div className="admin-comment-list">
                 {comments.map(c => (
                   <div key={c.id} className="admin-comment-item">
                     <div className="admin-comment-main">
                       <div className="admin-comment-meta">
-                        <span className="admin-comment-author">{c.user?.nickname || c.user?.username || '匿名'}</span>
+                        <span className="admin-comment-author">{c.user?.nickname || c.user?.username || t('admin.anonymous')}</span>
                         <span className="admin-comment-blog">
                           <Link to={`/blogs/${c.blog_id}`} target="_blank" rel="noopener noreferrer">{c.blog_title || `#${c.blog_id}`}</Link>
                         </span>
                         <span className="admin-cell-time">{fmtTime(c.created_at)}</span>
                       </div>
                       {c.parent_id && (
-                        <div className="admin-comment-parent">回复 @{c.parent_username || '匿名'}：{c.parent_content}</div>
+                        <div className="admin-comment-parent">{t('admin.comments.replyTo', { name: c.parent_username || t('admin.anonymous') })}：{c.parent_content}</div>
                       )}
                       <div className="admin-comment-content">{c.content}</div>
                     </div>
                     <button
                       className="admin-comment-delete-btn"
-                      title="删除评论"
+                      title={t('admin.comments.deleteTitle')}
                       onClick={() => setModal({
                         id: c.id,
-                        title: '删除评论',
-                        message: '确认删除这条评论？删除后无法恢复。',
-                        confirmText: '确认删除',
+                        title: t('admin.comments.deleteModalTitle'),
+                        message: t('admin.comments.deleteConfirm'),
+                        confirmText: t('admin.comments.deleteConfirmText'),
                         onConfirm: () => handleDeleteComment(c.id),
                       })}
                     >
@@ -592,19 +593,19 @@ function AdminPage() {
         {tab === 'blogs' && !loading && (
           <div className="admin-section">
             <div className="admin-section-head">
-              <h2>所有博客（{blogs.length}）</h2>
+              <h2>{t('admin.blogs.all', { count: blogs.length })}</h2>
             </div>
             {blogs.length === 0 ? (
-              <div className="admin-empty">暂无博客</div>
+              <div className="admin-empty">{t('admin.blogs.empty')}</div>
             ) : (
               <div className="admin-table">
                 <div className="admin-row admin-row-head">
-                  <span>ID</span>
-                  <span>标题</span>
-                  <span>作者</span>
-                  <span>分类</span>
-                  <span>发布时间</span>
-                  <span>操作</span>
+                  <span>{t('admin.blogs.colId')}</span>
+                  <span>{t('admin.blogs.colTitle')}</span>
+                  <span>{t('admin.blogs.colAuthor')}</span>
+                  <span>{t('admin.blogs.colCategory')}</span>
+                  <span>{t('admin.blogs.colPublished')}</span>
+                  <span>{t('admin.blogs.colActions')}</span>
                 </div>
                 {blogs.map(b => (
                   <div key={b.id} className="admin-row">
@@ -618,7 +619,7 @@ function AdminPage() {
                         value={b.category || ''}
                         onChange={(v) => handleSetCategory(b.id, v)}
                         options={CATEGORIES.map(c => ({ value: c, label: c }))}
-                        placeholder="未分类"
+                        placeholder={t('admin.blogs.uncategorized')}
                         size="sm"
                       />
                     </span>
@@ -628,13 +629,13 @@ function AdminPage() {
                         className="btn btn-danger btn-sm"
                         onClick={() => setModal({
                           id: b.id,
-                          title: '撤回博客',
-                          message: `确认撤回《${b.title}》？撤回后无法恢复。`,
-                          confirmText: '确认撤回',
+                          title: t('admin.blogs.recallTitle'),
+                          message: t('admin.blogs.recallConfirm', { title: b.title }),
+                          confirmText: t('admin.blogs.recallConfirmText'),
                           onConfirm: () => handleDeleteBlog(b.id),
                         })}
                       >
-                        撤回
+                        {t('admin.blogs.recall')}
                       </button>
                     </span>
                   </div>
@@ -648,29 +649,29 @@ function AdminPage() {
         {tab === 'links' && !loading && (
           <div className="admin-section">
             <div className="admin-section-head">
-              <h2>友情链接（{links.length}）</h2>
+              <h2>{t('admin.links.all', { count: links.length })}</h2>
             </div>
             <div className="admin-link-form">
               <input
                 className="admin-link-input"
-                placeholder="名称"
+                placeholder={t('admin.links.name')}
                 value={linkForm.name}
                 onChange={e => setLinkForm({ ...linkForm, name: e.target.value })}
               />
               <input
                 className="admin-link-input"
-                placeholder="URL（https://...）"
+                placeholder={t('admin.links.url')}
                 value={linkForm.url}
                 onChange={e => setLinkForm({ ...linkForm, url: e.target.value })}
               />
               <input
                 className="admin-link-input"
-                placeholder="简介（可选）"
+                placeholder={t('admin.links.description')}
                 value={linkForm.description}
                 onChange={e => setLinkForm({ ...linkForm, description: e.target.value })}
               />
               <button className="btn btn-primary btn-sm" onClick={handleSaveLink}>
-                {linkEditingId ? '保存' : '添加'}
+                {linkEditingId ? t('admin.save') : t('admin.links.add')}
               </button>
               {linkEditingId && (
                 <button
@@ -680,19 +681,19 @@ function AdminPage() {
                     setLinkEditingId(null)
                   }}
                 >
-                  取消
+                  {t('admin.cancel')}
                 </button>
               )}
             </div>
             {links.length === 0 ? (
-              <div className="admin-empty">暂无友情链接</div>
+              <div className="admin-empty">{t('admin.links.empty')}</div>
             ) : (
               <div className="admin-table">
                 <div className="admin-row admin-row-head admin-row-links">
-                  <span>名称</span>
-                  <span>链接</span>
-                  <span>简介</span>
-                  <span>操作</span>
+                  <span>{t('admin.links.colName')}</span>
+                  <span>{t('admin.links.colUrl')}</span>
+                  <span>{t('admin.links.colDescription')}</span>
+                  <span>{t('admin.links.colActions')}</span>
                 </div>
                 {links.map(l => (
                   <div key={l.id} className="admin-row admin-row-links">
@@ -702,18 +703,18 @@ function AdminPage() {
                     </span>
                     <span>{l.description || '-'}</span>
                     <span className="admin-link-actions">
-                      <button className="btn-role-toggle" onClick={() => handleStartEditLink(l)}>编辑</button>
+                      <button className="btn-role-toggle" onClick={() => handleStartEditLink(l)}>{t('admin.edit')}</button>
                       <button
                         className="btn btn-danger btn-sm"
                         onClick={() => setModal({
                           id: l.id,
-                          title: '删除友情链接',
-                          message: `确认删除友情链接「${l.name}」？删除后无法恢复。`,
-                          confirmText: '确认删除',
+                          title: t('admin.links.deleteTitle'),
+                          message: t('admin.links.deleteConfirm', { name: l.name }),
+                          confirmText: t('admin.links.deleteConfirmText'),
                           onConfirm: () => handleDeleteLink(l.id),
                         })}
                       >
-                        删除
+                        {t('admin.delete')}
                       </button>
                     </span>
                   </div>
@@ -727,28 +728,28 @@ function AdminPage() {
         {tab === 'codes' && !loading && (
           <div className="admin-section">
             <div className="admin-section-head">
-              <h2>邀请码管理（{codes.length}）</h2>
-              <button className="btn btn-primary btn-sm" onClick={handleCreateCode}>生成邀请码</button>
+              <h2>{t('admin.codes.manage', { count: codes.length })}</h2>
+              <button className="btn btn-primary btn-sm" onClick={handleCreateCode}>{t('admin.codes.generate')}</button>
             </div>
             {newCode && (
               <div className="admin-new-code">
-                <span>新邀请码：</span>
+                <span>{t('admin.codes.new')}</span>
                 <code className="admin-code-highlight">{newCode}</code>
-                <button className="btn-copy" onClick={() => copyCode(newCode)}>复制</button>
+                <button className="btn-copy" onClick={() => copyCode(newCode)}>{t('admin.codes.copy')}</button>
               </div>
             )}
             {codes.length === 0 ? (
-              <div className="admin-empty">暂无邀请码，点击上方按钮生成</div>
+              <div className="admin-empty">{t('admin.codes.empty')}</div>
             ) : (
               <div className="admin-table">
                 <div className="admin-row admin-row-head admin-row-codes">
-                  <span>ID</span>
-                  <span>邀请码</span>
-                  <span>专属用户</span>
-                  <span>已使用</span>
-                  <span>可重复</span>
-                  <span>生成时间</span>
-                  <span>操作</span>
+                  <span>{t('admin.codes.colId')}</span>
+                  <span>{t('admin.codes.colCode')}</span>
+                  <span>{t('admin.codes.colOwner')}</span>
+                  <span>{t('admin.codes.colUsed')}</span>
+                  <span>{t('admin.codes.colReusable')}</span>
+                  <span>{t('admin.codes.colCreated')}</span>
+                  <span>{t('admin.codes.colActions')}</span>
                 </div>
                 {codes.map(c => (
                   <div key={c.id} className="admin-row admin-row-codes">
@@ -757,9 +758,9 @@ function AdminPage() {
                     <span>{c.owner_username ? c.owner_username : '-'}</span>
                     <span>
                       {c.is_used ? (
-                        <span className="check-used" title="已使用">&#10003;</span>
+                        <span className="check-used" title={t('admin.codes.used')}>&#10003;</span>
                       ) : (
-                        <span className="check-unused" title="未使用">&#9711;</span>
+                        <span className="check-unused" title={t('admin.codes.unused')}>&#9711;</span>
                       )}
                     </span>
                     <span>
@@ -774,18 +775,18 @@ function AdminPage() {
                     </span>
                     <span className="admin-cell-time">{fmtTime(c.created_at)}</span>
                     <span className="admin-code-actions">
-                      <button className="btn-copy" onClick={() => copyCode(c.code)}>复制</button>
+                      <button className="btn-copy" onClick={() => copyCode(c.code)}>{t('admin.codes.copy')}</button>
                       <button
                         className="btn btn-danger btn-sm"
                         onClick={() => setModal({
                           id: c.id,
-                          title: '删除邀请码',
-                          message: `确认删除邀请码 ${c.code}？删除后无法恢复。`,
-                          confirmText: '确认删除',
+                          title: t('admin.codes.deleteTitle'),
+                          message: t('admin.codes.deleteConfirm', { code: c.code }),
+                          confirmText: t('admin.codes.deleteConfirmText'),
                           onConfirm: () => handleDeleteCode(c.id),
                         })}
                       >
-                        删除
+                        {t('admin.delete')}
                       </button>
                     </span>
                   </div>
@@ -799,21 +800,21 @@ function AdminPage() {
         {tab === 'settings' && !loading && (
           <div className="admin-section">
             <div className="admin-section-head">
-              <h2>站点设置（首页"保持联系"区块）</h2>
+              <h2>{t('admin.site.all')}</h2>
             </div>
             <div className="admin-settings-form">
               <div className="admin-sections-head">
-                <h3 className="admin-sub-title">联系项卡片：显示「图标 + 标题 + 简介」，链接不显示在卡片上，点击卡片跳转</h3>
+                <h3 className="admin-sub-title">{t('admin.site.cardHint')}</h3>
                 <button
                   className="btn btn-primary btn-sm"
                   onClick={() => setSettings(prev => ({
                     ...prev,
                     contact_items: [...(prev.contact_items || []), { label: '', value: '', type: 'link', icon: '', description: '' }],
                   }))}
-                >+ 添加联系项</button>
+                >+ {t('admin.site.addItem')}</button>
               </div>
               {!settings.contact_items || settings.contact_items.length === 0 ? (
-                <div className="admin-empty">暂无联系项，点击上方按钮添加</div>
+                <div className="admin-empty">{t('admin.site.noItems')}</div>
               ) : (
                 <div className="admin-sections-list">
                   {settings.contact_items.map((item, i) => (
@@ -829,14 +830,14 @@ function AdminPage() {
                             }}
                           >
                             {CONTACT_ICON_OPTIONS.map(o => (
-                              <option key={o.key} value={o.key}>{o.label}</option>
+                              <option key={o.key} value={o.key}>{t('icons.contact.' + o.key)}</option>
                             ))}
                           </select>
                           <span className="admin-icon-preview"><ContactIcon icon={item.icon} type={item.type} /></span>
                           {!CONTACT_ICON_OPTIONS.some(o => o.key === item.icon) && (
                             <input
                               className="admin-link-input"
-                              placeholder="自定义图标图片 URL"
+                              placeholder={t('admin.site.customIcon')}
                               value={item.icon || ''}
                               onChange={e => updateContactItem(i, { icon: e.target.value })}
                             />
@@ -844,19 +845,19 @@ function AdminPage() {
                         </div>
                         <input
                           className="admin-link-input"
-                          placeholder="标题，如 邮箱 / GitHub"
+                          placeholder={t('admin.site.label')}
                           value={item.label}
                           onChange={e => updateContactItem(i, { label: e.target.value })}
                         />
                         <input
                           className="admin-link-input"
-                          placeholder="简介，显示在卡片上（可空）"
+                          placeholder={t('admin.site.description')}
                           value={item.description || ''}
                           onChange={e => updateContactItem(i, { description: e.target.value })}
                         />
                         <input
                           className="admin-link-input"
-                          placeholder="链接或文本"
+                          placeholder={t('admin.site.value')}
                           value={item.value}
                           onChange={e => updateContactItem(i, { value: e.target.value })}
                         />
@@ -866,7 +867,7 @@ function AdminPage() {
                           className="btn btn-danger btn-sm"
                           onClick={() => removeContactItem(i)}
                         >
-                          删除
+                          {t('admin.delete')}
                         </button>
                       </div>
                     </div>
@@ -875,11 +876,11 @@ function AdminPage() {
               )}
               <div>
                 <button className="btn btn-primary btn-sm" onClick={handleSaveSettings} disabled={settingsSaving}>
-                  {settingsSaving ? '保存中...' : '保存'}
+                  {settingsSaving ? t('admin.site.saving') : t('admin.save')}
                 </button>
-                {settingsSaved && <div className="profile-success">&#10003; 保存成功</div>}
+                {settingsSaved && <div className="profile-success">&#10003; {t('admin.site.saved')}</div>}
               </div>
-              <p className="admin-settings-hint">保存后首页"保持连接"区块即时生效；卡片显示「图标 + 标题 + 简介」，链接不显示在卡片上，点击卡片跳转</p>
+              <p className="admin-settings-hint">{t('admin.site.hint')}</p>
             </div>
           </div>
         )}
@@ -888,31 +889,31 @@ function AdminPage() {
         {tab === 'leetcode' && !loading && (
           <div className="admin-section">
             <div className="admin-section-head">
-              <h2>LeetCode 调试模式</h2>
+              <h2>{t('admin.leetcode.title')}</h2>
             </div>
             <div className="admin-settings-form">
               {!lcDebug || !lcDebug.bound ? (
-                <div className="admin-empty">你尚未绑定 LeetCode 账号，请先到「榜单」页绑定</div>
+                <div className="admin-empty">{t('admin.leetcode.notBound')}</div>
               ) : (
                 <>
                   <p className="admin-settings-hint">
-                    调试模式开启后，该账号不再读取 LeetCode 数据，可手动调整刷题量；开启前会记录当前数据，关闭后自动恢复。
+                    {t('admin.leetcode.hint')}
                   </p>
                   <div className="admin-settings-row">
-                    <span className="admin-settings-label">调试模式（@{lcDebug.leetcode_username}）</span>
+                    <span className="admin-settings-label">{t('admin.leetcode.mode', { name: lcDebug.leetcode_username })}</span>
                     <button
                       className={`btn btn-sm ${lcDebug.debug_mode ? 'btn-danger' : 'btn-primary'}`}
                       onClick={() => handleLcDebugToggle(!lcDebug.debug_mode)}
                       disabled={lcDebugBusy}
                     >
-                      {lcDebug.debug_mode ? '关闭调试' : '开启调试'}
+                      {lcDebug.debug_mode ? t('admin.leetcode.off') : t('admin.leetcode.on')}
                     </button>
                   </div>
                   {lcDebug.debug_mode && (
                     <div className="admin-leetcode-debug">
-                      <p className="admin-settings-hint">设置各难度刷题量（增量，基于调试开启时保存的数据）：</p>
+                      <p className="admin-settings-hint">{t('admin.leetcode.amountHint')}</p>
                       <div className="admin-leetcode-debug-inputs">
-                        {[['easy', '简单题'], ['medium', '中等题'], ['hard', '困难题']].map(([k, label]) => (
+                        {[['easy', t('admin.leetcode.easy')], ['medium', t('admin.leetcode.medium')], ['hard', t('admin.leetcode.hard')]].map(([k, label]) => (
                           <label key={k} className="admin-leetcode-debug-field">
                             <span>{label}</span>
                             <input
@@ -926,7 +927,7 @@ function AdminPage() {
                         ))}
                       </div>
                       <button className="btn btn-primary btn-sm" onClick={handleLcDebugSet} disabled={lcDebugBusy}>
-                        应用刷题量
+                        {t('admin.leetcode.apply')}
                       </button>
                     </div>
                   )}
@@ -941,7 +942,7 @@ function AdminPage() {
         open={!!modal}
         title={modal?.title || ''}
         message={modal?.message || ''}
-        confirmText={modal?.confirmText || '确认'}
+        confirmText={modal?.confirmText || t('admin.modal.confirm')}
         danger
         onConfirm={() => modal?.onConfirm?.()}
         onCancel={() => setModal(null)}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { changeThemeWithTransition } from '../utils/themeTransition'
+import { t } from '../i18n'
 import './ProfileEdit.css'
 
 function ProfileEdit() {
@@ -77,7 +78,7 @@ function ProfileEdit() {
 
       const data = await res.json()
       if (!res.ok) {
-        setError(data.detail || '保存失败')
+        setError(data.detail || t('profile.saveFailed'))
         return
       }
 
@@ -87,14 +88,14 @@ function ProfileEdit() {
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
     } catch {
-      setError('网络错误，请稍后重试')
+      setError(t('profile.networkError'))
     } finally {
       setSaving(false)
     }
   }
 
   const handleDeleteAccount = async () => {
-    if (!deleteForm.username.trim() || !deleteForm.password) { alert('请输入账号和密码'); return }
+    if (!deleteForm.username.trim() || !deleteForm.password) { alert(t('profile.enterAccountPassword')); return }
     setDeleting(true)
     try {
       const res = await fetch('/api/user/delete-account', {
@@ -109,12 +110,12 @@ function ProfileEdit() {
         }),
       })
       const data = await res.json()
-      if (!res.ok) { alert(data.detail || '注销失败'); return }
+      if (!res.ok) { alert(data.detail || t('profile.deleteFailed')); return }
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       navigate('/')
     } catch {
-      alert('网络错误，请稍后重试')
+      alert(t('profile.networkError'))
     } finally {
       setDeleting(false)
     }
@@ -125,12 +126,12 @@ function ProfileEdit() {
   // 返回来源页面（点击头像进入时由 Navbar 记录）；无记录则回首页
   const backTarget = sessionStorage.getItem('profile_redirect') || '/'
   const backLabel = backTarget.startsWith('/blogs')
-    ? '返回博客'
+    ? t('profile.backBlogs')
     : backTarget.startsWith('/projects')
-      ? '返回项目'
+      ? t('profile.backProjects')
       : backTarget !== '/'
-        ? '返回'
-        : '返回首页'
+        ? t('profile.back')
+        : t('profile.backHome')
   const handleBack = () => {
     sessionStorage.removeItem('profile_redirect')
   }
@@ -152,15 +153,19 @@ function ProfileEdit() {
       <div className="profile-container">
         {/* 头部 */}
         <div className="profile-header">
-          <h1 className="profile-title">编辑个人资料</h1>
+          <h1 className="profile-title">{t('profile.title')}</h1>
           <Link to={backTarget} className="profile-back" onClick={handleBack}>&larr; {backLabel}</Link>
         </div>
 
         {/* 主题模式（浅色 / 深色 / 跟随系统，渐变切换） */}
         <div className="profile-theme">
-          <span className="profile-theme-label">主题模式</span>
+          <span className="profile-theme-label">{t('profile.theme.label')}</span>
           <div className="profile-theme-toggle">
-            {[['system', '跟随系统'], ['light', '浅色'], ['dark', '深色']].map(([v, label]) => (
+            {[
+              ['system', t('profile.theme.system')],
+              ['light', t('profile.theme.light')],
+              ['dark', t('profile.theme.dark')],
+            ].map(([v, label]) => (
               <button
                 key={v}
                 type="button"
@@ -193,11 +198,11 @@ function ProfileEdit() {
           {error && <div className="profile-error">{error}</div>}
 
           <div className="profile-field">
-            <label className="profile-label">昵称</label>
+            <label className="profile-label">{t('profile.nickname')}</label>
             <input
               type="text"
               className="profile-input"
-              placeholder="输入昵称"
+              placeholder={t('profile.nicknamePlaceholder')}
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
               maxLength={50}
@@ -205,16 +210,16 @@ function ProfileEdit() {
           </div>
 
           <div className="profile-field">
-            <label className="profile-label">头像链接</label>
+            <label className="profile-label">{t('profile.avatarUrl')}</label>
             <input
               type="text"
               className="profile-input"
-              placeholder="输入图片 URL（可选）"
+              placeholder={t('profile.avatarUrlPlaceholder')}
               value={avatarUrl}
               onChange={(e) => setAvatarUrl(e.target.value)}
               maxLength={500}
             />
-            <p className="profile-field-hint">输入在线图片链接作为头像，留空使用默认首字母头像</p>
+            <p className="profile-field-hint">{t('profile.avatarHint')}</p>
           </div>
 
           <button
@@ -222,14 +227,14 @@ function ProfileEdit() {
             onClick={handleSave}
             disabled={saving}
           >
-            {saving ? '保存中...' : '保存'}
+            {saving ? t('profile.saving') : t('profile.save')}
           </button>
 
-          {saved && <div className="profile-success">&#10003; 保存成功</div>}
+          {saved && <div className="profile-success">&#10003; {t('profile.saveSuccess')}</div>}
 
           {user.role === 'admin' && (
             <Link to="/admin" className="btn btn-primary profile-admin-btn">
-              进入管理后台
+              {t('profile.admin')}
             </Link>
           )}
 
@@ -243,7 +248,7 @@ function ProfileEdit() {
               navigate('/')
             }}
           >
-            退出登录
+            {t('profile.logout')}
           </button>
 
           <button
@@ -253,16 +258,16 @@ function ProfileEdit() {
               setDeleteForm({ username: '', password: '' })
             }}
           >
-            注销账号
+            {t('profile.deleteAccount')}
           </button>
 
           {deleteOpen && (
             <div className="profile-delete-form">
-              <p className="profile-delete-tip">注销后账号与所有内容将被永久删除，且需输入账号和密码验证</p>
+              <p className="profile-delete-tip">{t('profile.deleteTip')}</p>
               <input
                 type="text"
                 className="profile-input"
-                placeholder="用户名"
+                placeholder={t('profile.username')}
                 value={deleteForm.username}
                 onChange={e => setDeleteForm({ ...deleteForm, username: e.target.value })}
                 maxLength={50}
@@ -270,13 +275,13 @@ function ProfileEdit() {
               <input
                 type="password"
                 className="profile-input"
-                placeholder="密码"
+                placeholder={t('profile.password')}
                 value={deleteForm.password}
                 onChange={e => setDeleteForm({ ...deleteForm, password: e.target.value })}
               />
               <div className="profile-delete-actions">
                 <button className="btn btn-danger" onClick={handleDeleteAccount} disabled={deleting}>
-                  {deleting ? '注销中...' : '确认注销'}
+                  {deleting ? t('profile.deleting') : t('profile.confirmDelete')}
                 </button>
                 <button
                   className="btn btn-secondary"
@@ -285,7 +290,7 @@ function ProfileEdit() {
                     setDeleteForm({ username: '', password: '' })
                   }}
                 >
-                  取消
+                  {t('profile.cancel')}
                 </button>
               </div>
             </div>

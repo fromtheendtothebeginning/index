@@ -6,6 +6,7 @@
 # 全部子进程带 CREATE_NO_WINDOW：父进程为 pythonw 时避免反复弹黑窗。
 
 import json
+import os
 import re
 import secrets
 import shutil
@@ -35,7 +36,7 @@ _ASR_CHUNK_SECONDS = 600        # 音频分片时长（每片 ≤10 分钟，规
 _OCR_MAX_FRAMES = 90            # 抽帧上限（每 max(10s, 时长/90) 一帧）
 _AI_TIMEOUT = 300               # 单次模型调用超时
 _BROWSER_UA = aisettings._BROWSER_UA
-_CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
+_CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000) if os.name == "nt" else 0
 
 _SUB_LANGS = ["zh-Hans", "zh-CN", "zh", "ai-zh", "en"]
 

@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import NavItem from './NavItem'
 import { navItems as featureNavItems } from '../appRoutes'
 import { BLOG_CATEGORIES } from '../constants'
+import { t } from '../i18n'
 
 function Navbar({ activePage }) {
   const navigate = useNavigate()
@@ -126,33 +127,33 @@ function Navbar({ activePage }) {
   // 导航栏目（桌面导航栏与移动端抽屉共用同一组，点击链接后关闭抽屉）
   const navItems = (
     <>
-      <NavItem label="博客" to="/blogs" active={activePage === 'blog'} onNavigate={closeMenu}>
-        <Link to="/blogs">全部</Link>
+      <NavItem label={t('nav.blog')} to="/blogs" active={activePage === 'blog'} onNavigate={closeMenu}>
+        <Link to="/blogs">{t('nav.all')}</Link>
         {BLOG_CATEGORIES.map(c => (
           <Link key={c} to={`/blogs?category=${encodeURIComponent(c)}`}>{c}</Link>
         ))}
       </NavItem>
-      <NavItem label="项目" to="/projects" active={activePage === 'project'} onNavigate={closeMenu} />
-      <NavItem label="榜单" to="/leetcode" active={activePage === 'leetcode'} onNavigate={closeMenu} />
-      <NavItem label="工具" to="/tools" active={activePage === 'tools'} onNavigate={closeMenu}>
-        <Link to="/tools/video-parse">视频解析</Link>
+      <NavItem label={t('nav.project')} to="/projects" active={activePage === 'project'} onNavigate={closeMenu} />
+      <NavItem label={t('nav.ranking')} to="/leetcode" active={activePage === 'leetcode'} onNavigate={closeMenu} />
+      <NavItem label={t('nav.tools')} to="/tools" active={activePage === 'tools'} onNavigate={closeMenu}>
+        <Link to="/tools/video-parse">{t('nav.videoParse')}</Link>
         {featureNavItems.filter(i => i.parent === '/tools').map(item => (
           <Link key={item.path} to={item.path}>{item.label}</Link>
         ))}
       </NavItem>
       {user && (
         <NavItem
-          label={<span>我的{unread > 0 && badgeOn && <span className="nav-badge">{unread}</span>}</span>}
+          label={<span>{t('nav.my')}{unread > 0 && badgeOn && <span className="nav-badge">{unread}</span>}</span>}
           to="/my"
           active={activePage === 'my'}
           onNavigate={closeMenu}
         />
       )}
-      <NavItem label="首页" to="/" active={activePage === 'home'} onNavigate={closeMenu}>
-        <Link to="/" onClick={() => setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50)}>开始</Link>
-        <Link to="/" onClick={() => scrollToSection('projects')}>项目</Link>
-        <Link to="/" onClick={() => scrollToSection('friends')}>友情链接</Link>
-        <Link to="/" onClick={() => scrollToSection('contact')}>联系</Link>
+      <NavItem label={t('nav.home')} to="/" active={activePage === 'home'} onNavigate={closeMenu}>
+        <Link to="/" onClick={() => setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50)}>{t('nav.start')}</Link>
+        <Link to="/" onClick={() => scrollToSection('projects')}>{t('nav.project')}</Link>
+        <Link to="/" onClick={() => scrollToSection('friends')}>{t('nav.friends')}</Link>
+        <Link to="/" onClick={() => scrollToSection('contact')}>{t('nav.contact')}</Link>
       </NavItem>
       {featureNavItems.filter(i => !i.parent).map(item => (
         <NavItem key={item.path} label={item.label} to={item.path} onNavigate={closeMenu} />
@@ -166,7 +167,7 @@ function Navbar({ activePage }) {
       <Link
         to="/profile"
         className="nav-user-avatar"
-        title="编辑资料"
+        title={t('nav.editProfile')}
         onClick={() => {
           sessionStorage.setItem('profile_redirect', window.location.pathname + window.location.search)
           closeMenu()
@@ -182,7 +183,7 @@ function Navbar({ activePage }) {
       </Link>
     </div>
   ) : (
-    <Link to="/login" className="nav-login-btn" onClick={closeMenu}>登录</Link>
+    <Link to="/login" className="nav-login-btn" onClick={closeMenu}>{t('nav.login')}</Link>
   )
 
   return (
@@ -195,7 +196,7 @@ function Navbar({ activePage }) {
         <button
           type="button"
           className="nav-hamburger"
-          aria-label="打开菜单"
+          aria-label={t('nav.openMenu')}
           onClick={() => setMenuOpen(!menuOpen)}
         >
           {menuOpen ? '✕' : '☰'}

@@ -4,11 +4,12 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { applyGolden } from '../utils/themeTransition'
+import { t } from '../i18n'
 
 const GOLDEN_CHANCE = 0.05 // 部署服务器 5%（本地开发可改 0.5）
 const GOLDEN_UNTIL_KEY = 'lc_golden_until'
 const DURATION = 5 * 60 * 1000 // 5 分钟
-const SLOGANS = ['真是段美妙的旅程啊，马哈特。', '我也是这么想的，格鲁克大人', '万物成金魔法']
+const SLOGANS = ['golden.slogan1', 'golden.slogan2', 'golden.slogan3']
 
 function GoldenMagic() {
   const [phase, setPhase] = useState(null) // 'ask' 询问 / 'active' 计时器
@@ -90,24 +91,24 @@ function GoldenMagic() {
     <div className={`golden-magic ${phase === 'active' ? 'golden-magic-active' : ''} ${exiting ? 'golden-magic-exit' : ''}`}>
       {phase === 'ask' ? (
         <>
-          <div className="golden-magic-title">{slogan}</div>
+          <div className="golden-magic-title">{t(slogan)}</div>
           <div className="golden-magic-text">
-            你是激励分数超过 0 的玩家，是否将一切变成黄金？（5 分钟）
+            {t('golden.prompt')}
           </div>
           <div className="golden-magic-actions">
             <button className="btn btn-primary golden-magic-confirm" onClick={enterGolden}>
-              进入黄金模式
+              {t('golden.enter')}
             </button>
             <button className="golden-magic-cancel" onClick={() => setPhase(null)}>
-              算了
+              {t('golden.cancel')}
             </button>
           </div>
         </>
       ) : (
         <>
-          <div className="golden-magic-title">{slogan}</div>
+          <div className="golden-magic-title">{t(slogan)}</div>
           <div className="golden-magic-timer">{mm}:{ss}</div>
-          <div className="golden-magic-text">万物成金魔法生效中</div>
+          <div className="golden-magic-text">{t('golden.effect')}</div>
         </>
       )}
     </div>

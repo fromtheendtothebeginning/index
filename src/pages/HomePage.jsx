@@ -5,6 +5,7 @@ import { renderMd, sanitizeUrl } from '../utils/markdown'
 import ProjectCover from '../components/ProjectCover'
 import Reveal from '../components/Reveal'
 import { ContactIcon } from '../components/Icons'
+import { t } from '../i18n'
 
 export default function HomePage() {
   const [mounted, setMounted] = useState(false)
@@ -77,14 +78,14 @@ export default function HomePage() {
           </h1>
           <div className="hero-actions">
             <a href="#projects" className="btn btn-primary">
-              探索项目
+              {t('home.hero.explore')}
               <span className="btn-arrow">→</span>
             </a>
           </div>
         </div>
         <div className="hero-scroll">
           <div className="scroll-line" />
-          <span className="scroll-text">滚动浏览</span>
+          <span className="scroll-text">{t('home.hero.scroll')}</span>
         </div>
       </section>
 
@@ -92,23 +93,23 @@ export default function HomePage() {
         <div className="section-inner">
           <Reveal className="section-header">
             <span className="section-tag">PROJECTS</span>
-            <h2 className="section-title">近期项目</h2>
-            <p className="section-desc">每一个项目都是一次对边界的试探。</p>
+            <h2 className="section-title">{t('home.projects.title')}</h2>
+            <p className="section-desc">{t('home.projects.desc')}</p>
           </Reveal>
           <div className="project-grid">
             {projectsLoading ? (
               <Reveal className="project-card">
                 <div className="project-card-bg" />
                 <div className="project-card-content">
-                  <p>加载中...</p>
+                  <p>{t('home.projects.loading')}</p>
                 </div>
               </Reveal>
             ) : recentProjects.length === 0 ? (
               <Reveal className="project-card">
                 <div className="project-card-bg" />
                 <div className="project-card-content">
-                  <h3>暂无项目</h3>
-                  <p>敬请期待</p>
+                  <h3>{t('home.projects.emptyTitle')}</h3>
+                  <p>{t('home.projects.emptyDesc')}</p>
                 </div>
               </Reveal>
             ) : (
@@ -143,8 +144,8 @@ export default function HomePage() {
           <div className="section-inner">
             <Reveal className="section-header">
               <span className="section-tag">LINKS</span>
-              <h2 className="section-title">友情链接</h2>
-              <p className="section-desc">值得推荐的伙伴站点</p>
+              <h2 className="section-title">{t('home.friends.title')}</h2>
+              <p className="section-desc">{t('home.friends.desc')}</p>
             </Reveal>
             <Reveal className="friend-links-grid">
               {friendLinks.filter(f => sanitizeUrl(f.url)).map(f => (
@@ -162,8 +163,8 @@ export default function HomePage() {
         <div className="section-inner">
           <Reveal className="section-header">
             <span className="section-tag">CONTACT</span>
-            <h2 className="section-title">保持连接</h2>
-            <p className="section-desc">无论你是想合作、交流想法，还是单纯打个招呼——我们都在。</p>
+            <h2 className="section-title">{t('home.contact.title')}</h2>
+            <p className="section-desc">{t('home.contact.desc')}</p>
           </Reveal>
           <Reveal className="contact-links">
             {(contactSettings.contact_items || []).map((item, i) => {
@@ -202,7 +203,7 @@ export default function HomePage() {
           <p className="footer-copyright">
             © {new Date().getFullYear()} <strong>anticraft</strong> · 逆匠
           </p>
-          <p className="footer-motto">以匠心破常规</p>
+          <p className="footer-motto">{t('home.footer.motto')}</p>
         </div>
       </footer>
     </div>

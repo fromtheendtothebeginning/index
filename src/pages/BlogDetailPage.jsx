@@ -6,6 +6,7 @@ import CategoryDropdown from '../components/CategoryDropdown'
 import { renderMd } from '../utils/markdown'
 import { UiIcon } from '../components/Icons'
 import { BLOG_CATEGORIES as CATEGORIES } from '../constants'
+import { t } from '../i18n'
 import './Blog.css'
 
 // 单条评论卡片（主列表 / 回复链面板共用）
@@ -44,7 +45,7 @@ function CommentCard({
       <div className="comment-body">
         <div className="comment-header">
           <span className="comment-author">
-            {c.user?.nickname || c.user?.username || '匿名'}
+            {c.user?.nickname || c.user?.username || t('blogDetail.anonymous')}
           </span>
           <span className="comment-time">
             {new Date(c.created_at).toLocaleString('zh-CN', {
@@ -59,21 +60,21 @@ function CommentCard({
             className={`comment-like-btn ${c.liked_by_me ? 'liked' : ''}`}
             onClick={() => handleCommentLike(c)}
             disabled={commentLikePending.has(c.id)}
-            aria-label="评论点赞"
+            aria-label={t('blogDetail.comment.likeAriaLabel')}
           >
             <span className="comment-like-icon"><UiIcon name="heart" filled={c.liked_by_me} size={14} /></span>
             <span className="comment-like-count">{c.like_count || 0}</span>
           </button>
           <button className="comment-reply-btn" onClick={() => handleOpenReply(c)}>
-            回复{c.reply_count > 0 ? ` (${c.reply_count})` : ''}
+            {t('blogDetail.comment.reply')}{c.reply_count > 0 ? ` (${c.reply_count})` : ''}
           </button>
-          <button className="comment-chain-link" onClick={() => setChainCommentId(c.id)}>↗ 回复链</button>
+          <button className="comment-chain-link" onClick={() => setChainCommentId(c.id)}>{t('blogDetail.comment.chain')}</button>
         </div>
         {showReplyBox && (
           <form className="comment-inline-reply" onSubmit={handlePostReply}>
             <textarea
               className="comment-input"
-              placeholder={`回复 @${c.user?.nickname || c.user?.username || '匿名'}`}
+              placeholder={t('blogDetail.comment.replyPlaceholder', { name: c.user?.nickname || c.user?.username || t('blogDetail.anonymous') })}
               value={replyText}
               onChange={e => setReplyText(e.target.value)}
               rows={2}
@@ -83,9 +84,9 @@ function CommentCard({
             {replyError && <div className="form-server-error">{replyError}</div>}
             <div className="comment-form-actions">
               <button type="submit" className="btn btn-primary" disabled={replyPosting}>
-                {replyPosting ? '发送中...' : '发送'}
+                {replyPosting ? t('blogDetail.comment.sending') : t('blogDetail.comment.send')}
               </button>
-              <button type="button" className="btn btn-secondary" onClick={handleCancelReply}>取消</button>
+              <button type="button" className="btn btn-secondary" onClick={handleCancelReply}>{t('blogDetail.comment.cancel')}</button>
             </div>
           </form>
         )}
@@ -94,7 +95,7 @@ function CommentCard({
         <button
           className="comment-delete-btn"
           onClick={() => setCommentToDelete(c.id)}
-          title="删除"
+          title={t('blogDetail.comment.delete')}
         >
           ×
         </button>
@@ -148,7 +149,7 @@ function BlogDetailPage() {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
       .then(r => {
-        if (!r.ok) throw new Error('博客不存在')
+        if (!r.ok) throw new Error(t('blogDetail.notFound'))
         return r.json()
       })
       .then(data => setBlog(data))
@@ -186,12 +187,12 @@ function BlogDetailPage() {
       })
       if (!res.ok) {
         const data = await res.json()
-        alert(data.detail || '删除失败')
+        alert(data.detail || t('blogDetail.deleteFail'))
         return
       }
       navigate('/blogs')
     } catch {
-      alert('网络错误')
+      alert(t('blogDetail.networkError'))
     } finally {
       setDeleting(false)
     }
@@ -222,14 +223,14 @@ function BlogDetailPage() {
         // 回滚
         setBlog({ ...blog, liked_by_me: prevLiked, like_count: prevCount })
         const data = await res.json().catch(() => ({}))
-        alert(data.detail || '操作失败')
+        alert(data.detail || t('blogDetail.operationFailed'))
         return
       }
       const data = await res.json()
       setBlog(b => b ? { ...b, liked_by_me: data.liked, like_count: data.like_count } : b)
     } catch {
       setBlog({ ...blog, liked_by_me: prevLiked, like_count: prevCount })
-      alert('网络错误')
+      alert(t('blogDetail.networkError'))
     } finally {
       setLikePending(false)
     }
@@ -239,7 +240,7 @@ function BlogDetailPage() {
     e.preventDefault()
     const text = commentText.trim()
     if (!text) {
-      setCommentError('评论内容不能为空')
+      setCommentError(t('blogDetail.comment.contentRequired'))
       return
     }
     if (!user) {
@@ -260,14 +261,14 @@ function BlogDetailPage() {
       })
       const data = await res.json()
       if (!res.ok) {
-        setCommentError(data.detail || '发表失败')
+        setCommentError(data.detail || t('blogDetail.comment.postFailed'))
         return
       }
       setComments(prev => [...prev, data])
       setCommentText('')
       setBlog(b => b ? { ...b, comment_count: b.comment_count + 1 } : b)
     } catch {
-      setCommentError('网络错误')
+      setCommentError(t('blogDetail.networkError'))
     } finally {
       setCommentPosting(false)
     }
@@ -297,7 +298,7 @@ function BlogDetailPage() {
           ? { ...x, liked_by_me: prevLiked, like_count: c.like_count }
           : x))
         const data = await res.json().catch(() => ({}))
-        alert(data.detail || '操作失败')
+        alert(data.detail || t('blogDetail.operationFailed'))
         return
       }
       const data = await res.json()
@@ -308,7 +309,7 @@ function BlogDetailPage() {
       setComments(prev => prev.map(x => x.id === c.id
         ? { ...x, liked_by_me: prevLiked, like_count: c.like_count }
         : x))
-      alert('网络错误')
+      alert(t('blogDetail.networkError'))
     } finally {
       setCommentLikePending(prev => {
         const s = new Set(prev)
@@ -338,7 +339,7 @@ function BlogDetailPage() {
     e.preventDefault()
     const text = replyText.trim()
     if (!text) {
-      setReplyError('回复内容不能为空')
+      setReplyError(t('blogDetail.comment.replyContentRequired'))
       return
     }
     if (!replyToId) return
@@ -356,7 +357,7 @@ function BlogDetailPage() {
       })
       const data = await res.json()
       if (!res.ok) {
-        setReplyError(data.detail || '回复失败')
+        setReplyError(data.detail || t('blogDetail.comment.replyFailed'))
         return
       }
       // 重新拉取列表，刷新树、计数与 reply_count
@@ -365,7 +366,7 @@ function BlogDetailPage() {
       setReplyText('')
       setBlog(b => b ? { ...b, comment_count: b.comment_count + 1 } : b)
     } catch {
-      setReplyError('网络错误')
+      setReplyError(t('blogDetail.networkError'))
     } finally {
       setReplyPosting(false)
     }
@@ -381,14 +382,14 @@ function BlogDetailPage() {
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        alert(data.detail || '删除失败')
+        alert(data.detail || t('blogDetail.deleteFail'))
         return
       }
       setComments(prev => prev.filter(c => c.id !== commentToDelete))
       if (chainCommentId === commentToDelete) setChainCommentId(null)
       setBlog(b => b ? { ...b, comment_count: Math.max(0, b.comment_count - 1) } : b)
     } catch {
-      alert('网络错误')
+      alert(t('blogDetail.networkError'))
     } finally {
       setCommentToDelete(null)
     }
@@ -427,7 +428,7 @@ function BlogDetailPage() {
   if (loading) {
     return (
       <div className="blog-page">
-        <div className="blog-main"><div className="blog-loading">加载中...</div></div>
+        <div className="blog-main"><div className="blog-loading">{t('blogDetail.loading')}</div></div>
       </div>
     )
   }
@@ -438,7 +439,7 @@ function BlogDetailPage() {
         <div className="blog-main">
           <div className="blog-error">
             <h2>{error}</h2>
-            <Link to="/blogs" className="btn btn-primary">&larr; 返回博客列表</Link>
+            <Link to="/blogs" className="btn btn-primary">{t('blogDetail.backToBlogs')}</Link>
           </div>
         </div>
       </div>
@@ -461,13 +462,13 @@ function BlogDetailPage() {
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        alert(data.detail || '分类修改失败')
+        alert(data.detail || t('blogDetail.categoryUpdateFailed'))
         setAdminCategory(blog.category || '')
         return
       }
       setBlog(b => b ? { ...b, category: newCat || null } : b)
     } catch {
-      alert('网络错误')
+      alert(t('blogDetail.networkError'))
       setAdminCategory(blog.category || '')
     } finally {
       setCategorySaving(false)
@@ -481,7 +482,7 @@ function BlogDetailPage() {
       <div className="blog-main">
         <div className="blog-detail">
           <div className="blog-detail-nav">
-            <Link to="/blogs" className="blog-back-link">&larr; 返回列表</Link>
+            <Link to="/blogs" className="blog-back-link">{t('blogDetail.backToList')}</Link>
           </div>
 
           <h1 className="blog-detail-title">
@@ -490,7 +491,7 @@ function BlogDetailPage() {
           </h1>
           <div className="blog-detail-meta">
             <span className="blog-detail-author">
-              作者：{blog.author?.nickname || blog.author?.username || '匿名'}
+              {t('blogDetail.author', { name: blog.author?.nickname || blog.author?.username || t('blogDetail.anonymous') })}
             </span>
             <span className="blog-detail-date">
               {new Date(blog.created_at).toLocaleDateString('zh-CN', {
@@ -501,19 +502,19 @@ function BlogDetailPage() {
 
           {(isAuthor || isAdmin) && (
             <div className="blog-detail-actions">
-              {(isAuthor || isAdmin) && <Link to={`/blogs/${blog.id}/edit`} className="btn-edit">编辑</Link>}
+              {(isAuthor || isAdmin) && <Link to={`/blogs/${blog.id}/edit`} className="btn-edit">{t('blogDetail.edit')}</Link>}
               {isAdmin && (
-                <div title="管理员设置分类">
+                <div title={t('blogDetail.adminSetCategory')}>
                   <CategoryDropdown
                     value={adminCategory}
                     onChange={handleAdminCategory}
                     options={CATEGORIES.map(c => ({ value: c, label: c }))}
-                    placeholder="未分类"
+                    placeholder={t('blogDetail.uncategorized')}
                   />
                 </div>
               )}
               <button className="btn-delete" onClick={() => setShowDeleteModal(true)} disabled={deleting}>
-                {deleting ? '删除中...' : (isAdmin && !isAuthor ? '撤回' : '删除')}
+                {deleting ? t('blogDetail.deleting') : (isAdmin && !isAuthor ? t('blogDetail.withdraw') : t('blogDetail.delete'))}
               </button>
             </div>
           )}
@@ -525,7 +526,7 @@ function BlogDetailPage() {
 
           {blog.project && (
             <Link to={`/projects/${blog.project.id}`} className="blog-project-link">
-              <span className="blog-project-label">所属项目</span>
+              <span className="blog-project-label">{t('blogDetail.projectLabel')}</span>
               <span className="blog-project-name">{blog.project.name}</span>
               <span className="blog-project-arrow">&rarr;</span>
             </Link>
@@ -537,26 +538,26 @@ function BlogDetailPage() {
               className={`like-btn ${blog.liked_by_me ? 'liked' : ''}`}
               onClick={handleToggleLike}
               disabled={likePending}
-              aria-label="点赞"
+              aria-label={t('blogDetail.likeAriaLabel')}
             >
               <span className="like-icon"><UiIcon name="heart" filled={blog.liked_by_me} size={14} /></span>
               <span className="like-count">{blog.like_count || 0}</span>
             </button>
             <a href="#comments" className="comment-count-link">
               <span className="comment-icon"><UiIcon name="message" size={14} /></span>
-              <span>{blog.comment_count || 0} 条评论</span>
+              <span>{t('blogDetail.commentCount', { count: blog.comment_count || 0 })}</span>
             </a>
           </div>
 
           {/* 评论区 */}
           <section id="comments" className="comments-section">
-            <h3 className="comments-title">评论 {comments.length > 0 && <span className="comments-count">({comments.length})</span>}</h3>
+            <h3 className="comments-title">{t('blogDetail.commentsTitle')} {comments.length > 0 && <span className="comments-count">({comments.length})</span>}</h3>
 
             {user ? (
               <form className="comment-form" onSubmit={handlePostComment}>
                 <textarea
                   className="comment-input"
-                  placeholder="写下你的评论..."
+                  placeholder={t('blogDetail.comment.placeholder')}
                   value={commentText}
                   onChange={e => setCommentText(e.target.value)}
                   rows={3}
@@ -565,21 +566,21 @@ function BlogDetailPage() {
                 {commentError && <div className="form-server-error">{commentError}</div>}
                 <div className="comment-form-actions">
                   <button type="submit" className="btn btn-primary" disabled={commentPosting}>
-                    {commentPosting ? '发表中...' : '发表评论'}
+                    {commentPosting ? t('blogDetail.comment.posting') : t('blogDetail.comment.submit')}
                   </button>
                 </div>
               </form>
             ) : (
               <div className="comment-login-hint">
-                <Link to="/login">登录</Link> 后参与评论
+                <Link to="/login">{t('blogDetail.comment.login')}</Link> {t('blogDetail.comment.loginHint')}
               </div>
             )}
 
             <div className="comments-list">
               {commentsLoading ? (
-                <div className="comments-empty">加载评论中...</div>
+                <div className="comments-empty">{t('blogDetail.comment.loading')}</div>
               ) : topLevelComments.length === 0 ? (
-                <div className="comments-empty">还没有评论，来说点什么吧</div>
+                <div className="comments-empty">{t('blogDetail.comment.empty')}</div>
               ) : (
                 topLevelComments.map(c => {
                   const directReplies = childrenMap.get(c.id) || []
@@ -629,7 +630,7 @@ function BlogDetailPage() {
                       )}
                       {c.reply_count > directReplies.length && (
                         <button className="comment-view-all" onClick={() => setChainCommentId(c.id)}>
-                          查看全部 {c.reply_count} 条回复
+                          {t('blogDetail.comment.viewAllReplies', { count: c.reply_count })}
                         </button>
                       )}
                     </div>
@@ -643,18 +644,18 @@ function BlogDetailPage() {
 
       <Modal
         open={showDeleteModal}
-        title="确认删除"
-        message={isAdmin && !isAuthor ? '管理员将撤回这篇博客，操作不可恢复。确定继续吗？' : '这篇博客将被永久删除，无法恢复。确定继续吗？'}
-        confirmText={deleting ? '删除中...' : '确认删除'}
+        title={t('blogDetail.confirmDelete')}
+        message={isAdmin && !isAuthor ? t('blogDetail.deleteAdminMessage') : t('blogDetail.deleteMessage')}
+        confirmText={deleting ? t('blogDetail.deleting') : t('blogDetail.confirmDelete')}
         danger
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteModal(false)}
       />
       <Modal
         open={!!commentToDelete}
-        title="删除评论"
-        message="确认删除这条评论？删除后无法恢复。"
-        confirmText="确认删除"
+        title={t('blogDetail.comment.deleteTitle')}
+        message={t('blogDetail.comment.deleteMessage')}
+        confirmText={t('blogDetail.confirmDelete')}
         danger
         onConfirm={handleDeleteComment}
         onCancel={() => setCommentToDelete(null)}
@@ -663,8 +664,8 @@ function BlogDetailPage() {
         <div className="modal-overlay comment-chain-overlay" onClick={() => setChainCommentId(null)}>
           <div className="modal-sheet comment-chain-panel" onClick={e => e.stopPropagation()}>
             <div className="comment-chain-header">
-              <h3>回复链</h3>
-              <button className="comment-chain-close" onClick={() => setChainCommentId(null)} title="关闭">×</button>
+              <h3>{t('blogDetail.comment.chainTitle')}</h3>
+              <button className="comment-chain-close" onClick={() => setChainCommentId(null)} title={t('blogDetail.close')}>×</button>
             </div>
             <div className="comment-chain-list">
               {chainData.chain.map((c, i) => (

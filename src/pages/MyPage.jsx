@@ -6,15 +6,16 @@ import CategoryDropdown from '../components/CategoryDropdown'
 import Modal from '../components/Modal'
 import ActionButton from '../components/ActionButton'
 import { PROVIDERS, getProvider, getThinkingLevels, isValidThinkingLevel, AI_DEFAULTS } from '../utils/aiProviders'
+import { t } from '../i18n'
 import './MyPage.css'
 
 const TYPE_META = {
-  comment_reply: { icon: 'message', label: '回复' },
-  comment_like: { icon: 'heart', label: '点赞' },
-  blog_comment_like: { icon: 'thumb', label: '评论获赞' },
-  project_new_blog: { icon: 'pin', label: '项目新博客' },
-  blog_like: { icon: 'heart', label: '博客点赞' },
-  blog_new_comment: { icon: 'message', label: '博客新评论' },
+  comment_reply: { icon: 'message', label: 'myPage.notify.type.commentReply' },
+  comment_like: { icon: 'heart', label: 'myPage.notify.type.commentLike' },
+  blog_comment_like: { icon: 'thumb', label: 'myPage.notify.type.blogCommentLike' },
+  project_new_blog: { icon: 'pin', label: 'myPage.notify.type.projectNewBlog' },
+  blog_like: { icon: 'heart', label: 'myPage.notify.type.blogLike' },
+  blog_new_comment: { icon: 'message', label: 'myPage.notify.type.blogNewComment' },
 }
 
 function MyPage() {
@@ -129,7 +130,7 @@ function MyPage() {
         setNotifications(data.notifications || [])
         setUnread(data.unread_count || 0)
       })
-      .catch(() => setError('网络错误'))
+      .catch(() => setError(t('myPage.notify.loadError')))
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [navigate])
@@ -164,7 +165,8 @@ function MyPage() {
         if (s.vision_key_id) fetchKeyModelList(s.vision_key_id, setVisionModels, 'vision')
         if (s.speech_key_id) fetchKeyModelList(s.speech_key_id, setSpeechModels, 'speech')
       })
-      .catch(() => setAiError('网络错误，无法加载 AI 设置'))
+      .catch(() => setAiError(t('myPage.ai.loadError')))
+
       .finally(() => { if (!cancelled) setAiLoading(false) })
     return () => { cancelled = true }
   }, [tab])
@@ -254,9 +256,9 @@ function MyPage() {
   }
 
   const handleAddKey = async () => {
-    if (!newKey.api_key.trim()) { setAiError('请填写 API Key'); return }
-    if (!getProvider(newKey.provider)) { setAiError('未知的提供商'); return }
-    if (newKey.provider === 'custom' && !newKey.base_url.trim()) { setAiError('自定义提供商必须填写 Base URL'); return }
+    if (!newKey.api_key.trim()) { setAiError(t('myPage.key.add.needApiKey')); return }
+    if (!getProvider(newKey.provider)) { setAiError(t('myPage.key.add.unknownProvider')); return }
+    if (newKey.provider === 'custom' && !newKey.base_url.trim()) { setAiError(t('myPage.key.add.needBaseUrl')); return }
     setSavingKey(true)
     setAiError('')
     try {
@@ -271,14 +273,14 @@ function MyPage() {
         }),
       })
       const data = await res.json()
-      if (!res.ok) { setAiError(data.detail || '添加失败'); return }
+      if (!res.ok) { setAiError(data.detail || t('myPage.key.add.failed')); return }
       setKeys(ks => [...ks, data])
       // 立即选中新 Key 并恢复其默认模型（创建时已写入 provider 默认模型为 last_model）
       setCurrentKeyId(data.id)
       restoreKey(data.id)
       setAddKeyOpen(false)
     } catch {
-      setAiError('网络错误，请稍后重试')
+      setAiError(t('myPage.key.add.networkError'))
     } finally {
       setSavingKey(false)
     }
@@ -303,11 +305,11 @@ function MyPage() {
         body: JSON.stringify(body),
       })
       const data = await res.json()
-      if (!res.ok) { setAiError(data.detail || '保存失败'); return }
+      if (!res.ok) { setAiError(data.detail || t('myPage.key.edit.failed')); return }
       setKeys(ks => ks.map(x => (x.id === editKeyTarget.id ? data : x)))
       setEditKeyTarget(null)
     } catch {
-      setAiError('网络错误，请稍后重试')
+      setAiError(t('myPage.key.edit.networkError'))
     }
   }
 
@@ -325,12 +327,12 @@ function MyPage() {
         method: 'DELETE',
         headers: authHeaders(),
       })
-      if (!res.ok) { setAiError('删除失败'); setDeleting(false); return }
+      if (!res.ok) { setAiError(t('myPage.key.delete.failed')); setDeleting(false); return }
       setKeys(ks => ks.filter(x => x.id !== deleteTarget.id))
       if (currentKeyId === deleteTarget.id) { setCurrentKeyId(null); setDynModels([]) }
       setDeleteTarget(null)
     } catch {
-      setAiError('网络错误，请稍后重试')
+      setAiError(t('myPage.key.delete.networkError'))
     } finally {
       setDeleting(false)
     }
@@ -416,7 +418,7 @@ function MyPage() {
   const handleAddModel = async () => {
     const name = newModelName.trim()
     if (!name) return
-    if (!currentKey) { setAiError('请先选择或添加一个 Key'); return }
+    if (!currentKey) { setAiError(t('myPage.model.add.needKey')); return }
     setAiError('')
     try {
       const res = await fetch('/api/user/ai-models', {
@@ -425,11 +427,11 @@ function MyPage() {
         body: JSON.stringify({ provider: currentKey.provider, model: name }),
       })
       const data = await res.json()
-      if (!res.ok) { setAiError(data.detail || '添加失败'); return }
+      if (!res.ok) { setAiError(data.detail || t('myPage.model.add.failed')); return }
       // 新增成功后不自动刷新列表，由用户点「刷新」后手动看到新模型
       setAddModelOpen(false)
     } catch {
-      setAiError('网络错误，请稍后重试')
+      setAiError(t('myPage.model.add.networkError'))
     }
   }
 
@@ -460,10 +462,10 @@ function MyPage() {
         body: JSON.stringify({ provider: currentKey.provider, model: m.model }),
       })
       const data = await res.json()
-      if (!res.ok) { setAiError(data.detail || '删除失败'); return }
+      if (!res.ok) { setAiError(data.detail || t('myPage.model.remove.failed')); return }
       setCustomModels(data.models.map(mm => ({ model: mm })))
     } catch {
-      setAiError('网络错误，请稍后重试')
+      setAiError(t('myPage.model.remove.networkError'))
     }
   }
 
@@ -487,18 +489,18 @@ function MyPage() {
         body: JSON.stringify(body),
       })
       const data = await res.json()
-      if (!res.ok) { setAiError(data.detail || '保存失败'); return }
+      if (!res.ok) { setAiError(data.detail || t('myPage.save.failed')); return }
       setAiSaved(true)
       setTimeout(() => setAiSaved(false), 2500)
     } catch {
-      setAiError('网络错误，请稍后重试')
+      setAiError(t('myPage.save.networkError'))
     } finally {
       setSavingAi(false)
     }
   }
 
   const handleTestAi = async () => {
-    if (!currentKeyId) { setTestResult({ ok: false, text: '请先选择一个 Key' }); return }
+    if (!currentKeyId) { setTestResult({ ok: false, text: t('myPage.test.needKey') }); return }
     setTestingAi(true)
     setAiError('')
     setTestResult(null)
@@ -511,15 +513,15 @@ function MyPage() {
         body: JSON.stringify(body),
       })
       const data = await res.json()
-      if (!res.ok) { setAiError(data.detail || '测试失败'); return }
+      if (!res.ok) { setAiError(data.detail || t('myPage.test.failed')); return }
       setTestResult({
         ok: data.ok,
         text: data.ok
-          ? `连接成功（${data.latency_ms}ms）`
-          : `连接失败：${data.error || '未知错误'}`,
+          ? t('myPage.test.ok', { latency: data.latency_ms })
+          : t('myPage.test.err', { error: data.error || t('myPage.test.unknownError') }),
       })
     } catch {
-      setTestResult({ ok: false, text: '网络错误，请稍后重试' })
+      setTestResult({ ok: false, text: t('myPage.test.networkError') })
     } finally {
       setTestingAi(false)
     }
@@ -558,13 +560,13 @@ function MyPage() {
       <Navbar activePage="my" />
       <div className="my-container">
         <div className="my-header">
-          <h1 className="my-title">我的</h1>
+          <h1 className="my-title">{t('myPage.title')}</h1>
           <div className="my-tabs">
             <button type="button" className={`my-tab ${tab === 'notify' ? 'active' : ''}`} onClick={() => switchTab('notify')}>
-              通知{unread > 0 && <span className="my-tab-badge">{unread}</span>}
+              {t('myPage.tab.notifications')}{unread > 0 && <span className="my-tab-badge">{unread}</span>}
             </button>
             <button type="button" className={`my-tab ${tab === 'ai' ? 'active' : ''}`} onClick={() => switchTab('ai')}>
-              AI 设置
+              {t('myPage.tab.aiSettings')}
             </button>
           </div>
         </div>
@@ -574,16 +576,16 @@ function MyPage() {
             <div className="my-subheader">
               <label className="my-badge-toggle">
                 <input type="checkbox" checked={badgeOn} onChange={handleToggleBadge} />
-                <span>未读红点</span>
+                <span>{t('myPage.notify.unreadBadge')}</span>
               </label>
-              {unread > 0 && <span className="my-unread-count">{unread} 条未读</span>}
-              <ActionButton size="sm" onClick={handleReadAll}>全部已读</ActionButton>
+              {unread > 0 && <span className="my-unread-count">{t('myPage.notify.unreadCount', { n: unread })}</span>}
+              <ActionButton size="sm" onClick={handleReadAll}>{t('myPage.notify.readAll')}</ActionButton>
             </div>
             {error && <div className="my-error">{error}</div>}
             {loading ? (
-              <div className="my-loading">加载中...</div>
+              <div className="my-loading">{t('myPage.loading')}</div>
             ) : notifications.length === 0 ? (
-              <div className="my-empty">暂无通知</div>
+              <div className="my-empty">{t('myPage.notify.empty')}</div>
             ) : (
               <ul className="my-list">
                 {notifications.map((n, i) => {
@@ -595,7 +597,7 @@ function MyPage() {
                       onClick={() => handleClick(n)}
                       style={{ animationDelay: `${i * 60}ms` }}
                     >
-                      <span className="my-item-icon" title={meta.label}><UiIcon name={meta.icon} size={15} /></span>
+                      <span className="my-item-icon" title={t(meta.label)}><UiIcon name={meta.icon} size={15} /></span>
                       <div className="my-item-main">
                         <p className="my-item-content">{n.content}</p>
                         <p className="my-item-meta">
@@ -615,7 +617,7 @@ function MyPage() {
         {tab === 'ai' && (
           <div className="ai-settings">
             {aiLoading ? (
-              <div className="my-loading">加载中...</div>
+              <div className="my-loading">{t('myPage.loading')}</div>
             ) : (
               <>
                 {aiError && <div className="my-error">{aiError}</div>}
@@ -623,12 +625,12 @@ function MyPage() {
                 {/* ═══ Key 管理 ═══ */}
                 <div className="ai-section">
                   <div className="ai-section-head">
-                    <span className="ai-section-title">API Key 管理</span>
-                    <ActionButton size="sm" onClick={openAddKey}>+ 新增 Key</ActionButton>
+                    <span className="ai-section-title">{t('myPage.key.manage')}</span>
+                    <ActionButton size="sm" onClick={openAddKey}>+ {t('myPage.key.addButton')}</ActionButton>
                   </div>
 
                   {keys.length === 0 ? (
-                    <div className="my-empty">还没有 API Key，点击「新增 Key」添加</div>
+                    <div className="my-empty">{t('myPage.key.noKeys')}</div>
                   ) : (
                     <div className="ai-key-list">
                       {keys.map(k => (
@@ -637,23 +639,23 @@ function MyPage() {
                             <div className="ai-key-top">
                               <span className="ai-key-provider">{getProvider(k.provider)?.label || k.provider}</span>
                               {k.label && <span className="ai-key-label">{k.label}</span>}
-                              {k.id === currentKeyId && <span className="ai-key-current">当前使用</span>}
+                              {k.id === currentKeyId && <span className="ai-key-current">{t('myPage.key.current')}</span>}
                             </div>
                             <div className="ai-key-meta">
-                              <span className="ai-key-hint">{k.key_hint || '无 Key'}</span>
+                              <span className="ai-key-hint">{k.key_hint || t('myPage.key.noKey')}</span>
                               {k.custom_base_url && <span className="ai-key-url">{k.custom_base_url}</span>}
                             </div>
                           </div>
                           <div className="ai-key-ops">
                             {k.id !== currentKeyId && (
-                              <button className="ai-op-btn" title="设为当前" onClick={() => handleSetCurrentKey(k.id)}>
+                              <button className="ai-op-btn" title={t('myPage.key.setCurrent')} onClick={() => handleSetCurrentKey(k.id)}>
                                 <UiIcon name="check" size={14} />
                               </button>
                             )}
-                            <button className="ai-op-btn" title="编辑" onClick={() => openEditKey(k)}>
+                            <button className="ai-op-btn" title={t('myPage.key.editTitle')} onClick={() => openEditKey(k)}>
                               <UiIcon name="edit" size={14} />
                             </button>
-                            <button className="ai-op-btn danger" title="删除" onClick={() => openDeleteKey(k)}>
+                            <button className="ai-op-btn danger" title={t('myPage.key.deleteTitle')} onClick={() => openDeleteKey(k)}>
                               <UiIcon name="trash" size={14} />
                             </button>
                           </div>
@@ -666,29 +668,29 @@ function MyPage() {
                 {/* ═══ 选择当前模型（点击可用模型项）═══ */}
                 <div className="ai-section">
                   <div className="ai-section-head">
-                    <span className="ai-section-title">选择当前模型</span>
+                    <span className="ai-section-title">{t('myPage.model.select')}</span>
                     {currentProv && <span className="ai-key-provider">{currentProv.label}</span>}
                     <div className="ai-section-ops">
                       <ActionButton
                         size="sm"
                         onClick={() => refreshModels(currentKeyId)}
                         disabled={modelsLoading || !currentKeyId}
-                        title="刷新可用模型"
+                        title={t('myPage.model.refreshTitle')}
                       >
-                        {modelsLoading ? '加载中...' : '刷新'}
+                        {modelsLoading ? t('myPage.loading') : t('myPage.model.refresh')}
                       </ActionButton>
-                      <ActionButton size="sm" onClick={openAddModel}>+ 新增模型</ActionButton>
+                      <ActionButton size="sm" onClick={openAddModel}>+ {t('myPage.model.addButton')}</ActionButton>
                     </div>
                   </div>
 
                   {!currentKeyId ? (
-                    <div className="my-empty">请先在「API Key 管理」选择或添加一个 Key</div>
+                    <div className="my-empty">{t('myPage.model.needKey')}</div>
                   ) : (
                     <>
-                      <p className="ai-hint">收藏的模型排在最前，其余按添加时间排序；点星标收藏/取消</p>
+                      <p className="ai-hint">{t('myPage.model.sortHint')}</p>
                       {sortedModels.length === 0 ? (
                         <div className="my-empty">
-                          {modelsLoading ? '正在查询可用模型...' : '暂无可用模型，可手动新增'}
+                          {modelsLoading ? t('myPage.model.querying') : t('myPage.model.none')}
                         </div>
                       ) : (
                         <ul className="ai-model-list" ref={modelListRef}>
@@ -701,22 +703,22 @@ function MyPage() {
                               <button
                                 type="button"
                                 className="ai-model-name"
-                                title="点击设为当前模型"
+                                title={t('myPage.model.setCurrent')}
                               >
                                 {m.model}
-                                {m.custom && <span className="ai-model-tag">自定义</span>}
+                                {m.custom && <span className="ai-model-tag">{t('myPage.model.custom')}</span>}
                               </button>
                               <div className="ai-model-ops">
                                 <button
                                   type="button"
                                   className={`ai-fav-btn ${favorites.includes(m.model) ? 'active' : ''}`}
-                                  title={favorites.includes(m.model) ? '取消收藏' : '收藏'}
+                                  title={favorites.includes(m.model) ? t('myPage.model.unfav') : t('myPage.model.fav')}
                                   onClick={() => handleToggleFavorite(m)}
                                 >
                                   <UiIcon name="star" size={14} filled={favorites.includes(m.model)} />
                                 </button>
                                 {m.custom && (
-                                  <button type="button" className="ai-op-btn danger" title="移除" onClick={() => handleRemoveCustomModel(m)}>
+                                  <button type="button" className="ai-op-btn danger" title={t('myPage.model.removeTitle')} onClick={() => handleRemoveCustomModel(m)}>
                                     <UiIcon name="trash" size={14} />
                                   </button>
                                 )}
@@ -732,12 +734,12 @@ function MyPage() {
                 {/* ═══ 识图 / 语音模型（视频总结等工具使用）═══ */}
                 <div className="ai-section">
                   <div className="ai-section-head">
-                    <span className="ai-section-title">识图与语音模型</span>
-                    <span className="ai-section-sub">视频 AI 总结等工具使用</span>
+                    <span className="ai-section-title">{t('myPage.visionSpeech.title')}</span>
+                    <span className="ai-section-sub">{t('myPage.visionSpeech.sub')}</span>
                   </div>
 
                   <div className="ai-field">
-                    <label className="ai-label">识图模型（提取视频画面）</label>
+                    <label className="ai-label">{t('myPage.visionSpeech.visionLabel')}</label>
                     <div className="vs-config-row">
                       <CategoryDropdown
                         value={visionKeyId || ''}
@@ -748,22 +750,22 @@ function MyPage() {
                           fetchKeyModelList(id, setVisionModels, 'vision')
                         }}
                         options={keys.map(k => ({ value: k.id, label: `${k.provider} · ${k.label || k.key_hint || k.id}` }))}
-                        placeholder="选择 Key"
+                        placeholder={t('myPage.visionSpeech.selectKey')}
                         closeOnSelect
                       />
                       <CategoryDropdown
                         value={visionModel}
                         onChange={setVisionModel}
                         options={(visionKeyId ? visionModels : []).map(mm => ({ value: mm, label: mm }))}
-                        placeholder="识图模型"
+                        placeholder={t('myPage.visionSpeech.visionModel')}
                         closeOnSelect
                       />
                     </div>
-                    <p className="ai-hint">需支持多模态图片输入的模型（如 *-vision-exp、qwen-vl 系列）</p>
+                    <p className="ai-hint">{t('myPage.visionSpeech.visionHint')}</p>
                   </div>
 
                   <div className="ai-field">
-                    <label className="ai-label">语音模型（转写音频）</label>
+                    <label className="ai-label">{t('myPage.visionSpeech.speechLabel')}</label>
                     <div className="vs-config-row">
                       <CategoryDropdown
                         value={speechKeyId || ''}
@@ -774,18 +776,18 @@ function MyPage() {
                           fetchKeyModelList(id, setSpeechModels, 'speech')
                         }}
                         options={keys.map(k => ({ value: k.id, label: `${k.provider} · ${k.label || k.key_hint || k.id}` }))}
-                        placeholder="选择 Key"
+                        placeholder={t('myPage.visionSpeech.selectKey')}
                         closeOnSelect
                       />
                       <CategoryDropdown
                         value={speechModel}
                         onChange={setSpeechModel}
                         options={(speechKeyId ? speechModels : []).map(mm => ({ value: mm, label: mm }))}
-                        placeholder="语音模型"
+                        placeholder={t('myPage.visionSpeech.speechModel')}
                         closeOnSelect
                       />
                     </div>
-                    <p className="ai-hint">需支持 OpenAI 兼容 /audio/transcriptions 接口的模型（如 whisper 系列、sensevoice 等）</p>
+                    <p className="ai-hint">{t('myPage.visionSpeech.speechHint')}</p>
                   </div>
                 </div>
 
@@ -793,28 +795,28 @@ function MyPage() {
                 {model ? (
                   <div className="ai-section">
                     <div className="ai-section-head">
-                      <span className="ai-section-title">采样参数</span>
-                      <span className="ai-section-sub">当前模型：{model}</span>
+                      <span className="ai-section-title">{t('myPage.sampling.title')}</span>
+                      <span className="ai-section-sub">{t('myPage.sampling.currentModel', { model })}</span>
                     </div>
 
                     <div className="ai-field">
-                      <label className="ai-label">思考深度</label>
+                      <label className="ai-label">{t('myPage.sampling.thinking')}</label>
                       <CategoryDropdown
                         value={thinking}
                         onChange={setThinking}
                         options={getThinkingLevels(currentKey ? currentKey.provider : 'deepseek', model).map(t => ({ value: t.value, label: t.label }))}
-                        placeholder="选择思考深度"
+                        placeholder={t('myPage.sampling.selectThinking')}
                         hideClear
                         closeOnSelect
                       />
-                      <p className="ai-hint">根据所选厂商支持的思考档位调整</p>
+                      <p className="ai-hint">{t('myPage.sampling.thinkingHint')}</p>
                     </div>
 
                     {getProvider(currentKey ? currentKey.provider : 'deepseek')?.sampling !== false && (
                       <>
                         <div className="ai-field">
                           <label className="ai-label">
-                            温度 Temperature
+                            {t('myPage.sampling.temperature')}
                             <span className="ai-value">{temperature.toFixed(2)}</span>
                           </label>
                           <input
@@ -824,12 +826,12 @@ function MyPage() {
                             value={temperature}
                             onChange={(e) => setTemperature(parseFloat(e.target.value))}
                           />
-                          <p className="ai-hint">越低越确定，越高越发散（默认 0.7）</p>
+                          <p className="ai-hint">{t('myPage.sampling.temperatureHint')}</p>
                         </div>
 
                         <div className="ai-field">
                           <label className="ai-label">
-                            Top-K
+                            {t('myPage.sampling.topK')}
                             <span className="ai-value">{topK}</span>
                           </label>
                           <input
@@ -839,27 +841,27 @@ function MyPage() {
                             value={topK}
                             onChange={(e) => setTopK(parseInt(e.target.value, 10))}
                           />
-                          <p className="ai-hint">采样时考虑的候选数量（默认 40）</p>
+                          <p className="ai-hint">{t('myPage.sampling.topKHint')}</p>
                         </div>
                       </>
                     )}
                   </div>
                 ) : (
                   <div className="ai-section">
-                    <div className="my-empty">请先在「选择当前模型」中点击一个模型，再设置采样参数</div>
+                    <div className="my-empty">{t('myPage.sampling.needModel')}</div>
                   </div>
                 )}
 
                 <div className="ai-actions">
                   <button className="btn btn-primary" onClick={handleSaveAi} disabled={savingAi}>
-                    {savingAi ? '保存中...' : '保存设置'}
+                    {savingAi ? t('myPage.save.saving') : t('myPage.save.title')}
                   </button>
                   <button className="btn btn-secondary" onClick={handleTestAi} disabled={testingAi}>
-                    {testingAi ? '测试中...' : '测试连接'}
+                    {testingAi ? t('myPage.test.testing') : t('myPage.test.title')}
                   </button>
                 </div>
 
-                {aiSaved && <div className="profile-success ai-saved">&#10003; 已保存</div>}
+                {aiSaved && <div className="profile-success ai-saved">&#10003; {t('myPage.save.done')}</div>}
                 {testResult && (
                   <div className={`ai-test ${testResult.ok ? 'ok' : 'err'}`}>{testResult.text}</div>
                 )}
@@ -870,23 +872,23 @@ function MyPage() {
       </div>
 
       {/* ═══ 二级弹窗（新增/编辑 Key）═══ */}
-      <Modal open={addKeyOpen} title="新增 API Key" confirmText="添加" onCancel={() => setAddKeyOpen(false)} onConfirm={handleAddKey} confirmDisabled={savingKey}>
+      <Modal open={addKeyOpen} title={t('myPage.key.addModal.title')} confirmText={t('myPage.key.addModal.confirm')} onCancel={() => setAddKeyOpen(false)} onConfirm={handleAddKey} confirmDisabled={savingKey}>
         <div className="ai-modal-field">
-          <label className="ai-label">AI 提供商</label>
+          <label className="ai-label">{t('myPage.key.addModal.provider')}</label>
           <CategoryDropdown
             value={newKey.provider}
             onChange={(v) => setNewKey({ ...newKey, provider: v })}
             options={PROVIDERS.map(p => ({ value: p.id, label: p.label }))}
-            placeholder="选择提供商"
+            placeholder={t('myPage.key.addModal.selectProvider')}
             hideClear
           />
         </div>
         <div className="ai-modal-field">
-          <label className="ai-label">API Key</label>
+          <label className="ai-label">{t('myPage.key.addModal.apiKey')}</label>
           <input
             type="password"
             className="profile-input ai-input"
-            placeholder="输入 API Key *"
+            placeholder={t('myPage.key.addModal.apiKeyPlaceholder')}
             value={newKey.api_key}
             onChange={(e) => setNewKey({ ...newKey, api_key: e.target.value })}
             maxLength={300}
@@ -894,11 +896,11 @@ function MyPage() {
           />
         </div>
         <div className="ai-modal-field">
-          <label className="ai-label">备注名</label>
+          <label className="ai-label">{t('myPage.key.addModal.label')}</label>
           <input
             type="text"
             className="profile-input ai-input"
-            placeholder="可选，如「工作账号」"
+            placeholder={t('myPage.key.addModal.labelPlaceholder')}
             value={newKey.label}
             onChange={(e) => setNewKey({ ...newKey, label: e.target.value })}
             maxLength={50}
@@ -906,11 +908,11 @@ function MyPage() {
         </div>
         {newKey.provider === 'custom' && (
           <div className="ai-modal-field">
-            <label className="ai-label">Base URL（必填）</label>
+            <label className="ai-label">{t('myPage.key.addModal.baseUrlRequired')}</label>
             <input
               type="text"
               className="profile-input ai-input"
-              placeholder="如 https://my-custom-endpoint.com/v1"
+              placeholder={t('myPage.key.addModal.baseUrlPlaceholder')}
               value={newKey.base_url}
               onChange={(e) => setNewKey({ ...newKey, base_url: e.target.value })}
               maxLength={500}
@@ -920,24 +922,24 @@ function MyPage() {
         {aiError && addKeyOpen && <div className="ai-modal-err">{aiError}</div>}
       </Modal>
 
-      <Modal open={!!editKeyTarget} title={`编辑 Key${editKeyTarget ? (editKeyTarget.label ? `「${editKeyTarget.label}」` : '') : ''}`} confirmText="保存" onCancel={() => setEditKeyTarget(null)} onConfirm={handleSaveEditKey}>
+      <Modal open={!!editKeyTarget} title={t('myPage.key.editModal.title', { label: editKeyTarget ? (editKeyTarget.label ? editKeyTarget.label : '') : '' })} confirmText={t('myPage.key.editModal.confirm')} onCancel={() => setEditKeyTarget(null)} onConfirm={handleSaveEditKey}>
         <div className="ai-modal-field">
-          <label className="ai-label">备注名</label>
+          <label className="ai-label">{t('myPage.key.editModal.label')}</label>
           <input
             type="text"
             className="profile-input ai-input"
-            placeholder="备注名"
+            placeholder={t('myPage.key.editModal.labelPlaceholder')}
             value={editKey.label}
             onChange={(e) => setEditKey({ ...editKey, label: e.target.value })}
             maxLength={50}
           />
         </div>
         <div className="ai-modal-field">
-          <label className="ai-label">API Key</label>
+          <label className="ai-label">{t('myPage.key.editModal.apiKey')}</label>
           <input
             type="password"
             className="profile-input ai-input"
-            placeholder={editKeyTarget?.key_hint ? `已保存 ${editKeyTarget.key_hint}，输入新 Key 覆盖` : 'API Key'}
+            placeholder={editKeyTarget?.key_hint ? t('myPage.key.editModal.overwriteHint', { hint: editKeyTarget.key_hint }) : t('myPage.key.editModal.apiKey')}
             value={editKey.api_key}
             onChange={(e) => setEditKey({ ...editKey, api_key: e.target.value })}
             maxLength={300}
@@ -946,11 +948,11 @@ function MyPage() {
         </div>
         {editKeyTarget?.provider === 'custom' && (
           <div className="ai-modal-field">
-            <label className="ai-label">Base URL</label>
+            <label className="ai-label">{t('myPage.key.editModal.baseUrl')}</label>
             <input
               type="text"
               className="profile-input ai-input"
-              placeholder="Base URL"
+              placeholder={t('myPage.key.editModal.baseUrl')}
               value={editKey.base_url}
               onChange={(e) => setEditKey({ ...editKey, base_url: e.target.value })}
               maxLength={500}
@@ -960,29 +962,29 @@ function MyPage() {
         {aiError && editKeyTarget && <div className="ai-modal-err">{aiError}</div>}
       </Modal>
 
-      <Modal open={addModelOpen} title="新增模型" confirmText="添加" onCancel={() => setAddModelOpen(false)} onConfirm={handleAddModel}>
+      <Modal open={addModelOpen} title={t('myPage.model.addModal.title')} confirmText={t('myPage.model.addModal.confirm')} onCancel={() => setAddModelOpen(false)} onConfirm={handleAddModel}>
         <div className="ai-modal-field">
-          <label className="ai-label">模型 ID</label>
+          <label className="ai-label">{t('myPage.model.addModal.modelId')}</label>
           <input
             type="text"
             className="profile-input ai-input"
-            placeholder="如 my-custom-v1"
+            placeholder={t('myPage.model.addModal.modelIdPlaceholder')}
             value={newModelName}
             onChange={(e) => setNewModelName(e.target.value)}
             maxLength={100}
             autoFocus
           />
-          <p className="ai-hint">手动添加一个模型到「可用模型」列表，供当前 Key 选择</p>
+          <p className="ai-hint">{t('myPage.model.addModal.hint')}</p>
         </div>
         {aiError && addModelOpen && <div className="ai-modal-err">{aiError}</div>}
       </Modal>
 
       <Modal
         open={!!deleteTarget}
-        title="删除 API Key"
-        message={`确定删除 Key「${deleteTarget ? (deleteTarget.label || deleteTarget.key_hint || deleteTarget.id) : ''}」？此操作不可撤销。`}
-        confirmText="删除"
-        cancelText="取消"
+        title={t('myPage.key.deleteModal.title')}
+        message={t('myPage.key.deleteModal.message', { name: deleteTarget ? (deleteTarget.label || deleteTarget.key_hint || deleteTarget.id) : '' })}
+        confirmText={t('myPage.key.deleteModal.confirm')}
+        cancelText={t('myPage.key.deleteModal.cancel')}
         danger
         confirmDisabled={deleting}
         onCancel={() => setDeleteTarget(null)}

@@ -6,6 +6,7 @@ import Reveal from '../components/Reveal'
 import CategoryDropdown from '../components/CategoryDropdown'
 import { UiIcon } from '../components/Icons'
 import { ALL_CATEGORY, BLOG_CATEGORIES as CATEGORIES } from '../constants'
+import { t } from '../i18n'
 import './Blog.css'
 
 const API_BASE = '/api'
@@ -143,11 +144,11 @@ function BlogListPage() {
       })
       if (!res.ok) {
         const d = await res.json().catch(() => ({}))
-        alert(d.detail || '精选设置失败')
+        alert(d.detail || t('blogList.featuredUpdateFailed'))
         setBlogs(prev => prev.map(b => b.id === blogId ? { ...b, is_featured: !next } : b))
       }
     } catch {
-      alert('网络错误')
+      alert(t('blogList.networkError'))
       setBlogs(prev => prev.map(b => b.id === blogId ? { ...b, is_featured: !next } : b))
     }
   }
@@ -162,13 +163,13 @@ function BlogListPage() {
       })
       if (!res.ok) {
         const d = await res.json().catch(() => ({}))
-        alert(d.detail || '撤回失败')
+        alert(d.detail || t('blogList.withdrawFailed'))
         return
       }
       setBlogs(prev => prev.filter(b => b.id !== withdrawTarget.id))
       setTotal(t => Math.max(0, t - 1))
     } catch {
-      alert('网络错误')
+      alert(t('blogList.networkError'))
     } finally {
       setWithdrawTarget(null)
     }
@@ -184,12 +185,12 @@ function BlogListPage() {
       })
       if (!res.ok) {
         const d = await res.json().catch(() => ({}))
-        alert(d.detail || '分类修改失败')
+        alert(d.detail || t('blogList.categoryUpdateFailed'))
         return
       }
       setBlogs(prev => prev.map(b => b.id === blogId ? { ...b, category: newCat || null } : b))
     } catch {
-      alert('网络错误')
+      alert(t('blogList.networkError'))
     }
   }
 
@@ -202,12 +203,12 @@ function BlogListPage() {
       <div className="blog-main">
         <Reveal className="blog-header">
           <div className="blog-header-content">
-            <h1 className="blog-title">博客</h1>
-            <p className="blog-subtitle">记录思考，分享创造</p>
+            <h1 className="blog-title">{t('blogList.title')}</h1>
+            <p className="blog-subtitle">{t('blogList.subtitle')}</p>
           </div>
           {user && (
             <Link to="/blogs/new" className="btn btn-primary blog-write-btn">
-              写文章
+              {t('blogList.write')}
             </Link>
           )}
         </Reveal>
@@ -215,7 +216,7 @@ function BlogListPage() {
         <div className="blog-toolbar">
           <input
             className="blog-search-input"
-            placeholder="搜索博客标题或内容…"
+            placeholder={t('blogList.searchPlaceholder')}
             value={q}
             onChange={e => setQ(e.target.value)}
           />
@@ -223,37 +224,37 @@ function BlogListPage() {
             value={timeRange}
             onChange={(v) => { setTimeRange(v); setPage(0) }}
             options={[
-              { value: '7d', label: '近7天' },
-              { value: '30d', label: '近30天' },
-              { value: 'year', label: '今年' },
+              { value: '7d', label: t('blogList.time.last7d') },
+              { value: '30d', label: t('blogList.time.last30d') },
+              { value: 'year', label: t('blogList.time.year') },
             ]}
-            placeholder="全部时间"
+            placeholder={t('blogList.time.all')}
           />
           <CategoryDropdown
             value={sort}
             onChange={(v) => { setSort(v); setPage(0) }}
             options={[
-              { value: 'comprehensive', label: '综合排序' },
-              { value: 'created', label: '最新发布' },
-              { value: 'likes', label: '最多点赞' },
+              { value: 'comprehensive', label: t('blogList.sort.comprehensive') },
+              { value: 'created', label: t('blogList.sort.created') },
+              { value: 'likes', label: t('blogList.sort.likes') },
             ]}
-            placeholder="综合排序"
+            placeholder={t('blogList.sort.comprehensive')}
             hideClear
           />
           <div className="blog-view-toggle">
             <button
               className={`blog-view-btn ${view === 'grid' ? 'active' : ''}`}
               onClick={() => switchView('grid')}
-              title="网格视图"
+              title={t('blogList.view.gridTitle')}
             >
-              ▦ 网格
+              {t('blogList.view.grid')}
             </button>
             <button
               className={`blog-view-btn ${view === 'list' ? 'active' : ''}`}
               onClick={() => switchView('list')}
-              title="列表视图"
+              title={t('blogList.view.listTitle')}
             >
-              ☰ 列表
+              {t('blogList.view.list')}
             </button>
           </div>
         </div>
@@ -265,17 +266,17 @@ function BlogListPage() {
               className={`blog-filter-btn ${filterCategory === cat ? 'active' : ''}`}
               onClick={() => { setFilterCategory(cat); setPage(0) }}
             >
-              {cat || '全部'}
+              {cat || t('blogList.category.all')}
             </button>
           ))}
         </div>
 
         {loading ? (
-          <div className="blog-loading">加载中...</div>
+          <div className="blog-loading">{t('blogList.loading')}</div>
         ) : blogs.length === 0 ? (
           <div className="blog-empty">
-            <p>还没有文章</p>
-            {user && <Link to="/blogs/new" className="btn btn-primary">写第一篇</Link>}
+            <p>{t('blogList.empty')}</p>
+            {user && <Link to="/blogs/new" className="btn btn-primary">{t('blogList.writeFirst')}</Link>}
           </div>
         ) : (
           <>
@@ -287,12 +288,12 @@ function BlogListPage() {
                       <div className="blog-card-body">
                         <h2 className="blog-card-title">
                           {blog.category && <span className="blog-card-category">{blog.category}</span>}
-                          {blog.is_featured && <span className="blog-card-featured" title="精选"><UiIcon name="star" filled size={14} /></span>}
+                          {blog.is_featured && <span className="blog-card-featured" title={t('blogList.featured')}><UiIcon name="star" filled size={14} /></span>}
                           {blog.title}
                         </h2>
                         <div className="blog-card-meta">
                           <span className="blog-card-author">
-                            {blog.author?.nickname || blog.author?.username || '匿名'}
+                            {blog.author?.nickname || blog.author?.username || t('blogList.anonymous')}
                           </span>
                           <span className="blog-card-date">
                             {new Date(blog.created_at).toLocaleDateString('zh-CN')}
@@ -305,7 +306,7 @@ function BlogListPage() {
                         <button
                           className={`blog-card-featured-btn ${blog.is_featured ? 'active' : ''}`}
                           onClick={() => handleToggleFeatured(blog.id)}
-                          title={blog.is_featured ? '取消精选' : '设为精选'}
+                          title={blog.is_featured ? t('blogList.unfeatured') : t('blogList.setFeatured')}
                         >
                           <UiIcon name="star" size={13} />
                         </button>
@@ -313,7 +314,7 @@ function BlogListPage() {
                           value={blog.category || ''}
                           onChange={(v) => handleSetCategory(blog.id, v)}
                           options={CATEGORIES.map(c => ({ value: c, label: c }))}
-                          placeholder="未分类"
+                          placeholder={t('blogList.uncategorized')}
                           size="sm"
                         />
                         <button
@@ -323,9 +324,9 @@ function BlogListPage() {
                             e.stopPropagation()
                             setWithdrawTarget({ id: blog.id, title: blog.title })
                           }}
-                          title="撤回"
+                          title={t('blogList.withdraw')}
                         >
-                          撤回
+                          {t('blogList.withdraw')}
                         </button>
                       </div>
                     )}
@@ -337,12 +338,12 @@ function BlogListPage() {
                 {blogs.map((blog, i) => (
                   <div key={blog.id} className="blog-list-item" style={{ animationDelay: `${i * 60}ms` }}>
                     <Link to={`/blogs/${blog.id}`} className="blog-list-item-title">
-                      {blog.is_featured && <span className="blog-list-featured" title="精选"><UiIcon name="star" filled size={14} /></span>}
+                      {blog.is_featured && <span className="blog-list-featured" title={t('blogList.featured')}><UiIcon name="star" filled size={14} /></span>}
                       {blog.title}
                     </Link>
                     <div className="blog-list-meta">
                       {blog.category && <span className="blog-card-category">{blog.category}</span>}
-                      <span>{blog.author?.nickname || blog.author?.username || '匿名'}</span>
+                      <span>{blog.author?.nickname || blog.author?.username || t('blogList.anonymous')}</span>
                       <span>{new Date(blog.created_at).toLocaleDateString('zh-CN')}</span>
                       <span><UiIcon name="heart" size={13} /> {blog.like_count || 0}</span>
                       <span><UiIcon name="message" size={13} /> {blog.comment_count || 0}</span>
@@ -352,23 +353,23 @@ function BlogListPage() {
                         <button
                           className={`blog-card-featured-btn ${blog.is_featured ? 'active' : ''}`}
                           onClick={() => handleToggleFeatured(blog.id)}
-                          title={blog.is_featured ? '取消精选' : '设为精选'}
+                          title={blog.is_featured ? t('blogList.unfeatured') : t('blogList.setFeatured')}
                         >
-                          <UiIcon name="star" size={13} /> 精选
+                          <UiIcon name="star" size={13} /> {t('blogList.featured')}
                         </button>
                         <CategoryDropdown
                           value={blog.category || ''}
                           onChange={(v) => handleSetCategory(blog.id, v)}
                           options={CATEGORIES.map(c => ({ value: c, label: c }))}
-                          placeholder="未分类"
+                          placeholder={t('blogList.uncategorized')}
                           size="sm"
                         />
                         <button
                           className="blog-card-withdraw"
                           onClick={() => setWithdrawTarget({ id: blog.id, title: blog.title })}
-                          title="撤回"
+                          title={t('blogList.withdraw')}
                         >
-                          撤回
+                          {t('blogList.withdraw')}
                         </button>
                       </div>
                     )}
@@ -384,7 +385,7 @@ function BlogListPage() {
                   disabled={page === 0}
                   onClick={() => setPage(p => p - 1)}
                 >
-                  上一页
+                  {t('blogList.prevPage')}
                 </button>
                 <span className="pagination-info">{page + 1} / {totalPages}</span>
                 <button
@@ -392,7 +393,7 @@ function BlogListPage() {
                   disabled={page >= totalPages - 1}
                   onClick={() => setPage(p => p + 1)}
                 >
-                  下一页
+                  {t('blogList.nextPage')}
                 </button>
               </div>
             )}
@@ -402,9 +403,9 @@ function BlogListPage() {
 
       <Modal
         open={!!withdrawTarget}
-        title="管理员撤回博客"
-        message={withdrawTarget ? `确认撤回《${withdrawTarget.title}》？撤回后博客将被删除，无法恢复。` : ''}
-        confirmText="确认撤回"
+        title={t('blogList.withdrawTitle')}
+        message={withdrawTarget ? t('blogList.withdrawMessage', { title: withdrawTarget.title }) : ''}
+        confirmText={t('blogList.withdrawConfirm')}
         danger
         onConfirm={handleWithdraw}
         onCancel={() => setWithdrawTarget(null)}

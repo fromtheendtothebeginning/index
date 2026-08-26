@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Modal from '../components/Modal'
 import { UiIcon } from '../components/Icons'
+import { t } from '../i18n'
 import './LeetCodePage.css'
 
 const MEDAL_COLORS = { 0: 'lc-medal-gold', 1: 'lc-medal-silver', 2: 'lc-medal-bronze' }
@@ -99,7 +100,7 @@ const load = () => {
 
   const handleBind = async () => {
     const name = lcUsername.trim()
-    if (!name) { setLcError('请输入 LeetCode 用户名'); return }
+    if (!name) { setLcError(t('leetcode.bind.usernameRequired')); return }
     setLcSaving(true)
     setLcError('')
     try {
@@ -109,16 +110,16 @@ const load = () => {
         body: JSON.stringify({ leetcode_username: name }),
       })
       const d = await res.json()
-      if (!res.ok) { setLcError(d.detail || '绑定失败'); return }
+      if (!res.ok) { setLcError(d.detail || t('leetcode.bind.failed')); return }
       setMe(d)
       setLcUsername('')
       load()
-    } catch { setLcError('网络错误') }
+    } catch { setLcError(t('leetcode.networkError')) }
     finally { setLcSaving(false) }
   }
 
   const handleUnbind = async () => {
-    if (unbindText.trim() !== '确认解绑') return
+    if (unbindText.trim() !== t('leetcode.unbind.confirmText')) return
     setUnbinding(true)
     try {
       const res = await fetch('/api/leetcode/me', { method: 'DELETE', headers: lcHeaders() })
@@ -166,29 +167,29 @@ const load = () => {
       {!me || !me.bound ? (
         <div className="lc-bind-box">
           <div className="lc-bind-head">
-            <span className="lc-mine-label">绑定 LeetCode 账号</span>
+            <span className="lc-mine-label">{t('leetcode.bind.title')}</span>
             {lcError && <span className="lc-bind-error">{lcError}</span>}
           </div>
           <p className="lc-bind-hint">
-            绑定 leetcode.cn 账号后，榜单将展示你从绑定时刻起的刷题增量（简单 2 分 / 中等 4 分 / 困难 8 分）
+            {t('leetcode.bind.hint')}
           </p>
           <div className="lc-bind-row">
             <input
               type="text"
               className="lc-bind-input"
-              placeholder="LeetCode 用户名"
+              placeholder={t('leetcode.bind.usernamePlaceholder')}
               value={lcUsername}
               onChange={e => setLcUsername(e.target.value)}
               maxLength={100}
             />
             <button className="btn btn-primary lc-bind-btn" onClick={handleBind} disabled={lcSaving}>
-              {lcSaving ? '绑定中...' : '绑定'}
+              {lcSaving ? t('leetcode.bind.binding') : t('leetcode.bind.bind')}
             </button>
           </div>
         </div>
       ) : (
         <>
-          <span className="lc-mine-label">我的排名</span>
+          <span className="lc-mine-label">{t('leetcode.mine.myRank')}</span>
           <span className="lc-mine-rank">#{myRank >= 0 ? myRank + 1 : '-'}</span>
           <span className="lc-mine-user">
             <Avatar user={{ avatar_url: myRow ? myRow.avatar_url : null, nickname: myRow ? myRow.nickname : null, username: myRow ? myRow.username : null }} />
@@ -198,30 +199,30 @@ const load = () => {
               href={`https://leetcode.cn/u/${encodeURIComponent(me.leetcode_username)}`}
               target="_blank"
               rel="noopener noreferrer"
-              title="在 LeetCode 查看主页"
+              title={t('leetcode.link.viewProfile')}
               onClick={e => e.stopPropagation()}
             >@{me.leetcode_username}</a>
             {me.difficulty_mode && (
-              <span className="lc-hard-tag" title="困难模式下得分减半">困难模式</span>
+              <span className="lc-hard-tag" title={t('leetcode.mode.difficultyHint')}>{t('leetcode.mode.difficulty')}</span>
             )}
             {me.serious_mode && (
-              <span className="lc-serious-tag" title="严肃模式下简单题不计入分数">严肃模式</span>
+              <span className="lc-serious-tag" title={t('leetcode.mode.seriousHint')}>{t('leetcode.mode.serious')}</span>
             )}
             {me.boost_mode && (
-              <span className={`lc-boost-tag ${me.score > 0 ? 'lc-boost-tag-gold' : ''}`} title="激励模式：初始 -100 分，3/6/9 计分">激励模式</span>
+              <span className={`lc-boost-tag ${me.score > 0 ? 'lc-boost-tag-gold' : ''}`} title={t('leetcode.mode.boostHint')}>{t('leetcode.mode.boost')}</span>
             )}
             {me.debug_mode && (
-              <span className="lc-debug-tag" title="调试模式：手动调整刷题量，不读取 LeetCode">调试</span>
+              <span className="lc-debug-tag" title={t('leetcode.mode.debugHint')}>{t('leetcode.mode.debug')}</span>
             )}
           </span>
           <span className="lc-mine-stats">
-            增量：简单 {me.inc.easy} · 中等 {me.inc.medium} · 困难 {me.inc.hard} · 合计 {me.total_inc}
+            {t('leetcode.mine.statsIncrement', { easy: me.inc.easy, medium: me.inc.medium, hard: me.inc.hard, total: me.total_inc })}
             <br />
-            力扣累计：简单 {me.cur.easy} · 中等 {me.cur.medium} · 困难 {me.cur.hard} · <b>总刷题量 {me.cur.easy + me.cur.medium + me.cur.hard}</b>
+            {t('leetcode.mine.statsCumulative', { easy: me.cur.easy, medium: me.cur.medium, hard: me.cur.hard, total: me.cur.easy + me.cur.medium + me.cur.hard })}
           </span>
-          <span className="lc-mine-score">{me.score} 分</span>
+          <span className="lc-mine-score">{t('leetcode.mine.score', { score: me.score })}</span>
           <div className="lc-mine-actions">
-            <label className="lc-mode-toggle" title="困难模式下得分减半">
+            <label className="lc-mode-toggle" title={t('leetcode.mode.difficultyHint')}>
               <input
                 type="checkbox"
                 checked={!!me.difficulty_mode}
@@ -234,9 +235,9 @@ const load = () => {
                   handleMode({ difficulty_mode: e.target.checked })
                 }}
               />
-              困难模式
+              {t('leetcode.mode.difficulty')}
             </label>
-            <label className="lc-mode-toggle" title="严肃模式下简单题不计入分数">
+            <label className="lc-mode-toggle" title={t('leetcode.mode.seriousHint')}>
               <input
                 type="checkbox"
                 checked={!!me.serious_mode}
@@ -249,9 +250,9 @@ const load = () => {
                   handleMode({ serious_mode: e.target.checked })
                 }}
               />
-              严肃模式
+              {t('leetcode.mode.serious')}
             </label>
-            <label className="lc-mode-toggle" title="激励模式：初始 -100 分，简单 3 分 / 中等 6 分 / 困难 9 分，与困难/严肃模式互斥">
+            <label className="lc-mode-toggle" title={t('leetcode.mode.boostToggleHint')}>
               <input
                 type="checkbox"
                 checked={!!me.boost_mode}
@@ -260,33 +261,33 @@ const load = () => {
                   else setBoostExitConfirm(true)
                 }}
               />
-              激励模式
+              {t('leetcode.mode.boost')}
             </label>
-            <button className="lc-unbind-btn" onClick={() => setUnbindOpen(true)}>解绑</button>
+            <button className="lc-unbind-btn" onClick={() => setUnbindOpen(true)}>{t('leetcode.unbind.title')}</button>
           </div>
           {unbindOpen && (
             <div className="lc-unbind-confirm">
-              <p className="lc-unbind-tip">解绑后榜单将不再展示你的刷题量，且重新绑定将重新计算（从新绑定时刻起算）。输入「确认解绑」以解绑：</p>
+              <p className="lc-unbind-tip">{t('leetcode.unbind.tip')}</p>
               <div className="lc-unbind-row">
                 <input
                   type="text"
                   className="lc-bind-input"
-                  placeholder="确认解绑"
+                  placeholder={t('leetcode.unbind.confirmText')}
                   value={unbindText}
                   onChange={e => setUnbindText(e.target.value)}
                 />
                 <button
                   className="btn btn-danger lc-unbind-confirm-btn"
-                  disabled={unbindText.trim() !== '确认解绑' || unbinding}
+                  disabled={unbindText.trim() !== t('leetcode.unbind.confirmText') || unbinding}
                   onClick={handleUnbind}
                 >
-                  {unbinding ? '解绑中...' : '确认解绑'}
+                  {unbinding ? t('leetcode.unbind.unbinding') : t('leetcode.unbind.confirmText')}
                 </button>
                 <button
                   className="lc-unbind-cancel"
                   onClick={() => { setUnbindOpen(false); setUnbindText('') }}
                 >
-                  取消
+                  {t('leetcode.unbind.cancel')}
                 </button>
               </div>
             </div>
@@ -301,41 +302,41 @@ const load = () => {
       <Navbar activePage="leetcode" />
       <div className="lc-main">
         <div className="lc-header">
-          <h1 className="lc-title">LeetCode 刷题榜</h1>
+          <h1 className="lc-title">{t('leetcode.title')}</h1>
           <p className="lc-subtitle">
-            绑定 LeetCode 账号后的刷题量 · 简单 2 分 / 中等 4 分 / 困难 8 分 · 困难模式减半 · 严肃模式简单不计分 · 激励模式初始 -100 分（3/6/9）
+            {t('leetcode.subtitle')}
           </p>
         </div>
 
         <div className="lc-toolbar">
           <button className="btn btn-primary lc-refresh-btn" onClick={handleRefresh} disabled={refreshing}>
-            {refreshing ? '同步中...' : '刷新数据'}
+            {refreshing ? t('leetcode.refresh.syncing') : t('leetcode.refresh.label')}
           </button>
           <span className="lc-updated">
-            {board ? `更新于 ${new Date(board.generated_at).toLocaleString('zh-CN')}` : ''}
+            {board ? t('leetcode.updatedAt', { time: new Date(board.generated_at).toLocaleString('zh-CN') }) : ''}
           </span>
-          {updatedTip && <span className="lc-updated-tip">数据已更新</span>}
-          <span className="lc-heartbeat-hint" title="后台每 60 秒自动同步所有绑定用户的 LeetCode 数据">自动同步中</span>
+          {updatedTip && <span className="lc-updated-tip">{t('leetcode.updated')}</span>}
+          <span className="lc-heartbeat-hint" title={t('leetcode.heartbeatHint')}>{t('leetcode.heartbeat')}</span>
         </div>
 
         {meCard}
 
         {loading ? (
-          <div className="lc-loading">加载中...</div>
+          <div className="lc-loading">{t('leetcode.loading')}</div>
         ) : users.length === 0 ? (
           <div className="lc-empty">
-            <p>暂无用户绑定 LeetCode</p>
+            <p>{t('leetcode.empty')}</p>
           </div>
         ) : (
           <div key={refreshKey} className="lc-board">
             <div className="lc-row lc-row-head">
-              <span className="lc-col-rank">排名</span>
-              <span className="lc-col-user">用户</span>
-              <span className="lc-col-stat">简单</span>
-              <span className="lc-col-stat">中等</span>
-              <span className="lc-col-stat">困难</span>
-              <span className="lc-col-stat">总数</span>
-              <span className="lc-col-score">得分</span>
+              <span className="lc-col-rank">{t('leetcode.col.rank')}</span>
+              <span className="lc-col-user">{t('leetcode.col.user')}</span>
+              <span className="lc-col-stat">{t('leetcode.col.easy')}</span>
+              <span className="lc-col-stat">{t('leetcode.col.medium')}</span>
+              <span className="lc-col-stat">{t('leetcode.col.hard')}</span>
+              <span className="lc-col-stat">{t('leetcode.col.total')}</span>
+              <span className="lc-col-score">{t('leetcode.col.score')}</span>
             </div>
             {users.map((u, i) => (
               <div
@@ -345,7 +346,7 @@ const load = () => {
               >
                 <span className="lc-col-rank">
                   {i < 3 ? (
-                    <span className={`lc-medal ${MEDAL_COLORS[i]}`} title={`第 ${i + 1} 名`}>
+                    <span className={`lc-medal ${MEDAL_COLORS[i]}`} title={t('leetcode.rank', { n: i + 1 })}>
                       <UiIcon name="medal" size={20} />
                     </span>
                   ) : (
@@ -360,27 +361,27 @@ const load = () => {
                     href={`https://leetcode.cn/u/${encodeURIComponent(u.leetcode_username)}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    title="在 LeetCode 查看主页"
+                    title={t('leetcode.link.viewProfile')}
                     onClick={e => e.stopPropagation()}
                   >@{u.leetcode_username}</a>
                   {u.difficulty_mode && (
-                    <span className="lc-hard-tag" title="困难模式下得分减半">困难模式</span>
+                    <span className="lc-hard-tag" title={t('leetcode.mode.difficultyHint')}>{t('leetcode.mode.difficulty')}</span>
                   )}
                   {u.serious_mode && (
-                    <span className="lc-serious-tag" title="严肃模式下简单题不计入分数">严肃模式</span>
+                    <span className="lc-serious-tag" title={t('leetcode.mode.seriousHint')}>{t('leetcode.mode.serious')}</span>
                   )}
                   {u.boost_mode && (
-                    <span className={`lc-boost-tag ${u.score > 0 ? 'lc-boost-tag-gold' : ''}`} title="激励模式：初始 -100 分，3/6/9 计分">激励模式</span>
+                    <span className={`lc-boost-tag ${u.score > 0 ? 'lc-boost-tag-gold' : ''}`} title={t('leetcode.mode.boostHint')}>{t('leetcode.mode.boost')}</span>
                   )}
                   {u.debug_mode && (
-                    <span className="lc-debug-tag" title="调试模式：手动调整刷题量，不读取 LeetCode">调试</span>
+                    <span className="lc-debug-tag" title={t('leetcode.mode.debugHint')}>{t('leetcode.mode.debug')}</span>
                   )}
                 </span>
-                <span className="lc-col-stat"><span className="lc-stat-label">简单 </span>{u.easy}</span>
-                <span className="lc-col-stat"><span className="lc-stat-label">中等 </span>{u.medium}</span>
-                <span className="lc-col-stat"><span className="lc-stat-label">困难 </span>{u.hard}</span>
-                <span className="lc-col-stat lc-col-total"><span className="lc-stat-label">总数 </span>{u.total}</span>
-                <span className="lc-col-score"><span className="lc-stat-label">得分 </span>{u.score}</span>
+                <span className="lc-col-stat"><span className="lc-stat-label">{t('leetcode.col.easy')} </span>{u.easy}</span>
+                <span className="lc-col-stat"><span className="lc-stat-label">{t('leetcode.col.medium')} </span>{u.medium}</span>
+                <span className="lc-col-stat"><span className="lc-stat-label">{t('leetcode.col.hard')} </span>{u.hard}</span>
+                <span className="lc-col-stat lc-col-total"><span className="lc-stat-label">{t('leetcode.col.total')} </span>{u.total}</span>
+                <span className="lc-col-score"><span className="lc-stat-label">{t('leetcode.col.score')} </span>{u.score}</span>
               </div>
             ))}
           </div>
@@ -389,9 +390,9 @@ const load = () => {
 
       <Modal
         open={boostConfirm}
-        title="开启激励模式"
-        message="开启激励模式后将清零当前刷题量（已自动备份），退出激励模式时自动恢复。激励模式初始 -100 分，简单 3 分 / 中等 6 分 / 困难 9 分，且与困难、严肃模式互斥。确定开启？"
-        confirmText="确认开启"
+        title={t('leetcode.boost.title')}
+        message={t('leetcode.boost.message')}
+        confirmText={t('leetcode.boost.confirm')}
         danger
         onConfirm={() => {
           setBoostConfirm(false)
@@ -401,11 +402,11 @@ const load = () => {
       />
       <Modal
         open={boostExitConfirm}
-        title="退出激励模式"
+        title={t('leetcode.boostExit.title')}
         message={boostExitTarget
-          ? `激励模式与${boostExitTarget === 'difficulty' ? '困难模式' : '严肃模式'}互斥。退出激励模式后将恢复之前备份的刷题量（含激励期间新刷的题一并算回），并开启${boostExitTarget === 'difficulty' ? '困难模式（得分减半）' : '严肃模式（简单题不计分）'}。确定？`
-          : '退出激励模式后将恢复之前备份的刷题量（含激励期间新刷的题一并算回），并恢复普通计分（简单 2 / 中等 4 / 困难 8）。确定退出？'}
-        confirmText="确认退出"
+          ? t('leetcode.boostExit.messageWithTarget', { mode: boostExitTarget === 'difficulty' ? t('leetcode.mode.difficulty') : t('leetcode.mode.serious'), targetDesc: boostExitTarget === 'difficulty' ? t('leetcode.boostExit.targetDifficulty') : t('leetcode.boostExit.targetSerious') })
+          : t('leetcode.boostExit.messageDefault')}
+        confirmText={t('leetcode.boostExit.confirm')}
         danger
         onConfirm={() => {
           setBoostExitConfirm(false)

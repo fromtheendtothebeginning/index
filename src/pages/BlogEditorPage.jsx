@@ -5,6 +5,7 @@ import CategoryDropdown from '../components/CategoryDropdown'
 import { renderMd } from '../utils/markdown'
 import { UiIcon } from '../components/Icons'
 import { BLOG_CATEGORIES } from '../constants'
+import { t } from '../i18n'
 import './Blog.css'
 
 function BlogEditorPage() {
@@ -41,7 +42,7 @@ function BlogEditorPage() {
         setContent(data.content_md)
         setProjectId(data.project_id || '')
       })
-      .catch(() => setError('加载失败'))
+      .catch(() => setError(t('blogEditor.loadFailed')))
       .finally(() => setLoading(false))
   }, [id, isEdit])
 
@@ -53,7 +54,7 @@ function BlogEditorPage() {
   }, [])
 
   const handleInsertImage = () => {
-    const url = prompt('输入图片 URL（支持图床链接）：')
+    const url = prompt(t('blogEditor.imagePrompt'))
     if (!url) return
     const ta = textareaRef.current
     if (!ta) {
@@ -72,8 +73,8 @@ function BlogEditorPage() {
   }
 
   const handleSave = async () => {
-    if (!title.trim()) { setError('请输入标题'); return }
-    if (!content.trim()) { setError('请输入内容'); return }
+    if (!title.trim()) { setError(t('blogEditor.titleRequired')); return }
+    if (!content.trim()) { setError(t('blogEditor.contentRequired')); return }
     const token = localStorage.getItem('token')
     setSaving(true)
     setError('')
@@ -95,10 +96,10 @@ function BlogEditorPage() {
         }),
       })
       const data = await res.json()
-      if (!res.ok) { setError(data.detail || '保存失败'); return }
+      if (!res.ok) { setError(data.detail || t('blogEditor.saveFailed')); return }
       navigate(isEdit ? `/blogs/${id}` : `/blogs/${data.id}`)
     } catch {
-      setError('网络错误')
+      setError(t('blogEditor.networkError'))
     } finally {
       setSaving(false)
     }
@@ -107,7 +108,7 @@ function BlogEditorPage() {
   if (loading) {
     return (
       <div className="blog-page">
-        <div className="blog-main"><div className="blog-loading">加载中...</div></div>
+        <div className="blog-main"><div className="blog-loading">{t('blogEditor.loading')}</div></div>
       </div>
     )
   }
@@ -119,9 +120,9 @@ function BlogEditorPage() {
       <div className="blog-main">
           <div className="blog-editor">
             <div className="editor-header">
-              <Link to="/blogs" className="blog-back-link">&larr; 返回列表</Link>
+              <Link to="/blogs" className="blog-back-link">&larr; {t('blogEditor.backToList')}</Link>
             </div>
-            <h1 className="editor-title">{isEdit ? '编辑文章' : '写文章'}</h1>
+            <h1 className="editor-title">{isEdit ? t('blogEditor.editTitle') : t('blogEditor.newTitle')}</h1>
 
           {error && <div className="form-server-error">{error}</div>}
 
@@ -129,17 +130,17 @@ function BlogEditorPage() {
             <input
               type="text"
               className="editor-title-input"
-              placeholder="输入文章标题..."
+              placeholder={t('blogEditor.titlePlaceholder')}
               value={title}
               onChange={e => setTitle(e.target.value)}
             />
           </div>
 
           <div className="editor-toolbar">
-            <button type="button" className="toolbar-btn" onClick={handleInsertImage} title="插入图片">
-              <UiIcon name="image" size={15} /> 图床
+            <button type="button" className="toolbar-btn" onClick={handleInsertImage} title={t('blogEditor.insertImage')}>
+              <UiIcon name="image" size={15} /> {t('blogEditor.imageBed')}
             </button>
-            <span className="toolbar-hint">支持 Markdown 语法，图片使用图床链接</span>
+            <span className="toolbar-hint">{t('blogEditor.markdownHint')}</span>
           </div>
 
           <div className="editor-split">
@@ -147,16 +148,16 @@ function BlogEditorPage() {
               <textarea
                 ref={textareaRef}
                 className="editor-textarea"
-                placeholder="使用 Markdown 语法写文章..."
+                placeholder={t('blogEditor.contentPlaceholder')}
                 value={content}
                 onChange={e => setContent(e.target.value)}
               />
             </div>
             <div className="editor-pane preview-pane">
-              <div className="preview-label">预览</div>
+              <div className="preview-label">{t('blogEditor.preview')}</div>
               <div
                 className="markdown-body preview-content"
-                dangerouslySetInnerHTML={{ __html: renderMd(content) || '<p style="color:var(--text-muted)">预览区域</p>' }}
+                dangerouslySetInnerHTML={{ __html: renderMd(content) || `<p style="color:var(--text-muted)">${t('blogEditor.previewEmpty')}</p>` }}
               />
             </div>
           </div>
@@ -166,20 +167,20 @@ function BlogEditorPage() {
               value={category}
               onChange={setCategory}
               options={BLOG_CATEGORIES.map(c => ({ value: c, label: c }))}
-              placeholder="无"
+              placeholder={t('blogEditor.noCategory')}
             />
             <CategoryDropdown
               value={projects.find(p => p.id === projectId)?.name || ''}
               onChange={(v) => setProjectId(v === '' ? '' : Number(v))}
               options={projects.map(p => ({ value: String(p.id), label: p.name }))}
-              placeholder="不关联"
+              placeholder={t('blogEditor.noProject')}
             />
             <button
               className="btn btn-primary"
               onClick={handleSave}
               disabled={saving}
             >
-              {saving ? '保存中...' : (isEdit ? '保存修改' : '发布文章')}
+              {saving ? t('blogEditor.saving') : (isEdit ? t('blogEditor.saveChanges') : t('blogEditor.publish'))}
             </button>
           </div>
         </div>
