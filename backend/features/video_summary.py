@@ -5,6 +5,7 @@
 # → 主模型融合生成 Markdown 总结。字幕仅作下载失败时的降级路径。
 # 全部子进程带 CREATE_NO_WINDOW：父进程为 pythonw 时避免反复弹黑窗。
 
+import gc
 import json
 import os
 import re
@@ -815,6 +816,7 @@ def _set_task(task_id, **kw):
 
 
 def _run_summary_job(task_id, url, use_asr, main_cfg, speech_cfg, user_id):
+    global _ocr_engine
     import tempfile
     tmp = tempfile.mkdtemp(prefix="anticraft_vsum_")
     video_path = None
@@ -952,6 +954,8 @@ def _run_summary_job(task_id, url, use_asr, main_cfg, speech_cfg, user_id):
         _set_task(task_id, status="failed", stage="失败", error=str(e)[:200])
         _save_history(user_id, status="failed", title=title, error=str(e)[:500])
     finally:
+        _ocr_engine = None
+        gc.collect()
         shutil.rmtree(tmp, ignore_errors=True)
         # 只保留最近 40 个任务，防内存膨胀
         with _sum_lock:
