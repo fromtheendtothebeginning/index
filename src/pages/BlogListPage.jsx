@@ -77,7 +77,7 @@ function BlogListPage() {
       `sort=${sort}`,
       from ? `from=${from}` : '',
     ].filter(Boolean).join('&')
-    fetch(`${API_BASE}/blogs?${qs}`)
+    fetch(`${API_BASE}/blogs?${qs}`, { headers: authHeaders() })
       .then(r => r.json())
       .then(data => {
         setBlogs(data.blogs || [])
