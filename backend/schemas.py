@@ -392,9 +392,10 @@ class UpdateAdminUserRequest(BaseModel):
 
 
 class AdminCommentResponse(BaseModel):
-    """管理员视角的评论（含博客标题、用户名与父评论）"""
+    """管理员视角的评论（含博客/项目标题、用户名与父评论）"""
     id: int
     blog_id: Optional[int] = None
+    project_id: Optional[int] = None
     user_id: int
     content: str
     parent_id: Optional[int] = None
@@ -404,6 +405,7 @@ class AdminCommentResponse(BaseModel):
     updated_at: datetime
     user: Optional[CommentUserResponse] = None
     blog_title: Optional[str] = None
+    project_title: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

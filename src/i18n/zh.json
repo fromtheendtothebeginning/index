@@ -317,7 +317,8 @@
     "mine": {
       "myRank": "我的排名",
       "statsIncrement": "增量：简单 {easy} · 中等 {medium} · 困难 {hard} · 合计 {total}",
-      "statsCumulative": "力扣累计：简单 {easy} · 中等 {medium} · 困难 {hard} · <b>总刷题量 {total}</b>",
+      "statsCumulative": "力扣累计：简单 {easy} · 中等 {medium} · 困难 {hard} ·",
+      "statsTotal": "总刷题量 {total}",
       "score": "{score} 分"
     },
     "refresh": {

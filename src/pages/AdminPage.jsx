@@ -560,7 +560,11 @@ function AdminPage() {
                       <div className="admin-comment-meta">
                         <span className="admin-comment-author">{c.user?.nickname || c.user?.username || t('admin.anonymous')}</span>
                         <span className="admin-comment-blog">
-                          <Link to={`/blogs/${c.blog_id}`} target="_blank" rel="noopener noreferrer">{c.blog_title || `#${c.blog_id}`}</Link>
+                          {c.project_id ? (
+                            <Link to={`/projects/${c.project_id}`} target="_blank" rel="noopener noreferrer">{c.project_title || `#${c.project_id}`}</Link>
+                          ) : (
+                            <Link to={`/blogs/${c.blog_id}`} target="_blank" rel="noopener noreferrer">{c.blog_title || `#${c.blog_id}`}</Link>
+                          )}
                         </span>
                         <span className="admin-cell-time">{fmtTime(c.created_at)}</span>
                       </div>

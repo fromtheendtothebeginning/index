@@ -1508,6 +1508,27 @@
   flex-shrink: 0;
 }
 
+.blog-list-like {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  background: none;
+  border: none;
+  font: inherit;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.blog-list-like:hover {
+  color: var(--danger);
+}
+
+.blog-list-like.liked {
+  color: var(--danger);
+}
+
 .blog-list-admin {
   display: flex;
   align-items: center;

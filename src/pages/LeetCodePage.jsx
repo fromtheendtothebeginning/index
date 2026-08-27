@@ -218,7 +218,8 @@ const load = () => {
           <span className="lc-mine-stats">
             {t('leetcode.mine.statsIncrement', { easy: me.inc.easy, medium: me.inc.medium, hard: me.inc.hard, total: me.total_inc })}
             <br />
-            {t('leetcode.mine.statsCumulative', { easy: me.cur.easy, medium: me.cur.medium, hard: me.cur.hard, total: me.cur.easy + me.cur.medium + me.cur.hard })}
+            {t('leetcode.mine.statsCumulative', { easy: me.cur.easy, medium: me.cur.medium, hard: me.cur.hard })}
+            <b>{t('leetcode.mine.statsTotal', { total: me.cur.easy + me.cur.medium + me.cur.hard })}</b>
           </span>
           <span className="lc-mine-score">{t('leetcode.mine.score', { score: me.score })}</span>
           <div className="lc-mine-actions">

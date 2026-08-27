@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session, joinedload
 from auth import hash_password
 from database import get_db
 from deps import require_admin
-from models import Blog, Comment, InviteCode, User
+from models import Blog, Comment, InviteCode, Project, User
 from schemas import (
     AdminBlogListItem, AdminBlogListResponse, AdminCommentListResponse,
     AdminUserListResponse, AdminUserResponse, CreateInviteCodeResponse,
@@ -102,11 +102,17 @@ def admin_list_comments(
         .all()
     )
     # 批量查询博客标题
-    blog_ids = {c.blog_id for c in comments}
+    blog_ids = {c.blog_id for c in comments if c.blog_id}
     blog_titles = {}
     if blog_ids:
         blogs = db.query(Blog).filter(Blog.id.in_(blog_ids)).all()
         blog_titles = {b.id: b.title for b in blogs}
+    # 批量查询项目标题
+    project_ids = {c.project_id for c in comments if c.project_id}
+    project_titles = {}
+    if project_ids:
+        projects = db.query(Project).filter(Project.id.in_(project_ids)).all()
+        project_titles = {p.id: p.name for p in projects}
     # 批量查询父评论（作者与内容）
     parent_ids = {c.parent_id for c in comments if c.parent_id}
     parents = {}
@@ -120,6 +126,7 @@ def admin_list_comments(
         parents = {c.id: (c, u) for c, u in p_rows}
     for c in comments:
         c.blog_title = blog_titles.get(c.blog_id)
+        c.project_title = project_titles.get(c.project_id)
         if c.parent_id and c.parent_id in parents:
             pc, pu = parents[c.parent_id]
             c.parent_content = pc.content

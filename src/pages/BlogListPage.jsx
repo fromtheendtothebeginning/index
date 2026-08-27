@@ -41,6 +41,7 @@ function BlogListPage() {
 
   // 管理员操作
   const [withdrawTarget, setWithdrawTarget] = useState(null) // { id, title }
+  const [likePending, setLikePending] = useState(() => new Set())
 
   useEffect(() => {
     const raw = localStorage.getItem('user')
@@ -150,6 +151,38 @@ function BlogListPage() {
     } catch {
       alert(t('blogList.networkError'))
       setBlogs(prev => prev.map(b => b.id === blogId ? { ...b, is_featured: !next } : b))
+    }
+  }
+
+  // 点赞（乐观更新，未登录跳转登录页）
+  const handleToggleLike = async (blogId) => {
+    if (likePending.has(blogId)) return
+    if (!user) {
+      navigate('/auth')
+      return
+    }
+    const blog = blogs.find(b => b.id === blogId)
+    if (!blog) return
+    const prevLiked = !!blog.liked_by_me
+    const prevCount = blog.like_count || 0
+    setLikePending(prev => new Set(prev).add(blogId))
+    setBlogs(prev => prev.map(b => b.id === blogId ? { ...b, liked_by_me: !prevLiked, like_count: prevCount + (prevLiked ? -1 : 1) } : b))
+    try {
+      const res = await fetch(`/api/blogs/${blogId}/like`, { method: 'POST', headers: authHeaders() })
+      if (res.ok) {
+        const data = await res.json()
+        setBlogs(prev => prev.map(b => b.id === blogId ? { ...b, liked_by_me: data.liked, like_count: data.like_count } : b))
+      } else {
+        setBlogs(prev => prev.map(b => b.id === blogId ? { ...b, liked_by_me: prevLiked, like_count: prevCount } : b))
+      }
+    } catch {
+      setBlogs(prev => prev.map(b => b.id === blogId ? { ...b, liked_by_me: prevLiked, like_count: prevCount } : b))
+    } finally {
+      setLikePending(prev => {
+        const next = new Set(prev)
+        next.delete(blogId)
+        return next
+      })
     }
   }
 
@@ -345,7 +378,17 @@ function BlogListPage() {
                       {blog.category && <span className="blog-card-category">{blog.category}</span>}
                       <span>{blog.author?.nickname || blog.author?.username || t('blogList.anonymous')}</span>
                       <span>{new Date(blog.created_at).toLocaleDateString('zh-CN')}</span>
-                      <span><UiIcon name="heart" size={13} /> {blog.like_count || 0}</span>
+                      <button
+                        type="button"
+                        className={`blog-list-like ${blog.liked_by_me ? 'liked' : ''}`}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          handleToggleLike(blog.id)
+                        }}
+                      >
+                        <UiIcon name="heart" filled={blog.liked_by_me} size={13} /> {blog.like_count || 0}
+                      </button>
                       <span><UiIcon name="message" size={13} /> {blog.comment_count || 0}</span>
                     </div>
                     {isAdmin && (
