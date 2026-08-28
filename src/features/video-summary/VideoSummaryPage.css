@@ -87,7 +87,8 @@
 
 /* 双栏布局：左侧历史任务栏（DeepSeek 风格）+ 右侧内容 */
 .vs-main.tool-main {
-  max-width: min(1500px, 96vw);
+  /* 右侧内容区与其他工具页 .tool-main 同宽（720px）：容器 = 历史栏 + 间隙 + 720 */
+  max-width: min(calc(clamp(200px, 22vw, 320px) + clamp(16px, 3vw, 36px) + 720px), 96vw);
   padding-left: 24px;
   padding-right: 24px;
 }
