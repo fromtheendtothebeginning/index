@@ -52,6 +52,7 @@ export default function VideoSummaryPage() {
   const streamCtlRef = useRef(null)
   const [history, setHistory] = useState([])
   const [viewingId, setViewingId] = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
 
   // 进入页面：恢复上次成果/进度 + 拉取历史
   useEffect(() => {
@@ -86,6 +87,25 @@ export default function VideoSummaryPage() {
       .then(r => r.json())
       .then(d => { setResult(d); setCopied(false) })
       .catch(e => setError(t('videoSummary.history.loadError')))
+  }
+
+  function handleDeleteHistory() {
+    if (!deleteTarget) return
+    const id = deleteTarget.id
+    fetch(`/api/tools/video-summary/history/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    })
+      .then(r => {
+        if (!r.ok) throw new Error()
+        setHistory(prev => prev.filter(h => h.id !== id))
+        if (viewingId === id) {
+          setViewingId(null)
+          setResult(null)
+        }
+      })
+      .catch(() => setError(t('videoSummary.history.deleteFailed')))
+      .finally(() => setDeleteTarget(null))
   }
 
   // 关闭流式连接
@@ -241,8 +261,7 @@ export default function VideoSummaryPage() {
                 <div className="vs-sidebar-empty">{t('videoSummary.history.empty')}</div>
               ) : (
                 history.map(h => (
-                  <button
-                    type="button"
+                  <div
                     key={h.id}
                     className={`vs-sidebar-item ${h.status === 'failed' ? 'failed' : ''} ${viewingId === h.id ? 'active' : ''}`}
                     onClick={() => viewHistory(h.id)}
@@ -252,7 +271,15 @@ export default function VideoSummaryPage() {
                       {h.status === 'failed' ? t('videoSummary.status.failed') : `${t(SOURCE_LABEL[h.source]) || h.source} · ${h.model || ''}`}
                       {' · '}{fmtTime(h.created_at)}
                     </span>
-                  </button>
+                    <button
+                      type="button"
+                      className="vs-sidebar-del"
+                      title={t('videoSummary.history.deleteTitle')}
+                      onClick={e => { e.stopPropagation(); setDeleteTarget(h) }}
+                    >
+                      ×
+                    </button>
+                  </div>
                 ))
               )}
             </div>
@@ -352,6 +379,17 @@ export default function VideoSummaryPage() {
         showCancel
         onConfirm={gotoAiSettings}
         onCancel={() => setShowConfigModal(false)}
+      />
+
+      <Modal
+        open={!!deleteTarget}
+        title={t('videoSummary.history.deleteTitle')}
+        message={t('videoSummary.history.deleteConfirm', { title: deleteTarget?.title || t('videoSummary.history.unnamed') })}
+        confirmText={t('videoSummary.history.deleteConfirmText')}
+        cancelText={t('modal.cancel')}
+        showCancel
+        onConfirm={handleDeleteHistory}
+        onCancel={() => setDeleteTarget(null)}
       />
     </div>
   )

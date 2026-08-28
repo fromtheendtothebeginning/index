@@ -1122,3 +1122,16 @@ def video_summary_history_detail(record_id: int, current_user: User = Depends(ge
     if not r:
         raise HTTPException(status_code=404, detail="记录不存在")
     return _record_to_result(r)
+
+
+@router.delete("/api/tools/video-summary/history/{record_id}", tags=["工具"])
+def video_summary_history_delete(record_id: int, current_user: User = Depends(get_current_user_obj), db: Session = Depends(get_db)):
+    """删除本人的一条历史记录"""
+    r = (db.query(VideoSummaryRecord)
+         .filter(VideoSummaryRecord.id == record_id, VideoSummaryRecord.user_id == current_user.id)
+         .first())
+    if not r:
+        raise HTTPException(status_code=404, detail="记录不存在")
+    db.delete(r)
+    db.commit()
+    return {"message": "已删除"}

@@ -855,7 +855,11 @@
       "title": "历史记录",
       "empty": "暂无历史记录",
       "unnamed": "（未命名视频）",
-      "loadError": "加载历史失败"
+      "loadError": "加载历史失败",
+      "deleteTitle": "删除记录",
+      "deleteConfirm": "确定删除「{title}」的总结记录？此操作不可恢复。",
+      "deleteConfirmText": "删除",
+      "deleteFailed": "删除失败"
     },
     "status": {
       "failed": "失败"

@@ -146,6 +146,7 @@
 }
 
 .vs-sidebar-item {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -160,6 +161,40 @@
 
 .vs-sidebar-item:hover {
   background: var(--bg-elevated);
+}
+
+/* 悬停行提升层级：删除按钮绝对定位不被相邻项遮挡 */
+.vs-sidebar-item:hover {
+  position: relative;
+  z-index: 5;
+}
+
+.vs-sidebar-del {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.vs-sidebar-item:hover .vs-sidebar-del {
+  display: inline-flex;
+}
+
+.vs-sidebar-del:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 .vs-sidebar-item.active {
