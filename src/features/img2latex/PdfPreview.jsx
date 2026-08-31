@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import * as pdfjsLib from 'pdfjs-dist'
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
+import PdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?worker'
 import { t } from '../../i18n'
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker
+// 用 Vite ?worker 把 PDF.js worker 打包为独立 worker 文件（.js，标准 MIME），
+// 避免动态 import .mjs 在部分服务器返回错误 MIME 时被浏览器拒绝
+pdfjsLib.GlobalWorkerOptions.workerPort = new PdfWorker()
 
 // 开源 PDF.js 渲染：canvas 逐页绘制，绕开 iframe/object 在 CSP（frame-src 不含 blob:）下的预览阻拦
 function PdfPreview({ url }) {
