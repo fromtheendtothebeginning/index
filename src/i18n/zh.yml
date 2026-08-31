@@ -70,6 +70,38 @@ toolHome:
   videoSummary:
     name: 视频AI总结
     desc: 提取视频字幕，用你自己的 AI Key 生成 Markdown 总结
+  img2latex:
+    name: 图文转LaTeX
+    desc: 上传图片与说明，AI 生成 LaTeX 代码并在线编译为 PDF
+img2latex:
+  navLabel: 图文转LaTeX
+  title: 图文转LaTeX
+  subtitle: 上传图片与文字说明，AI 识图生成 LaTeX 代码，在线编译为 PDF 下载
+  backToTools: ← 返回工具主页
+  loginHint: 工具需要登录后使用。
+  goLogin: 去登录
+  step:
+    images: ① 上传图片与说明
+    code: ② LaTeX 代码（可编辑）
+    pdf: ③ 编译结果
+  dropHint: 点击或拖拽图片到此处（最多 4 张，单张 ≤6MB）
+  removeImage: 移除图片
+  notesPlaceholder: 补充说明（可选）：如「整理成习题并附解答」「按图片顺序排版」…
+  generate: 生成 LaTeX
+  generating: 生成中…
+  copyCode: 复制代码
+  copied: ✓ 已复制
+  compile: 编译为 PDF
+  compiling: 编译中…
+  downloadPdf: 下载 PDF
+  noEngine: 服务器未安装 XeLaTeX 编译引擎，无法编译
+  err:
+    noImage: 请至少上传一张图片
+    generate: 生成失败，请稍后重试
+    compile: 编译失败，请检查代码或查看错误日志
+  configModal:
+    title: 识图模型不可用
+    message: 使用本工具需要先在「我的 → AI 设置」配置识图模型（支持图片输入的模型）。
 videoParse:
   loginRequired: 请先登录后使用工具
   inputUrlRequired: 请输入视频链接

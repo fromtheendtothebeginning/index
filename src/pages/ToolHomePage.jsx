@@ -32,6 +32,15 @@ function ToolHomePage() {
             </div>
             <span className="tool-card-arrow">→</span>
           </Link>
+
+          <Link to="/tools/img2latex" className="tool-card-link">
+            <div className="tool-card-icon"><UiIcon name="img2latex" size={28} className="tool-brand-icon" /></div>
+            <div className="tool-card-info">
+              <h2 className="tool-card-name">{t('toolHome.img2latex.name')}</h2>
+              <p className="tool-card-desc">{t('toolHome.img2latex.desc')}</p>
+            </div>
+            <span className="tool-card-arrow">→</span>
+          </Link>
         </div>
       </div>
     </div>

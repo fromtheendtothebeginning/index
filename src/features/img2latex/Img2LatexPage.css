@@ -1,0 +1,192 @@
+/* Img2LatexPage.css — 图文转 LaTeX 工具页私有样式（基础复用 ToolParsePage.css） */
+
+.i2l-main {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.i2l-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.i2l-card-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.i2l-error {
+  background: var(--danger-soft, rgba(220, 38, 38, 0.08));
+  border: 1px solid var(--danger-border, rgba(220, 38, 38, 0.3));
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+.i2l-error pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-size: 12.5px;
+  color: var(--danger, #dc2626);
+  font-family: inherit;
+}
+
+/* 拖放区 */
+.i2l-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 22px 16px;
+  border: 1.5px dashed var(--border-color);
+  border-radius: 10px;
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.i2l-drop:hover {
+  border-color: var(--accent-1);
+  color: var(--accent-1);
+}
+
+.i2l-drop.has {
+  padding: 12px;
+}
+
+/* 缩略图 */
+.i2l-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.i2l-thumb {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.i2l-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.i2l-thumb-del {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.i2l-thumb-del:hover {
+  background: var(--danger, #dc2626);
+}
+
+/* 补充说明 */
+.i2l-notes {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13.5px;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--bg-elevated, var(--bg-card));
+  box-sizing: border-box;
+}
+
+.i2l-notes:focus {
+  outline: none;
+  border-color: var(--accent-1);
+}
+
+/* 按钮 */
+.i2l-btn {
+  align-self: flex-start;
+}
+
+.i2l-btn-row {
+  display: flex;
+  gap: 10px;
+}
+
+.i2l-btn-sm {
+  padding: 7px 16px;
+  font-size: 13.5px;
+}
+
+/* 代码编辑 */
+.i2l-code {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12.5px;
+  font-family: Consolas, Monaco, 'Courier New', monospace;
+  line-height: 1.55;
+  color: var(--text-primary);
+  background: var(--bg-elevated, var(--bg-card));
+  tab-size: 2;
+  box-sizing: border-box;
+}
+
+.i2l-code:focus {
+  outline: none;
+  border-color: var(--accent-1);
+}
+
+.i2l-engine-hint {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+/* PDF 预览 */
+.i2l-pdf-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.i2l-pdf {
+  width: 100%;
+  height: 560px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: #fff;
+}
+
+@media (max-width: 640px) {
+  .i2l-pdf {
+    height: 420px;
+  }
+}
