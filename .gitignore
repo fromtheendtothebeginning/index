@@ -83,3 +83,6 @@ run-backend-hidden.cmd
 run-frontend-hidden.cmd
 opencode.json
 
+# 图文转 LaTeX 会话文件（用户上传的临时文件，运行时生成）
+backend/img2latex_files/
+

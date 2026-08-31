@@ -80,29 +80,42 @@ img2latex:
   backToTools: ← 返回工具主页
   loginHint: 工具需要登录后使用。
   goLogin: 去登录
+  stepNav:
+    '1': 上传内容
+    '2': LaTeX 代码
+    '3': 编译结果
   step:
-    images: ① 上传内容（图片 / Markdown / 文字说明）
+    images: ① 上传内容（图片 / Markdown 文件，拖拽或点击）
     code: ② LaTeX 代码（可编辑）
     pdf: ③ 编译结果
-  dropHint: 点击或拖拽图片到此处（最多 5 张，单张 ≤6MB）
-  mdDropHint: 点击或拖拽 Markdown 文件到此处（最多 2 份，单份 ≤256KB）
+  dropHint: 点击或拖拽图片 / Markdown 文件到此处（图片 ≤5 张、md ≤2 份，自动识别类型）
   removeImage: 移除
   notesPlaceholder: 文字说明（可选，≤2 万字）：如「整理成习题并附解答」「按输入顺序排版」…
+  next: 下一步
+  back: 上一步（撤销）
+  saving: 保存中…
   generate: 生成 LaTeX
   generating: 生成中…
+  regenerate: 重新生成
+  codePlaceholder: 点击「生成 LaTeX」或手动粘贴代码…
   copyCode: 复制代码
   copied: ✓ 已复制
   compile: 编译为 PDF
+  compileHint: 已进入编译步骤，点击下方按钮将 LaTeX 编译为 PDF
+  recompile: 重新编译
   compiling: 编译中…
   downloadPdf: 下载 PDF
   noEngine: 服务器未安装 XeLaTeX 编译引擎，无法编译
   err:
-    noInput: 请至少上传图片、Markdown 文件或填写文字说明中的一种
+    noInput: 请至少上传图片或 Markdown 文件中的一种
+    needCode: 请先生成或粘贴 LaTeX 代码
+    saveFailed: 保存失败，请稍后重试
     generate: 生成失败，请稍后重试
     compile: 编译失败，请检查代码或查看错误日志
   configModal:
-    title: 识图模型不可用
-    message: 使用本工具需要先在「我的 → AI 设置」配置识图模型（支持图片输入的模型）。
+    title: AI 模型不可用
+    messageMain: 使用本工具（纯文字 / Markdown 输入）需要先在「我的 → AI 设置」选择当前使用的 Key 与模型。
+    messageVision: 使用本工具（含图片输入）需要先在「我的 → AI 设置」配置识图模型（支持图片输入的模型）。
 videoParse:
   loginRequired: 请先登录后使用工具
   inputUrlRequired: 请输入视频链接

@@ -63,37 +63,138 @@
   padding: 12px;
 }
 
-/* Markdown 文件拖放区与列表 */
-.i2l-drop-md {
-  padding: 14px 16px;
-  flex-direction: row;
-  justify-content: center;
-}
-
-.i2l-md-list {
+/* 统一文件列表（图片缩略 + md 图标） */
+.i2l-files {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
-.i2l-md-item {
+.i2l-file-item {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 6px 10px;
+  padding-right: 8px;
   border: 1px solid var(--border-color);
   border-radius: 8px;
   background: var(--bg-elevated, var(--bg-card));
+  max-width: 220px;
 }
 
-.i2l-md-name {
-  font-size: 13px;
+.i2l-file-item.image {
+  padding: 6px;
+}
+
+.i2l-file-thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 6px;
+  display: block;
+}
+
+.i2l-file-md-icon {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: var(--accent-1-soft, rgba(0, 120, 255, 0.1));
+  color: var(--accent-1);
+  flex-shrink: 0;
+}
+
+.i2l-file-name {
+  font-size: 12.5px;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   flex: 1;
+  min-width: 0;
+}
+
+/* 步骤指示器 */
+.i2l-stepper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 2px;
+}
+
+.i2l-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.i2l-step-num {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--border-color);
+  color: var(--text-secondary);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.i2l-step.active {
+  border-color: var(--accent-1);
+  color: var(--accent-1);
+}
+
+.i2l-step.active .i2l-step-num {
+  background: var(--accent-1);
+  color: #fff;
+}
+
+.i2l-step.done {
+  color: var(--text-primary);
+}
+
+.i2l-step.done .i2l-step-num {
+  background: var(--accent-1-soft);
+  color: var(--accent-1);
+}
+
+.i2l-step:hover:not(.active) {
+  border-color: var(--accent-1);
+}
+
+/* 导航行（上一步/下一步） */
+.i2l-nav-row {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+/* 编译空态 */
+.i2l-pdf-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.i2l-pdf-empty p {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--text-muted);
 }
 
 /* 缩略图 */
