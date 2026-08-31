@@ -348,10 +348,6 @@
   font-weight: 600;
 }
 
-.lc-row-hard {
-  background: var(--accent-1-soft);
-}
-
 .lc-col-rank {
   font-weight: 700;
   color: var(--text-secondary);

@@ -342,7 +342,7 @@ const load = () => {
             {users.map((u, i) => (
               <div
                 key={u.user_id}
-                className={`lc-row ${u.difficulty_mode ? 'lc-row-hard' : ''} ${me && me.bound && localUser && u.user_id === localUser.id ? 'lc-row-self' : ''}`}
+                className={`lc-row ${me && me.bound && localUser && u.user_id === localUser.id ? 'lc-row-self' : ''}`}
                 style={{ animationDelay: `${i * 60}ms` }}
               >
                 <span className="lc-col-rank">
