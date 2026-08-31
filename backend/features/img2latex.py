@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import tempfile
 import urllib.request
+from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import Response
@@ -20,8 +21,12 @@ from models import AiKey, AiSetting, User
 
 router = APIRouter()
 
-_MAX_IMAGES = 4
+_MAX_IMAGES = 5
 _MAX_IMAGE_BYTES = 6 * 1024 * 1024   # 单张 ≤6MB
+_MAX_MD_FILES = 2                    # Markdown 文件 ≤2 份
+_MAX_MD_BYTES = 256 * 1024           # 单份 md ≤256KB
+_MAX_MD_CHARS = 50000                # 单份 md 送入 AI 最多 5 万字
+_MAX_NOTES_CHARS = 20000             # 文字说明 ≤2 万字
 _AI_TIMEOUT = 300                    # 识图生成超时
 _COMPILE_TIMEOUT = 90                # 单遍 XeLaTeX 超时
 _CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000) if os.name == "nt" else 0
@@ -56,15 +61,17 @@ def _resolve_vision_model(db: Session, user_id: int):
 # ============================================
 
 _SYSTEM_PROMPT = (
-    "你是专业的 LaTeX 排版专家。用户会提供图片（题目、笔记、板书、试卷、文档截图等）和文字说明，"
+    "你是专业的 LaTeX 排版专家。用户会提供图片（题目、笔记、板书、试卷、文档截图等）、文字说明和/或 Markdown 文件内容，"
     "请把内容整理成一份完整、可直接编译的 LaTeX 文档。\n"
     "要求：\n"
     "1. 第一行必须是 \\documentclass，文档类固定用 ctexart（支持中文，XeLaTeX 编译）；最后一行必须是 \\end{document}，结构完整；\n"
-    "2. 图片中的文字、数学公式、表格、列表如实还原：公式用标准 LaTeX 数学环境（amsmath），下标 _ 上标 ^ 分数 \\frac 求和 \\sum 积分 \\int 规范书写；\n"
-    "3. 只使用常见宏包：amsmath、amssymb、geometry、enumitem、booktabs、array；禁止冷门或过时宏包；\n"
-    "4. 禁止 \\includegraphics 等引用外部文件的命令（编译环境无外部文件）；图片内容用文字/表格/公式表达；\n"
-    "5. 用户文字说明中的要求（如添加解答、调整结构）应尽量满足；\n"
-    "6. 只输出 LaTeX 源代码本身：不要 markdown 代码块围栏（```），不要任何解释或多余文字。"
+    "2. 图片中的文字、数学公式、表格、列表如实还原；Markdown 内容保留其结构（标题→section、列表→itemize/enumerate、表格→tabular、代码→verbatim/listing）；文字说明中的要求尽量满足；\n"
+    "3. 公式用标准 LaTeX 数学环境（amsmath）：下标 _ 上标 ^ 分数 \\frac 求和 \\sum 积分 \\int；\n"
+    "4. 只使用常见宏包：amsmath、amssymb、geometry、enumitem、booktabs、array、fancyvrb；禁止冷门或过时宏包；\n"
+    "5. 禁止 \\includegraphics 等引用外部文件的命令（编译环境无外部文件）；图片内容用文字/表格/公式表达；\n"
+    "6. 数学铁律：只有真正的数学公式才用数学环境（$...$、\\(...\\)、\\[\\]）；普通文本（数字、百分比、文件名、代码标识符）一律写成普通文本，不要包数学环境；\n"
+    "7. 百分号在 LaTeX 中是注释符，所有需要显示的 % 必须写为 \\%（含数学环境内外）；如 30% 写 30\\%，3/10 写 3/10（不要写成 \\\\(3/10=30\\\\%\\\\) 这种用数学环境包普通文本的写法）；\n"
+    "8. 只输出 LaTeX 源代码本身：不要 markdown 代码块围栏（```），不要任何解释或多余文字。"
 )
 
 
@@ -74,14 +81,14 @@ def _strip_fence(text: str) -> str:
     return (m.group(1) if m else text).strip() + "\n"
 
 
-def _ai_vision_chat(provider_id, api_key, model, base_url, system, notes, images):
-    """带图对话：images = [(mime, b64)]。按 provider api 风格构造，返回文本。"""
+def _ai_vision_chat(provider_id, api_key, model, base_url, system, user_text, images):
+    """带图对话：images = [(mime, b64)]，user_text 为已组装好的文字/Markdown 说明。按 provider api 风格构造，返回文本。"""
     p = aisettings.get_provider(provider_id)
     api = aisettings.resolve_api(provider_id, model)
     base = base_url or (p["base_url"] if p else "")
     url = aisettings._endpoint_url(api, base, provider_id)
 
-    user_text = ("请根据以下图片内容生成 LaTeX 文档。" + (f"\n文字说明：{notes}" if notes.strip() else ""))
+    user_text = user_text or "请根据输入内容生成 LaTeX 文档。"
 
     if api == "anthropic":
         parts = [{"type": "image", "source": {"type": "base64", "media_type": mime, "data": b64}}
@@ -147,16 +154,25 @@ def _ai_vision_chat(provider_id, api_key, model, base_url, system, notes, images
 
 @router.post("/api/tools/img2latex/generate", tags=["工具"])
 def img2latex_generate(
-    images: list[UploadFile] = File(...),
+    images: Optional[list[UploadFile]] = File(default=None),
+    md_files: Optional[list[UploadFile]] = File(default=None),
     notes: str = Form(""),
     current_user: User = Depends(get_current_user_obj),
     db: Session = Depends(get_db),
 ):
-    """图文 → AI 识图 → LaTeX 代码（需在 AI 设置配置识图模型）"""
-    if not images:
-        raise HTTPException(status_code=400, detail="请至少上传一张图片")
+    """图片/Markdown 文件/文字说明（任一或任意组合）→ AI 生成 LaTeX 代码（需在 AI 设置配置识图模型）"""
+    images = images or []
+    md_files = md_files or []
+    notes = (notes or "").strip()
     if len(images) > _MAX_IMAGES:
         raise HTTPException(status_code=400, detail=f"最多上传 {_MAX_IMAGES} 张图片")
+    if len(md_files) > _MAX_MD_FILES:
+        raise HTTPException(status_code=400, detail=f"最多上传 {_MAX_MD_FILES} 份 Markdown 文件")
+    if len(notes) > _MAX_NOTES_CHARS:
+        raise HTTPException(status_code=400, detail=f"文字说明不能超过 {_MAX_NOTES_CHARS} 字")
+    if not images and not md_files and not notes:
+        raise HTTPException(status_code=400, detail="请至少提供图片、Markdown 文件或文字说明中的一种")
+
     parsed = []
     for f in images:
         raw = f.file.read()
@@ -168,9 +184,24 @@ def img2latex_generate(
         import base64 as _b64
         parsed.append((mime, _b64.b64encode(raw).decode()))
 
+    md_texts = []
+    for f in md_files:
+        raw = f.file.read()
+        if len(raw) > _MAX_MD_BYTES:
+            raise HTTPException(status_code=400, detail=f"Markdown 文件「{f.filename}」超过 256KB，请精简后重试")
+        md_texts.append(raw.decode("utf-8", errors="replace")[:_MAX_MD_CHARS])
+
+    user_text = "请根据以下输入内容生成 LaTeX 文档。"
+    if md_texts:
+        for i, mt in enumerate(md_texts, 1):
+            user_text += f"\n\n【Markdown 文件 {i}】\n{mt}"
+    if notes:
+        user_text += f"\n\n【文字说明】\n{notes}"
+
     provider_id, api_key, model, base_url = _resolve_vision_model(db, current_user.id)
-    _log(f"img2latex generate: user={current_user.id} model={provider_id}/{model} images={len(parsed)}")
-    code = _ai_vision_chat(provider_id, api_key, model, base_url, _SYSTEM_PROMPT, notes or "", parsed)
+    _log(f"img2latex generate: user={current_user.id} model={provider_id}/{model} "
+         f"images={len(parsed)} md={len(md_texts)} notes={len(notes)}")
+    code = _ai_vision_chat(provider_id, api_key, model, base_url, _SYSTEM_PROMPT, user_text, parsed)
     return {"code": _strip_fence(code)}
 
 
@@ -180,6 +211,23 @@ def img2latex_generate(
 
 class CompileRequest(BaseModel):
     code: str
+
+
+def _fix_math_percent(code: str) -> str:
+    """数学环境内裸 % 转义为转义百分号：% 是 LaTeX 注释符，若 AI 把含 % 的文本包进数学环境，
+    会导致 % 吞掉闭合分隔符（如 \\(3/10 = 30%\\)）使文档编译失败。"""
+    def _esc(m):
+        return re.sub(r"(?<!\\)%", r"\\%", m.group(0))
+    return re.sub(r"(\\\[.*?\\\]|\\\(.*?\\\)|\$\$.*?\$\$|\$[^$\n]*\$)", _esc, code, flags=re.S)
+
+
+def _sanitize_latex(code: str) -> str:
+    """编译前防御性清洗：去首尾空白 + 修复数学环境内 % + 补齐缺失的文档头"""
+    code = code.strip()
+    if not code.startswith("\\documentclass"):
+        code = "\\documentclass{ctexart}\n" + code
+    code = _fix_math_percent(code)
+    return code + "\n"
 
 
 @router.get("/api/tools/img2latex/available", tags=["工具"])
@@ -216,6 +264,7 @@ def img2latex_compile(req: CompileRequest, current_user: User = Depends(get_curr
     if len(code) > 200_000:
         raise HTTPException(status_code=400, detail="LaTeX 代码过长（>200KB）")
 
+    code = _sanitize_latex(code)
     tmp = tempfile.mkdtemp(prefix="anticraft_tex_")
     try:
         tex_path = os.path.join(tmp, "document.tex")

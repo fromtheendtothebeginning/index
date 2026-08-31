@@ -10,6 +10,7 @@ import './Img2LatexPage.css'
 function Img2LatexPage() {
   const token = localStorage.getItem('token')
   const [images, setImages] = useState([])          // [{ file, url }]
+  const [mdFiles, setMdFiles] = useState([])         // [{ file, name }]
   const [notes, setNotes] = useState('')
   const [code, setCode] = useState('')
   const [genLoading, setGenLoading] = useState(false)
@@ -20,6 +21,7 @@ function Img2LatexPage() {
   const [showConfigModal, setShowConfigModal] = useState(false)
   const [copied, setCopied] = useState(false)
   const fileInputRef = useRef(null)
+  const mdInputRef = useRef(null)
   const pdfBlobRef = useRef(null)
 
   useEffect(() => {
@@ -39,7 +41,16 @@ function Img2LatexPage() {
       if (!f.type.startsWith('image/')) continue
       next.push({ file: f, url: URL.createObjectURL(f) })
     }
-    setImages(prev => [...prev, ...next].slice(0, 4))
+    setImages(prev => [...prev, ...next].slice(0, 5))
+  }
+
+  function addMdFiles(files) {
+    const next = []
+    for (const f of files) {
+      if (!/\.(md|markdown)$/i.test(f.name)) continue
+      next.push({ file: f, name: f.name })
+    }
+    setMdFiles(prev => [...prev, ...next].slice(0, 2))
   }
 
   function removeImage(i) {
@@ -49,6 +60,10 @@ function Img2LatexPage() {
     })
   }
 
+  function removeMdFile(i) {
+    setMdFiles(prev => prev.filter((_, idx) => idx !== i))
+  }
+
   function gotoAiSettings() {
     sessionStorage.setItem('profile_redirect', '/tools/img2latex')
     window.location.href = '/profile'
@@ -56,13 +71,17 @@ function Img2LatexPage() {
 
   async function handleGenerate() {
     if (genLoading) return
-    if (images.length === 0) { setError(t('img2latex.err.noImage')); return }
+    if (images.length === 0 && mdFiles.length === 0 && !notes.trim()) {
+      setError(t('img2latex.err.noInput'))
+      return
+    }
     setGenLoading(true)
     setError('')
     setPdfUrl(null)
     try {
       const fd = new FormData()
       images.forEach(it => fd.append('images', it.file))
+      mdFiles.forEach(it => fd.append('md_files', it.file))
       fd.append('notes', notes)
       const res = await fetch('/api/tools/img2latex/generate', {
         method: 'POST',
@@ -136,7 +155,7 @@ function Img2LatexPage() {
 
         {error && <div className="i2l-error"><pre>{error}</pre></div>}
 
-        {/* ① 上传图片 */}
+        {/* ① 上传图片与 Markdown */}
         <section className="i2l-card">
           <h2 className="i2l-card-title">{t('img2latex.step.images')}</h2>
           <div
@@ -166,6 +185,33 @@ function Img2LatexPage() {
               ))}
             </div>
           )}
+          <div
+            className={`i2l-drop i2l-drop-md ${mdFiles.length ? 'has' : ''}`}
+            onClick={() => mdInputRef.current?.click()}
+            onDragOver={e => e.preventDefault()}
+            onDrop={e => { e.preventDefault(); if (token) addMdFiles(e.dataTransfer.files) }}
+          >
+            <UiIcon name="text" size={22} />
+            <span>{t('img2latex.mdDropHint')}</span>
+            <input
+              ref={mdInputRef}
+              type="file"
+              accept=".md,.markdown,text/markdown"
+              multiple
+              hidden
+              onChange={e => { if (token) addMdFiles(e.target.files); e.target.value = '' }}
+            />
+          </div>
+          {mdFiles.length > 0 && (
+            <div className="i2l-md-list">
+              {mdFiles.map((it, i) => (
+                <div key={`${it.name}-${i}`} className="i2l-md-item">
+                  <span className="i2l-md-name">{it.name}</span>
+                  <button type="button" className="i2l-thumb-del" title={t('img2latex.removeImage')} onClick={() => removeMdFile(i)}>×</button>
+                </div>
+              ))}
+            </div>
+          )}
           <textarea
             className="i2l-notes"
             rows={2}
@@ -173,7 +219,7 @@ function Img2LatexPage() {
             value={notes}
             onChange={e => setNotes(e.target.value)}
           />
-          <button className="btn btn-primary i2l-btn" onClick={handleGenerate} disabled={!token || genLoading || images.length === 0}>
+          <button className="btn btn-primary i2l-btn" onClick={handleGenerate} disabled={!token || genLoading}>
             {genLoading ? t('img2latex.generating') : t('img2latex.generate')}
           </button>
         </section>

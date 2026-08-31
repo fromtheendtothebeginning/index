@@ -95,13 +95,14 @@
     "loginHint": "工具需要登录后使用。",
     "goLogin": "去登录",
     "step": {
-      "images": "① 上传图片与说明",
+      "images": "① 上传内容（图片 / Markdown / 文字说明）",
       "code": "② LaTeX 代码（可编辑）",
       "pdf": "③ 编译结果"
     },
-    "dropHint": "点击或拖拽图片到此处（最多 4 张，单张 ≤6MB）",
-    "removeImage": "移除图片",
-    "notesPlaceholder": "补充说明（可选）：如「整理成习题并附解答」「按图片顺序排版」…",
+    "dropHint": "点击或拖拽图片到此处（最多 5 张，单张 ≤6MB）",
+    "mdDropHint": "点击或拖拽 Markdown 文件到此处（最多 2 份，单份 ≤256KB）",
+    "removeImage": "移除",
+    "notesPlaceholder": "文字说明（可选，≤2 万字）：如「整理成习题并附解答」「按输入顺序排版」…",
     "generate": "生成 LaTeX",
     "generating": "生成中…",
     "copyCode": "复制代码",
@@ -111,7 +112,7 @@
     "downloadPdf": "下载 PDF",
     "noEngine": "服务器未安装 XeLaTeX 编译引擎，无法编译",
     "err": {
-      "noImage": "请至少上传一张图片",
+      "noInput": "请至少上传图片、Markdown 文件或填写文字说明中的一种",
       "generate": "生成失败，请稍后重试",
       "compile": "编译失败，请检查代码或查看错误日志"
     },
