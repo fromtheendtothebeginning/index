@@ -100,9 +100,9 @@
       "3": "编译结果"
     },
     "step": {
-      "images": "① 上传内容（图片 / Markdown 文件，拖拽或点击）",
-      "code": "② LaTeX 代码（可编辑）",
-      "pdf": "③ 编译结果"
+      "images": "上传内容（图片 / Markdown 文件，拖拽或点击）",
+      "code": "LaTeX 代码（可编辑）",
+      "pdf": "编译结果"
     },
     "dropHint": "点击或拖拽图片 / Markdown 文件到此处（图片 ≤5 张、md ≤2 份，自动识别类型）",
     "removeImage": "移除",
@@ -127,7 +127,8 @@
       "needCode": "请先生成或粘贴 LaTeX 代码",
       "saveFailed": "保存失败，请稍后重试",
       "generate": "生成失败，请稍后重试",
-      "compile": "编译失败，请检查代码或查看错误日志"
+      "compile": "编译失败，请检查代码或查看错误日志",
+      "preview": "PDF 预览渲染失败"
     },
     "configModal": {
       "title": "AI 模型不可用",

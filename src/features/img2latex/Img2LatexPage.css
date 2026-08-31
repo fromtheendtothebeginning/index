@@ -17,10 +17,18 @@
 }
 
 .i2l-card-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 14.5px;
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
+}
+
+.i2l-card-title svg {
+  color: var(--accent-1);
+  flex-shrink: 0;
 }
 
 .i2l-error {
@@ -150,6 +158,11 @@
   color: var(--text-secondary);
   font-size: 11.5px;
   font-weight: 700;
+  flex-shrink: 0;
+}
+
+.i2l-step-num svg {
+  color: currentColor;
 }
 
 .i2l-step.active {
@@ -304,7 +317,7 @@
   color: var(--text-muted);
 }
 
-/* PDF 预览 */
+/* PDF 预览（PDF.js canvas 渲染：滚动容器 + 白底页面） */
 .i2l-pdf-head {
   display: flex;
   align-items: center;
@@ -313,14 +326,39 @@
 
 .i2l-pdf {
   width: 100%;
-  height: 560px;
+  height: 620px;
+  overflow-y: auto;
+  background: #525659;
   border: 1px solid var(--border-color);
   border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.i2l-pdf-page {
   background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  border-radius: 2px;
+  width: 100%;
+  height: auto;
+}
+
+.i2l-pdf-err {
+  padding: 14px;
+  font-size: 13px;
+  color: var(--danger, #dc2626);
+  background: var(--danger-soft, rgba(220, 38, 38, 0.08));
+  border: 1px solid var(--danger-border, rgba(220, 38, 38, 0.3));
+  border-radius: 8px;
 }
 
 @media (max-width: 640px) {
   .i2l-pdf {
-    height: 420px;
+    height: 460px;
+    padding: 10px;
   }
 }

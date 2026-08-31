@@ -6,8 +6,10 @@ import { UiIcon } from '../../components/Icons'
 import { t } from '../../i18n'
 import '../../pages/ToolParsePage.css'
 import './Img2LatexPage.css'
+import PdfPreview from './PdfPreview'
 
 const STEPS = [1, 2, 3]
+const STEP_ICON = { 1: 'image', 2: 'edit', 3: 'img2latex' }
 
 function Img2LatexPage() {
   const token = localStorage.getItem('token')
@@ -294,7 +296,7 @@ function Img2LatexPage() {
                 if (n < step) { setStep(n); saveStep(n) }
               }}
             >
-              <span className="i2l-step-num">{step > n ? '✓' : n}</span>
+              <span className="i2l-step-num">{step > n ? '✓' : <UiIcon name={STEP_ICON[n]} size={13} />}</span>
               <span className="i2l-step-label">{t(`img2latex.stepNav.${n}`)}</span>
             </button>
           ))}
@@ -305,7 +307,7 @@ function Img2LatexPage() {
         {/* ① 上传内容 */}
         {step === 1 && (
           <section className="i2l-card">
-            <h2 className="i2l-card-title">{t('img2latex.step.images')}</h2>
+            <h2 className="i2l-card-title"><UiIcon name="image" size={15} /> {t('img2latex.step.images')}</h2>
             <div
               className={`i2l-drop ${files.length ? 'has' : ''}`}
               onClick={() => dropInputRef.current?.click()}
@@ -356,7 +358,7 @@ function Img2LatexPage() {
         {/* ② LaTeX 代码 */}
         {step === 2 && (
           <section className="i2l-card">
-            <h2 className="i2l-card-title">{t('img2latex.step.code')}</h2>
+            <h2 className="i2l-card-title"><UiIcon name="edit" size={15} /> {t('img2latex.step.code')}</h2>
             {!code && (
               <button className="btn btn-primary i2l-btn" onClick={handleGenerate} disabled={!token || genLoading}>
                 {genLoading ? t('img2latex.generating') : t('img2latex.generate')}
@@ -386,7 +388,7 @@ function Img2LatexPage() {
         {/* ③ 编译结果 */}
         {step === 3 && (
           <section className="i2l-card">
-            <h2 className="i2l-card-title">{t('img2latex.step.pdf')}</h2>
+            <h2 className="i2l-card-title"><UiIcon name="img2latex" size={15} /> {t('img2latex.step.pdf')}</h2>
             {pdfUrl ? (
               <>
                 <div className="i2l-pdf-head">
@@ -398,7 +400,7 @@ function Img2LatexPage() {
                     <a className="btn btn-secondary i2l-btn-sm" href={pdfUrl} download="document.pdf">{t('img2latex.downloadPdf')}</a>
                   </div>
                 </div>
-                <iframe className="i2l-pdf" src={pdfUrl} title="PDF preview" />
+                <PdfPreview url={pdfUrl} />
               </>
             ) : (
               <div className="i2l-pdf-empty">
