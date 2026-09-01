@@ -58,7 +58,10 @@ const load = () => {
     .finally(() => setLoading(false))
 }
 
+  const loggedIn = !!localStorage.getItem('token')
+
   useEffect(() => {
+    if (!loggedIn) { setLoading(false); return }
     load()
     // 先渲染本地缓存的绑定状态，避免切换页面时闪出绑定表单（实时同步 LeetCode 需 1-3s）
     try {
@@ -302,6 +305,13 @@ const load = () => {
     <div className="lc-page">
       <Navbar activePage="leetcode" />
       <div className="lc-main">
+        {!loggedIn ? (
+          <div className="lc-login-hint">
+            <p>{t('leetcode.loginHint')}</p>
+            <Link to="/login" className="btn btn-primary">{t('leetcode.goLogin')}</Link>
+          </div>
+        ) : (
+        <>
         <div className="lc-header">
           <h1 className="lc-title">{t('leetcode.title')}</h1>
           <p className="lc-subtitle">
@@ -386,6 +396,8 @@ const load = () => {
               </div>
             ))}
           </div>
+        )}
+        </>
         )}
       </div>
 

@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import CategoryDropdown from '../components/CategoryDropdown'
 import { renderMd } from '../utils/markdown'
+import CodeEditor from '../components/CodeEditor'
 import { UiIcon } from '../components/Icons'
 import { BLOG_CATEGORIES } from '../constants'
 import { t } from '../i18n'
@@ -145,12 +146,11 @@ function BlogEditorPage() {
 
           <div className="editor-split">
             <div className="editor-pane">
-              <textarea
-                ref={textareaRef}
-                className="editor-textarea"
-                placeholder={t('blogEditor.contentPlaceholder')}
+              <CodeEditor
+                textareaRef={textareaRef}
                 value={content}
-                onChange={e => setContent(e.target.value)}
+                onChange={setContent}
+                placeholder={t('blogEditor.contentPlaceholder')}
               />
             </div>
             <div className="editor-pane preview-pane">

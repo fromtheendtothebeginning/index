@@ -347,6 +347,8 @@
   "leetcode": {
     "title": "LeetCode 刷题榜",
     "subtitle": "绑定 LeetCode 账号后的刷题量 · 简单 2 分 / 中等 4 分 / 困难 8 分 · 困难模式减半 · 严肃模式简单不计分 · 激励模式初始 -100 分（3/6/9）",
+    "loginHint": "登录后即可查看刷题榜单。",
+    "goLogin": "去登录",
     "loading": "加载中...",
     "empty": "暂无用户绑定 LeetCode",
     "updated": "数据已更新",
@@ -929,5 +931,10 @@
       "goToSettings": "前往 AI 设置",
       "cancel": "取消"
     }
+  },
+  "md": {
+    "copyCode": "复制代码",
+    "copied": "已复制",
+    "copyFailed": "复制失败，请手动选中文本复制"
   }
 }

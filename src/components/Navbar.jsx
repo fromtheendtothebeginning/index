@@ -134,7 +134,7 @@ function Navbar({ activePage }) {
         ))}
       </NavItem>
       <NavItem label={t('nav.project')} to="/projects" active={activePage === 'project'} onNavigate={closeMenu} />
-      <NavItem label={t('nav.ranking')} to="/leetcode" active={activePage === 'leetcode'} onNavigate={closeMenu} />
+      {user && <NavItem label={t('nav.ranking')} to="/leetcode" active={activePage === 'leetcode'} onNavigate={closeMenu} />}
       <NavItem label={t('nav.tools')} to="/tools" active={activePage === 'tools'} onNavigate={closeMenu}>
         <Link to="/tools/video-parse">{t('nav.videoParse')}</Link>
         {featureNavItems.filter(i => i.parent === '/tools').map(item => (

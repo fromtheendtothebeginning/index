@@ -4,6 +4,7 @@
 
 import katex from 'katex'
 import hljs from 'highlight.js/lib/common'
+import { t } from '../i18n/index.js'
 
 // 数学公式渲染：throwOnError:false 下 KaTeX 会自行转义错误输入，try/catch 仅作保险
 function renderMath(latex, displayMode) {
@@ -44,7 +45,56 @@ function renderCodeBlock(rawLang, code) {
     html = escapeHtml(code)
   }
   const attr = effective ? ` data-lang="${escapeHtml(effective)}"` : ''
-  return `<pre class="lang-${escapeHtml(lang)}"${attr}><code class="hljs">${html}</code></pre>`
+  const label = t('md.copyCode')
+  const icon = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>'
+  return `<div class="md-code-block"><button type="button" class="md-code-copy" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">${icon}<span class="md-code-copy-label">${escapeHtml(label)}</span></button><pre class="lang-${escapeHtml(lang)}"${attr}><code class="hljs">${html}</code></pre></div>`
+}
+
+// 复制按钮事件委托：markdown-body 由 dangerouslySetInnerHTML 注入，需全局委托。
+// 在 main.jsx 调用一次即可（幂等）。
+let copyBound = false
+export function initMarkdownCopy() {
+  if (copyBound) return
+  copyBound = true
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest?.('.md-code-copy')
+    if (!btn) return
+    const block = btn.closest('.md-code-block')
+    if (!block) return
+    const codeEl = block.querySelector('pre code')
+    if (!codeEl) return
+    const text = codeEl.textContent ?? ''
+    const setState = (label, ok) => {
+      const span = btn.querySelector('.md-code-copy-label')
+      if (span) span.textContent = t(label)
+      btn.classList.toggle('copied', ok)
+    }
+    const doCopy = () => {
+      navigator.clipboard.writeText(text).then(() => {
+        setState('md.copied', true)
+        setTimeout(() => setState('md.copyCode', false), 1600)
+      }).catch(() => setState('md.copyFailed', false))
+    }
+    if (navigator.clipboard?.writeText) {
+      doCopy()
+    } else {
+      // 降级：兼容非 HTTPS/localhost 等无 Clipboard API 场景
+      const ta = document.createElement('textarea')
+      ta.value = text
+      ta.style.position = 'fixed'
+      ta.style.opacity = '0'
+      document.body.appendChild(ta)
+      ta.select()
+      try {
+        document.execCommand('copy')
+        setState('md.copied', true)
+        setTimeout(() => setState('md.copyCode', false), 1600)
+      } catch {
+        setState('md.copyFailed', false)
+      }
+      document.body.removeChild(ta)
+    }
+  })
 }
 
 // 反转 step1 的 & / < / > 转义（未闭合代码块兜底时 buf 内容已被转义，
@@ -240,6 +290,48 @@ export function renderMd(text) {
     return `\u0000MEDIA${mediaBlocks.length - 1}\u0000`
   })
 
+  // 反斜杠转义（CommonMark §2.4）：\ + ASCII 标点 → 该标点字面量；
+  // 代码块/行内代码/公式/媒体已提取为占位符，天然不受影响
+  const escStash = []
+  text = text.replace(/(\\([!"#$%&'()*+,.\/:;<=>?@[\\\]^_`{|}~-]))/g, (m, _, ch) => {
+    escStash.push(ch)
+    return `\u0000ESC${escStash.length - 1}\u0000`
+  })
+
+  // HTML 实体（CommonMark §2.5）：命名/十进制/十六进制字符引用 → 字符字面量；
+  // 未知实体名与非法码点保留原文（step1 会把 & 转义为 &amp;，不会泄漏可执行 HTML）
+  const ENTITIES = { amp:'&', lt:'<', gt:'>', quot:'"', apos:'\'', nbsp:'\u00a0', copy:'\u00a9', reg:'\u00ae', trade:'\u2122', hellip:'\u2026', mdash:'\u2014', ndash:'\u2013', times:'\u00d7', divide:'\u00f7', plusmn:'\u00b1', middot:'\u00b7', bull:'\u2022', deg:'\u00b0', sect:'\u00a7', para:'\u00b6', dagger:'\u2020', Dagger:'\u2021', permil:'\u2030', laquo:'\u00ab', raquo:'\u00bb', lsaquo:'\u2039', rsaquo:'\u203a', euro:'\u20ac', pound:'\u00a3', yen:'\u00a5', cent:'\u00a2', curren:'\u00a4', micro:'\u00b5', not:'\u00ac', prime:'\u2032', Prime:'\u2033', larr:'\u2190', rarr:'\u2192', uarr:'\u2191', darr:'\u2193', harr:'\u2194', lArr:'\u21d0', rArr:'\u21d2', infin:'\u221e', ne:'\u2260', le:'\u2264', ge:'\u2265', sum:'\u2211', prod:'\u220f', radic:'\u221a', int:'\u222b', frac12:'\u00bd', frac14:'\u00bc', frac34:'\u00be', alpha:'\u03b1', beta:'\u03b2' }
+  const entStash = []
+  text = text.replace(/&([a-zA-Z][a-zA-Z0-9]{1,31}|#x[0-9a-fA-F]{1,6}|#\d{1,7});/g, (m, name) => {
+    let cp = null
+    if (name[0] === '#') {
+      const hex = /^#x[0-9a-fA-F]+$/.test(name)
+      const digits = hex ? name.slice(2) : name.slice(1)
+      cp = parseInt(digits, hex ? 16 : 10)
+      if (!Number.isFinite(cp) || cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF)) cp = null
+    } else {
+      const ch = ENTITIES[name]
+      if (ch !== undefined) cp = ch.codePointAt(0)
+    }
+    if (cp === null) return m
+    entStash.push(String.fromCodePoint(cp))
+    return `\u0000ENT${entStash.length - 1}\u0000`
+  })
+
+  // 自动链接（CommonMark §6.5）：<https://...> / <mailto:...> / 裸邮箱 → <a>
+  const autoStash = []
+  text = text.replace(/<([^<>\s]+)>/g, (m, content) => {
+    let url = null
+    if (/^(https?:)?\/\//i.test(content) || /^mailto:/i.test(content)) {
+      url = sanitizeUrl(content)
+    } else if (/^[\w.+-]+@[\w-]+\.[\w-]+$/.test(content)) {
+      url = 'mailto:' + content
+    }
+    if (!url) return m
+    autoStash.push({ href: url, text: content })
+    return `\u0000AUTO${autoStash.length - 1}\u0000`
+  })
+
   // 1. 转义 HTML
   let src = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
@@ -287,6 +379,19 @@ export function renderMd(text) {
       continue
     }
 
+    // —— 缩进代码块（CommonMark §4.4）：行首 4 空格，仅当处于块边界（段落延续由段落分支并入）
+    if (/^ {4}/.test(line) && line.trim() !== '') {
+      const buf = [line.replace(/^ {4}/, '')]
+      i++
+      while (i < lines.length && (/^ {4}/.test(lines[i]) || lines[i].trim() === '')) {
+        buf.push(/^ {4}/.test(lines[i]) ? lines[i].replace(/^ {4}/, '') : '')
+        i++
+      }
+      while (buf.length && buf[buf.length - 1] === '') buf.pop()
+      out.push(renderCodeBlock('', unescapeStep1(buf.join('\n'))))
+      continue
+    }
+
     // —— 分隔线
     if (/^\s*([-*_])\1{2,}\s*$/.test(line)) {
       out.push('<hr />')
@@ -303,14 +408,14 @@ export function renderMd(text) {
       continue
     }
 
-    // —— 引用 > ...
-    if (/^\s*>\s?/.test(line)) {
+    // —— 引用 > ...（step1 已把 > 转义为 &gt;，此处按转义形态识别并还原后递归）
+    if (/^\s*&gt;\s?/.test(line)) {
       const buf = []
-      while (i < lines.length && /^\s*>\s?/.test(lines[i])) {
-        buf.push(lines[i].replace(/^\s*>\s?/, ''))
+      while (i < lines.length && /^\s*&gt;\s?/.test(lines[i])) {
+        buf.push(lines[i].replace(/^\s*&gt;\s?/, ''))
         i++
       }
-      out.push(`<blockquote>${renderMd(buf.join('\n'))}</blockquote>`)
+      out.push(`<blockquote>${renderMd(unescapeStep1(buf.join('\n')))}</blockquote>`)
       continue
     }
 
@@ -350,14 +455,21 @@ export function renderMd(text) {
         let j = start
         while (j < items.length && items[j].indent >= baseIndent) {
           if (items[j].indent === baseIndent) {
-            let content = renderInline(items[j].content)
+            let content
+            const task = items[j].content.match(/^\[([ xX])\]\s+(.*)$/)
+            if (task) {
+              const checked = task[1] !== ' '
+              content = `<input type="checkbox" disabled${checked ? ' checked' : ''}> ${renderInline(task[2])}`
+            } else {
+              content = renderInline(items[j].content)
+            }
             // 子项
             if (j + 1 < items.length && items[j + 1].indent > baseIndent) {
               const sub = buildList(items, j + 1, items[j + 1].indent)
               content += sub.html
               j = sub.end
             }
-            lis.push(`<li>${content}</li>`)
+            lis.push(`<li${task ? ' class="task-list-item"' : ''}>${content}</li>`)
             j++
           } else {
             // 跳过异常缩进
@@ -421,14 +533,26 @@ export function renderMd(text) {
       lines[i].trim() !== '' &&
       !/^```/.test(lines[i]) &&
       !/^(#{1,6})\s+/.test(lines[i]) &&
-      !/^\s*>\s?/.test(lines[i]) &&
+      !/^\s*&gt;\s?/.test(lines[i]) &&
       !/^\s*[-*+]\s+/.test(lines[i]) &&
       !/^\s*\d+\.\s+/.test(lines[i]) &&
       !/^\s*([-*_])\1{2,}\s*$/.test(lines[i]) &&
+      !/^\s*[=-]+\s*$/.test(lines[i]) &&
       !(/\|/.test(lines[i]) && i + 1 < lines.length && /^\s*\|?.*[-:]+\|[-:\s|]+$/.test(lines[i + 1]))
     ) {
       buf.push(lines[i])
       i++
+    }
+    // 硬换行（CommonMark §6.7）：非末行行尾两个以上空格或单个 \（且非转义字面 \）→ <br />
+    for (let k = 0; k < buf.length - 1; k++) {
+      buf[k] = buf[k].replace(/ {2,}$/, '\u0000BR\u0000').replace(/(^|[^\\])\\(?!\\+$)$/, '$1\u0000BR\u0000')
+    }
+    // Setext 标题（CommonMark §4.3）：下一行为纯 =+ 或 -+ 下划线时吞掉并输出对应标题
+    if (i < lines.length && /^\s*[=-]+\s*$/.test(lines[i]) && lines[i].trim() !== '') {
+      const level = lines[i].trim()[0] === '=' ? 1 : 2
+      i++
+      out.push(`<h${level}>${renderInline(buf.join(' ').replace(/\u0000BR\u0000/g, ' '))}</h${level}>`)
+      continue
     }
     out.push(`<p>${renderInline(buf.join(' '))}</p>`)
   }
@@ -445,7 +569,28 @@ export function renderMd(text) {
   // 6. 还原媒体嵌入占位
   html = html.replace(/\u0000MEDIA(\d+)\u0000/g, (_, idx) => mediaBlocks[Number(idx)] ?? `\u0000MEDIA${idx}\u0000`)
 
-  // 7. 还原行内代码与数学公式占位（KaTeX 输出直接作为 HTML 注入，属预期行为）
+  // 7. 还原自动链接占位（<a> 通过 escapeHtml 构造，URL 经 sanitizeUrl 白名单校验，防 XSS）
+  html = html.replace(/\u0000AUTO(\d+)\u0000/g, (_, idx) => {
+    const a = autoStash[Number(idx)]
+    return a ? `<a href="${escapeHtml(a.href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(a.text)}</a>` : `\u0000AUTO${idx}\u0000`
+  })
+
+  // 8. 还原 HTML 实体占位（内容为合法 Unicode 字符，非 HTML 标签源码）
+  html = html.replace(/\u0000ENT(\d+)\u0000/g, (_, idx) => {
+    const e = entStash[Number(idx)]
+    return e === undefined ? `\u0000ENT${idx}\u0000` : escapeHtml(e)
+  })
+
+  // 9. 还原反斜杠转义占位（内容为该标点字面量）
+  html = html.replace(/\u0000ESC(\d+)\u0000/g, (_, idx) => {
+    const c = escStash[Number(idx)]
+    return c === undefined ? `\u0000ESC${idx}\u0000` : escapeHtml(c)
+  })
+
+  // 10. 还原硬换行占位
+  html = html.replace(/\u0000BR\u0000/g, '<br />')
+
+  // 11. 还原行内代码与数学公式占位（KaTeX 输出直接作为 HTML 注入，属预期行为）
   html = html.replace(/\u0000CODE(\d+)\u0000/g, (_, idx) => {
     const c = codeStash[Number(idx)]
     return c === undefined ? `\u0000CODE${idx}\u0000` : `<code>${c}</code>`

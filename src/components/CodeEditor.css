@@ -1,0 +1,151 @@
+/* CodeEditor.css — overlay 语法高亮编辑器 */
+.code-editor {
+  position: relative;
+  width: 100%;
+  height: 500px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-card);
+  overflow: hidden;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.code-editor:focus-within {
+  border-color: var(--accent-1);
+  box-shadow: 0 0 0 3px var(--accent-1-soft);
+}
+
+/* 底层高亮层：与 textarea 逐行像素级对齐（同 padding/字体/行高/换行，仅改颜色） */
+.code-editor-hl {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 16px;
+  overflow: auto;
+  font-size: 14px;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  line-height: 1.7;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  pointer-events: none;
+  user-select: none;
+  box-sizing: border-box;
+  background: transparent;
+  border: none;
+}
+
+/* 上层输入层：透明文字、保留光标，与高亮层完全一致的对齐参数 */
+.code-editor-ta {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 16px;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--text-primary);
+  font-size: 14px;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow: auto;
+  box-sizing: border-box;
+  z-index: 2;
+}
+
+.code-editor-ta::placeholder {
+  color: var(--text-muted);
+}
+
+/* 代码块行：行内着色，绝不改变行高/行数（保持对齐的关键）。
+   不能使用 inline-block/min-height——那会改变行盒布局导致与 textarea 错位。 */
+.code-editor-fence-line.has-lang {
+  display: inline;
+}
+
+/* hljs token 配色复用 index.css 的 GitHub 主题变量 */
+.code-editor-hl .hljs-comment,
+.code-editor-hl .hljs-quote { color: var(--hljs-comment); font-style: italic; }
+.code-editor-hl .hljs-keyword,
+.code-editor-hl .hljs-doctag,
+.code-editor-hl .hljs-template-tag { color: var(--hljs-keyword); }
+.code-editor-hl .hljs-title,
+.code-editor-hl .hljs-title.class_,
+.code-editor-hl .hljs-title.function_ { color: var(--hljs-title); }
+.code-editor-hl .hljs-attr,
+.code-editor-hl .hljs-attribute,
+.code-editor-hl .hljs-literal,
+.code-editor-hl .hljs-number,
+.code-editor-hl .hljs-operator,
+.code-editor-hl .hljs-variable { color: var(--hljs-const); }
+.code-editor-hl .hljs-regexp,
+.code-editor-hl .hljs-string,
+.code-editor-hl .hljs-meta .hljs-string { color: var(--hljs-string); }
+.code-editor-hl .hljs-built_in,
+.code-editor-hl .hljs-symbol { color: var(--hljs-builtin); }
+.code-editor-hl .hljs-name,
+.code-editor-hl .hljs-selector-tag { color: var(--hljs-tag); }
+.code-editor-hl .hljs-section { color: var(--hljs-const); font-weight: bold; }
+.code-editor-hl .hljs-bullet { color: var(--hljs-bullet); }
+.code-editor-hl .hljs-addition { color: var(--hljs-add); background-color: var(--hljs-add-bg); }
+.code-editor-hl .hljs-deletion { color: var(--hljs-del); background-color: var(--hljs-del-bg); }
+.code-editor-hl .hljs-emphasis { font-style: italic; }
+.code-editor-hl .hljs-strong { font-weight: bold; }
+
+/* 自动补全下拉（Portal 到 body，position:fixed 悬浮在所有内容之上） */
+.code-editor-menu {
+  position: fixed;
+  z-index: 9999;
+  min-width: 220px;
+  max-height: 240px;
+  overflow-y: auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
+  padding: 4px;
+}
+
+.code-editor-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.code-editor-menu-item.active {
+  background: var(--accent-1-soft);
+  color: var(--accent-1);
+}
+
+.code-editor-menu-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.code-editor-menu-type {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .code-editor {
+    height: 300px;
+  }
+}
