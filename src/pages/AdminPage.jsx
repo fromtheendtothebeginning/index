@@ -39,6 +39,9 @@ function AdminPage() {
 
   // 新邀请码
   const [newCode, setNewCode] = useState('')
+  // 正在显示"已复制"的复制按钮（'new' 表示新邀请码，否则为邀请码 id）
+  const [copiedKey, setCopiedKey] = useState(null)
+  const copiedTimerRef = useRef(null)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -332,12 +335,17 @@ function AdminPage() {
     finally { setModal(null) }
   }
 
-  const copyCode = (code) => {
-    navigator.clipboard?.writeText(code).then(() => {
-      alert(t('admin.links.copied', { code }))
-    }).catch(() => {
-      alert(t('admin.links.inviteCode', { code }))
-    })
+  const copyCode = (code, key) => {
+    const done = () => {
+      setCopiedKey(key)
+      clearTimeout(copiedTimerRef.current)
+      copiedTimerRef.current = setTimeout(() => setCopiedKey(null), 2000)
+    }
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(code).then(done).catch(() => done())
+    } else {
+      done()
+    }
   }
 
   // 自定义联系项（与邮箱/GitHub 并列展示在首页"保持联系"）
@@ -739,7 +747,7 @@ function AdminPage() {
               <div className="admin-new-code">
                 <span>{t('admin.codes.new')}</span>
                 <code className="admin-code-highlight">{newCode}</code>
-                <button className="btn-copy" onClick={() => copyCode(newCode)}>{t('admin.codes.copy')}</button>
+                <button className="btn-copy" onClick={() => copyCode(newCode, 'new')}>{copiedKey === 'new' ? t('admin.codes.copied') : t('admin.codes.copy')}</button>
               </div>
             )}
             {codes.length === 0 ? (
@@ -779,7 +787,7 @@ function AdminPage() {
                     </span>
                     <span className="admin-cell-time">{fmtTime(c.created_at)}</span>
                     <span className="admin-code-actions">
-                      <button className="btn-copy" onClick={() => copyCode(c.code)}>{t('admin.codes.copy')}</button>
+                      <button className="btn-copy" onClick={() => copyCode(c.code, c.id)}>{copiedKey === c.id ? t('admin.codes.copied') : t('admin.codes.copy')}</button>
                       <button
                         className="btn btn-danger btn-sm"
                         onClick={() => setModal({
