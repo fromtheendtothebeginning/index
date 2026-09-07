@@ -437,6 +437,23 @@
   opacity: 0.7;
 }
 
+/* 模式标签占位槽（我的排名卡片）：未开启时显示灰色等宽占位，切模式不跳版；
+   排行榜行不留空，不渲染占位 */
+.lc-tag-slot {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  background: var(--neutral-soft);
+  color: var(--text-muted);
+  cursor: help;
+}
+
+.lc-tag-slot:hover {
+  background: var(--neutral-soft-hover);
+}
+
 .lc-hard-tag {
   font-size: 11px;
   padding: 2px 8px;

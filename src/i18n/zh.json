@@ -398,7 +398,8 @@
       "boostHint": "激励模式：初始 -100 分，3/6/9 计分",
       "boostToggleHint": "激励模式：初始 -100 分，简单 3 分 / 中等 6 分 / 困难 9 分，与困难/严肃模式互斥",
       "debug": "调试",
-      "debugHint": "调试模式：手动调整刷题量，不读取 LeetCode"
+      "debugHint": "调试模式：手动调整刷题量，不读取 LeetCode",
+      "slotOffHint": "{mode}未开启"
     },
     "unbind": {
       "title": "解绑",

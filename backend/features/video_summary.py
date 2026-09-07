@@ -13,6 +13,8 @@ import secrets
 import shutil
 import subprocess
 import threading
+import ipaddress
+import urllib.parse
 import urllib.request
 from difflib import SequenceMatcher
 
@@ -25,7 +27,7 @@ from sqlalchemy.orm import Session
 import aisettings
 import tools as video_tools
 from database import Base, SessionLocal, get_db
-from deps import get_current_user_obj, _log
+from deps import _assert_public_http_url, get_current_user_obj, _log
 from models import AiKey, AiSetting, User
 
 router = APIRouter()
@@ -283,7 +285,7 @@ def transcribe_file(provider, api_key, model, base_url, file_path):
 
 def _transcribe_openai_api(provider, api_key, model, base_url, file_path):
     p = aisettings.get_provider(provider)
-    url = ((base_url or (p["base_url"] if p else "")) or "").rstrip("/") + "/audio/transcriptions"
+    url = _assert_public_http_url(((base_url or (p["base_url"] if p else "")) or "").rstrip("/") + "/audio/transcriptions")
     if provider == "anthropic":
         raise _cfg("该提供商不支持语音转写接口，请为语音模型选择 OpenAI 兼容的提供商")
 
@@ -319,7 +321,7 @@ def _transcribe_chat_audio(provider, api_key, model, base_url, file_path):
     import base64 as _b64
     p = aisettings.get_provider(provider)
     base = (base_url or (p["base_url"] if p else "") or "").rstrip("/")
-    url = base + "/chat/completions"
+    url = _assert_public_http_url(base + "/chat/completions")
 
     with open(file_path, "rb") as f:
         audio_bytes = f.read()
@@ -392,7 +394,7 @@ def _chat_stream_once(provider_id, api_key, model, base_url, system, user_text):
     p = aisettings.get_provider(provider_id)
     api = aisettings.resolve_api(provider_id, model)
     base = base_url or (p["base_url"] if p else "")
-    url = aisettings._endpoint_url(api, base, provider_id)
+    url = _assert_public_http_url(aisettings._endpoint_url(api, base, provider_id))
 
     if api == "anthropic":
         payload = {"model": model, "max_tokens": 8192, "system": system, "stream": True,
@@ -591,7 +593,7 @@ def _chat_once(provider_id, api_key, model, base_url, system, user_text):
     p = aisettings.get_provider(provider_id)
     api = aisettings.resolve_api(provider_id, model)
     base = base_url or (p["base_url"] if p else "")
-    url = aisettings._endpoint_url(api, base, provider_id)
+    url = _assert_public_http_url(aisettings._endpoint_url(api, base, provider_id))
 
     if api == "anthropic":
         payload = {"model": model, "max_tokens": 8192, "system": system,
@@ -750,6 +752,7 @@ def _parse_vtt_srt(raw: bytes) -> str:
 
 
 def fetch_transcript(url: str, ext: str) -> str:
+    url = _assert_public_http_url(url)
     req = urllib.request.Request(url, headers={"User-Agent": _BROWSER_UA})
     with urllib.request.urlopen(req, timeout=30) as resp:
         raw = resp.read()

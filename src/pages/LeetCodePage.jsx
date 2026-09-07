@@ -20,6 +20,23 @@ const Avatar = ({ user, size = 28 }) => {
   )
 }
 
+/* 模式标签：placeholder=true 时未开启渲染灰色占位（我的排名卡片用，切模式不跳版）；
+   否则未开启不渲染（排行榜行用，不留空） */
+const ModeTagSlot = ({ label, hint, active, className, activeClassName, placeholder = false }) => {
+  if (active) {
+    return (
+      <span className={activeClassName || className} title={hint}>{label}</span>
+    )
+  }
+  if (!placeholder) return null
+  return (
+    <span
+      className={`lc-tag-slot ${className}`}
+      title={t('leetcode.mode.slotOffHint', { mode: label })}
+    >{label}</span>
+  )
+}
+
 function LeetCodePage() {
   const [board, setBoard] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -205,15 +222,30 @@ const load = () => {
               title={t('leetcode.link.viewProfile')}
               onClick={e => e.stopPropagation()}
             >@{me.leetcode_username}</a>
-            {me.difficulty_mode && (
-              <span className="lc-hard-tag" title={t('leetcode.mode.difficultyHint')}>{t('leetcode.mode.difficulty')}</span>
-            )}
-            {me.serious_mode && (
-              <span className="lc-serious-tag" title={t('leetcode.mode.seriousHint')}>{t('leetcode.mode.serious')}</span>
-            )}
-            {me.boost_mode && (
-              <span className={`lc-boost-tag ${me.score > 0 ? 'lc-boost-tag-gold' : ''}`} title={t('leetcode.mode.boostHint')}>{t('leetcode.mode.boost')}</span>
-            )}
+            <ModeTagSlot
+              active={!!me.difficulty_mode}
+              label={t('leetcode.mode.difficulty')}
+              hint={t('leetcode.mode.difficultyHint')}
+              className="lc-tag-hard"
+              activeClassName="lc-hard-tag"
+              placeholder
+            />
+            <ModeTagSlot
+              active={!!me.serious_mode}
+              label={t('leetcode.mode.serious')}
+              hint={t('leetcode.mode.seriousHint')}
+              className="lc-tag-serious"
+              activeClassName="lc-serious-tag"
+              placeholder
+            />
+            <ModeTagSlot
+              active={!!me.boost_mode}
+              label={t('leetcode.mode.boost')}
+              hint={t('leetcode.mode.boostHint')}
+              className="lc-tag-boost"
+              activeClassName={`lc-boost-tag ${me.score > 0 ? 'lc-boost-tag-gold' : ''}`}
+              placeholder
+            />
             {me.debug_mode && (
               <span className="lc-debug-tag" title={t('leetcode.mode.debugHint')}>{t('leetcode.mode.debug')}</span>
             )}
@@ -375,15 +407,27 @@ const load = () => {
                     title={t('leetcode.link.viewProfile')}
                     onClick={e => e.stopPropagation()}
                   >@{u.leetcode_username}</a>
-                  {u.difficulty_mode && (
-                    <span className="lc-hard-tag" title={t('leetcode.mode.difficultyHint')}>{t('leetcode.mode.difficulty')}</span>
-                  )}
-                  {u.serious_mode && (
-                    <span className="lc-serious-tag" title={t('leetcode.mode.seriousHint')}>{t('leetcode.mode.serious')}</span>
-                  )}
-                  {u.boost_mode && (
-                    <span className={`lc-boost-tag ${u.score > 0 ? 'lc-boost-tag-gold' : ''}`} title={t('leetcode.mode.boostHint')}>{t('leetcode.mode.boost')}</span>
-                  )}
+                  <ModeTagSlot
+                    active={!!u.difficulty_mode}
+                    label={t('leetcode.mode.difficulty')}
+                    hint={t('leetcode.mode.difficultyHint')}
+                    className="lc-tag-hard"
+                    activeClassName="lc-hard-tag"
+                  />
+                  <ModeTagSlot
+                    active={!!u.serious_mode}
+                    label={t('leetcode.mode.serious')}
+                    hint={t('leetcode.mode.seriousHint')}
+                    className="lc-tag-serious"
+                    activeClassName="lc-serious-tag"
+                  />
+                  <ModeTagSlot
+                    active={!!u.boost_mode}
+                    label={t('leetcode.mode.boost')}
+                    hint={t('leetcode.mode.boostHint')}
+                    className="lc-tag-boost"
+                    activeClassName={`lc-boost-tag ${u.score > 0 ? 'lc-boost-tag-gold' : ''}`}
+                  />
                   {u.debug_mode && (
                     <span className="lc-debug-tag" title={t('leetcode.mode.debugHint')}>{t('leetcode.mode.debug')}</span>
                   )}

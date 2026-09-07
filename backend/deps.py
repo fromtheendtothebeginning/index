@@ -1,5 +1,7 @@
 # deps.py — 跨域共享依赖与助手（自 main.py 逐字搬移，不依赖 features 下任何模块）
 
+import ipaddress
+import urllib.parse
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -11,6 +13,20 @@ from auth import decode_access_token
 from constants import ROLE_ADMIN
 from database import get_db
 from models import User, Notification
+
+
+def _assert_public_http_url(url: str) -> str:
+    """校验 URL 为公网 http(s) 且目标非内网/环回/链路本地地址，防 SSRF。合法返回原 URL。"""
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme not in ("http", "https") or not parsed.hostname:
+        raise HTTPException(status_code=400, detail="无效的资源地址")
+    try:
+        ip = ipaddress.ip_address(parsed.hostname)
+    except ValueError:
+        ip = None  # 域名：解析后无法在此拦截，配合超时兜底
+    if ip is not None and (ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved):
+        raise HTTPException(status_code=400, detail="不允许访问内网地址")
+    return url
 
 
 def _log(msg: str):

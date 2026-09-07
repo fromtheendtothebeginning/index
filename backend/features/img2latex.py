@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 import urllib.request
 import uuid
+from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
@@ -18,7 +19,7 @@ from sqlalchemy.orm import Session
 
 import aisettings
 from database import Base, get_db
-from deps import get_current_user_obj, _log
+from deps import _assert_public_http_url, get_current_user_obj, _log
 from models import AiKey, AiSetting, User
 
 router = APIRouter()
@@ -85,8 +86,14 @@ def _clear_user_files(user_id: int) -> None:
 
 
 def _save_blob(user_id: int, data: bytes, ext: str) -> str:
-    saved = uuid.uuid4().hex + (ext or "")
-    with open(os.path.join(_files_dir(user_id), saved), "wb") as fh:
+    """落盘扩展名白名单：仅纯字母数字后缀（防夹带路径分隔符），文件名主体为随机 uuid。"""
+    ext = ext if re.match(r"^\.[A-Za-z0-9]{1,8}$", ext or "") else ".bin"
+    saved = uuid.uuid4().hex + ext
+    dirpath = Path(_files_dir(user_id)).resolve()
+    path = (dirpath / saved).resolve()
+    if not path.is_relative_to(dirpath):
+        raise ValueError("illegal file path")
+    with path.open("wb") as fh:
         fh.write(data)
     return saved
 
@@ -340,7 +347,7 @@ def _ai_vision_chat(provider_id, api_key, model, base_url, system, user_text, im
     p = aisettings.get_provider(provider_id)
     api = aisettings.resolve_api(provider_id, model)
     base = base_url or (p["base_url"] if p else "")
-    url = aisettings._endpoint_url(api, base, provider_id)
+    url = _assert_public_http_url(aisettings._endpoint_url(api, base, provider_id))
 
     user_text = user_text or "请根据输入内容生成 LaTeX 文档。"
 
@@ -606,13 +613,13 @@ def img2latex_compile(req: CompileRequest, current_user: User = Depends(get_curr
         raise HTTPException(status_code=400, detail="LaTeX 代码过长（>200KB）")
 
     code = _sanitize_latex(code)
-    tmp = tempfile.mkdtemp(prefix="anticraft_tex_")
+    tmp = Path(tempfile.mkdtemp(prefix="anticraft_tex_"))
     try:
-        tex_path = os.path.join(tmp, "document.tex")
-        with open(tex_path, "w", encoding="utf-8") as fh:
+        tex_path = tmp / "document.tex"
+        with tex_path.open("w", encoding="utf-8") as fh:
             fh.write(code)
 
-        log_tail = _run_xelatex(tmp, "document")
+        log_tail = _run_xelatex(str(tmp), "document")
         if log_tail:
             # 1) AI 依错误日志修复（需主模型配置；异常则静默跳过）
             try:
@@ -620,9 +627,9 @@ def img2latex_compile(req: CompileRequest, current_user: User = Depends(get_curr
                 fixed = _ai_review(p, rev_key, rev_model, rev_base, code, log_tail)
                 if fixed and fixed.strip() and fixed != code:
                     code = fixed
-                    with open(tex_path, "w", encoding="utf-8") as fh:
+                    with tex_path.open("w", encoding="utf-8") as fh:
                         fh.write(code)
-                    log_tail = _run_xelatex(tmp, "document")
+                    log_tail = _run_xelatex(str(tmp), "document")
             except HTTPException:
                 pass
             except Exception as e:
@@ -635,15 +642,15 @@ def img2latex_compile(req: CompileRequest, current_user: User = Depends(get_curr
             if fixed == code:
                 break                       # 不是未定义命令问题，停止自动修复
             code = fixed
-            with open(tex_path, "w", encoding="utf-8") as fh:
+            with tex_path.open("w", encoding="utf-8") as fh:
                 fh.write(code)
-            log_tail = _run_xelatex(tmp, "document")
+            log_tail = _run_xelatex(str(tmp), "document")
             attempts += 1
 
         if log_tail:
             raise HTTPException(status_code=422, detail={"message": "LaTeX 编译失败", "log": log_tail})
-        _run_xelatex(tmp, "document")       # 第二遍解析目录/交叉引用
-        with open(os.path.join(tmp, "document.pdf"), "rb") as fh:
+        _run_xelatex(str(tmp), "document")  # 第二遍解析目录/交叉引用
+        with (tmp / "document.pdf").open("rb") as fh:
             pdf = fh.read()
         return Response(content=pdf, media_type="application/pdf",
                         headers={"Content-Disposition": "inline; filename=document.pdf"})
