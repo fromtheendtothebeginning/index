@@ -398,39 +398,45 @@ const load = () => {
                 </span>
                 <span className="lc-col-user">
                   <Avatar user={u} />
-                  <span className="lc-nickname">{u.nickname || u.username}</span>
-                  <a
-                    className="lc-username lc-username-link"
-                    href={`https://leetcode.cn/u/${encodeURIComponent(u.leetcode_username)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title={t('leetcode.link.viewProfile')}
-                    onClick={e => e.stopPropagation()}
-                  >@{u.leetcode_username}</a>
-                  <ModeTagSlot
-                    active={!!u.difficulty_mode}
-                    label={t('leetcode.mode.difficulty')}
-                    hint={t('leetcode.mode.difficultyHint')}
-                    className="lc-tag-hard"
-                    activeClassName="lc-hard-tag"
-                  />
-                  <ModeTagSlot
-                    active={!!u.serious_mode}
-                    label={t('leetcode.mode.serious')}
-                    hint={t('leetcode.mode.seriousHint')}
-                    className="lc-tag-serious"
-                    activeClassName="lc-serious-tag"
-                  />
-                  <ModeTagSlot
-                    active={!!u.boost_mode}
-                    label={t('leetcode.mode.boost')}
-                    hint={t('leetcode.mode.boostHint')}
-                    className="lc-tag-boost"
-                    activeClassName={`lc-boost-tag ${u.score > 0 ? 'lc-boost-tag-gold' : ''}`}
-                  />
-                  {u.debug_mode && (
-                    <span className="lc-debug-tag" title={t('leetcode.mode.debugHint')}>{t('leetcode.mode.debug')}</span>
-                  )}
+                  <span className="lc-user-info">
+                    <span className="lc-user-line">
+                      <span className="lc-nickname">{u.nickname || u.username}</span>
+                      <a
+                        className="lc-username lc-username-link"
+                        href={`https://leetcode.cn/u/${encodeURIComponent(u.leetcode_username)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={t('leetcode.link.viewProfile')}
+                        onClick={e => e.stopPropagation()}
+                      >@{u.leetcode_username}</a>
+                    </span>
+                    <span className="lc-user-tags">
+                      <ModeTagSlot
+                        active={!!u.difficulty_mode}
+                        label={t('leetcode.mode.difficulty')}
+                        hint={t('leetcode.mode.difficultyHint')}
+                        className="lc-tag-hard"
+                        activeClassName="lc-hard-tag"
+                      />
+                      <ModeTagSlot
+                        active={!!u.serious_mode}
+                        label={t('leetcode.mode.serious')}
+                        hint={t('leetcode.mode.seriousHint')}
+                        className="lc-tag-serious"
+                        activeClassName="lc-serious-tag"
+                      />
+                      <ModeTagSlot
+                        active={!!u.boost_mode}
+                        label={t('leetcode.mode.boost')}
+                        hint={t('leetcode.mode.boostHint')}
+                        className="lc-tag-boost"
+                        activeClassName={`lc-boost-tag ${u.score > 0 ? 'lc-boost-tag-gold' : ''}`}
+                      />
+                      {u.debug_mode && (
+                        <span className="lc-debug-tag" title={t('leetcode.mode.debugHint')}>{t('leetcode.mode.debug')}</span>
+                      )}
+                    </span>
+                  </span>
                 </span>
                 <span className="lc-col-stat"><span className="lc-stat-label">{t('leetcode.col.easy')} </span>{u.easy}</span>
                 <span className="lc-col-stat"><span className="lc-stat-label">{t('leetcode.col.medium')} </span>{u.medium}</span>

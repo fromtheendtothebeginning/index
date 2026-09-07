@@ -406,6 +406,27 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
+}
+
+/* 用户信息列：第一行昵称+@用户名，第二行模式标签（位于头像下方区域） */
+.lc-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.lc-user-line {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.lc-user-tags {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   flex-wrap: wrap;
 }
 
