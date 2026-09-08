@@ -8,13 +8,21 @@ class Config:
     ec_ver = os.environ.get("EC_VER", "7.6.7")
     ec_image = os.environ.get("EC_IMAGE", "hagb/docker-easyconnect:cli")
     max_sessions = int(os.environ.get("CAMPUS_MAX_SESSIONS", "6"))
-    port_low = int(os.environ.get("CAMPUS_PORT_LOW", "20000"))
-    port_high = int(os.environ.get("CAMPUS_PORT_HIGH", "29999"))
+    port_low = int(os.environ.get("CAMPUS_PORT_LOW", "10000"))
+    port_high = int(os.environ.get("CAMPUS_PORT_HIGH", "18000"))
     connect_timeout = int(os.environ.get("CAMPUS_CONNECT_TIMEOUT", "90"))
     max_lifetime_hours = float(os.environ.get("CAMPUS_MAX_LIFETIME_HOURS", "12"))
     mem_limit = os.environ.get("CAMPUS_MEM_LIMIT", "256m")
     # docker 连接：留空 = 默认(本地 socket)；本地 Windows 连 WSL 时填 tcp://<wsl-ip>:2375
     docker_host = os.environ.get("DOCKER_HOST", "")
+
+    @property
+    def proxy_host(self) -> str:
+        """代理连接地址：docker_host 为 tcp://<ip> 时提取 IP，否则回退 127.0.0.1"""
+        if self.docker_host.startswith("tcp://"):
+            ip = self.docker_host.split("://", 1)[1].split(":", 1)[0]
+            return ip or "127.0.0.1"
+        return "127.0.0.1"
     dekt_aes_key = os.environ.get("DEKT_AES_KEY", "")
     keepalive_addr = os.environ.get("KEEPALIVE_ADDR", "10.2.248.254")
     ping_interval = os.environ.get("PING_INTERVAL", "20")

@@ -38,9 +38,10 @@ class PendingJwxtLogin:
 
 
 class DektClient:
-    def __init__(self, user_id, socks_port, cfg):
+    def __init__(self, user_id, socks_port, cfg, proxy_host="127.0.0.1"):
         self.user_id = user_id
         self.socks_port = socks_port
+        self.proxy_host = proxy_host
         self.cfg = cfg
         self.aes_key = cfg.dekt_aes_key
         # 域名
@@ -69,8 +70,8 @@ class DektClient:
         s.verify = False
         s.headers["User-Agent"] = UA
         s.proxies = {
-            "http": "socks5h://127.0.0.1:%d" % self.socks_port,
-            "https": "socks5h://127.0.0.1:%d" % self.socks_port,
+            "http": "socks5h://%s:%d" % (self.proxy_host, self.socks_port),
+            "https": "socks5h://%s:%d" % (self.proxy_host, self.socks_port),
         }
         return s
 
@@ -477,7 +478,7 @@ class DektManager:
         with self.lock:
             c = self.clients.get(user_id)
             if c is None or c.socks_port != sess.socks_port:
-                c = DektClient(user_id, sess.socks_port, self.cfg)
+                c = DektClient(user_id, sess.socks_port, self.cfg, proxy_host=getattr(sess, "proxy_host", "127.0.0.1"))
                 self.clients[user_id] = c
             return c
 

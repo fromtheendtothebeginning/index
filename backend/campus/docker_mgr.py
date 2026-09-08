@@ -39,6 +39,7 @@ class DockerManager:
         return socks, http
 
     def create_container(self, sess):
+        # bridge 模式 + 端口映射，EasyConnect 需要独立网络命名空间建 tun
         cli_opts = "-d %s -u %s -p %s" % (self.cfg.vpn_addr, sess.student_id, sess.password)
         ports = {
             "1080/tcp": ("0.0.0.0", str(sess.socks_port)),
@@ -58,7 +59,7 @@ class DockerManager:
                     detach=True,
                     remove=True,
                     devices=["/dev/net/tun"],
-                    cap_add=["NET_ADMIN"],
+                    privileged=True,
                     environment=env,
                     ports=ports,
                     mem_limit=self.cfg.mem_limit,

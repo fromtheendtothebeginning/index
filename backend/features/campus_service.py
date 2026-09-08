@@ -138,11 +138,6 @@ def _decrypt_or_400(blob):
 def _session_payload(sess, request=None) -> dict:
     if sess is None:
         return {"connected": False, "status": "none"}
-    host = ""
-    if request:
-        host = request.headers.get("host", "")
-        if host and ":" in host and not host.startswith("["):
-            host = host.rsplit(":", 1)[0]
     return {
         "connected": sess.status == "connected",
         "status": sess.status,
@@ -150,7 +145,7 @@ def _session_payload(sess, request=None) -> dict:
         "student_id_masked": sess.student_id_masked,
         "socks_port": sess.socks_port,
         "http_port": sess.http_port,
-        "host": host,
+        "host": getattr(sess, "proxy_host", "127.0.0.1"),
     }
 
 

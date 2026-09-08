@@ -58,6 +58,9 @@ export default function CampusServicePage() {
   const [capInput, setCapInput] = useState('')
   const [autoCaptchaUsed, setAutoCaptchaUsed] = useState(false)
 
+  // 派生状态（useEffect 依赖用，必须在 useEffect 之前声明）
+  const connected = !!(status && !unavailable && status.status === 'connected')
+
   // 请求竞态防护
   const epochRef = useRef(0)
   const busyRef = useRef(false)
@@ -577,8 +580,6 @@ export default function CampusServicePage() {
       </Modal>
     )
   }
-
-  const connected = !!(status && !unavailable && status.status === 'connected')
 
   // ── 主页渲染 ──
   const renderMainPage = () => (
