@@ -15,10 +15,14 @@ class Config:
     mem_limit = os.environ.get("CAMPUS_MEM_LIMIT", "256m")
     # docker 连接：留空 = 默认(本地 socket)；本地 Windows 连 WSL 时填 tcp://<wsl-ip>:2375
     docker_host = os.environ.get("DOCKER_HOST", "")
+    # 对外展示的代理主机地址：服务器部署时填公网 IP（如 47.100.125.150），本地开发留空用 proxy_host
+    public_host = os.environ.get("CAMPUS_PUBLIC_HOST", "")
 
     @property
     def proxy_host(self) -> str:
-        """代理连接地址：docker_host 为 tcp://<ip> 时提取 IP，否则回退 127.0.0.1"""
+        """代理地址：优先用 PUBLIC_HOST，其次从 DOCKER_HOST 提取 IP，最后 127.0.0.1"""
+        if self.public_host:
+            return self.public_host
         if self.docker_host.startswith("tcp://"):
             ip = self.docker_host.split("://", 1)[1].split(":", 1)[0]
             return ip or "127.0.0.1"
