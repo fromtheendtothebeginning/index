@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
 import Modal from '../../components/Modal'
 import CategoryDropdown from '../../components/CategoryDropdown'
@@ -16,31 +16,49 @@ const STUDENT_LABELS = [
   ['bjmc', 'campusService.score.student.bjmc'],
 ]
 
+const VALID_FEATURES = ['score', 'grades', 'ecard']
+
+const KIND_LABELS = {
+  score: 'campusService.query.score',
+  grades: 'campusService.query.grades',
+  ecard: 'campusService.query.ecard',
+}
+
+function copyText(text) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).catch(() => {})
+  }
+}
+
 export default function CampusServicePage() {
+  const { feature } = useParams()
+  const isSubPage = VALID_FEATURES.includes(feature)
   const navigate = useNavigate()
   const token = localStorage.getItem('token')
 
   // ── VPN 连接状态 ──
-  const [status, setStatus] = useState(null) // null=加载中 | 会话 payload {connected,status,error,student_id_masked,...}
-  const [unavailable, setUnavailable] = useState('') // 503：服务器 VPN 服务未启用（含错误信息）
-  const [statusBusy, setStatusBusy] = useState(false) // 连接/断开请求进行中
-  const [credBanner, setCredBanner] = useState(false) // 未配置凭据（connect 400）
+  const [status, setStatus] = useState(null)
+  const [unavailable, setUnavailable] = useState('')
+  const [statusBusy, setStatusBusy] = useState(false)
+  const [credBanner, setCredBanner] = useState(false)
+  const [copyLabel, setCopyLabel] = useState('') // 显示「已复制」的 key
 
   // ── 查询结果 ──
   const [scoreData, setScoreData] = useState(null)
   const [gradeData, setGradeData] = useState(null)
   const [gradeTerms, setGradeTerms] = useState([])
-  const [gradeTerm, setGradeTerm] = useState('') // `${xnm}|${xqm}`，''=全部
+  const [gradeTerm, setGradeTerm] = useState('')
   const [ecardData, setEcardData] = useState(null)
   const [ecardCount, setEcardCount] = useState(0)
-  const [qBusy, setQBusy] = useState(null) // 正在查询的 kind
+  const [qBusy, setQBusy] = useState(null)
   const [errMsg, setErrMsg] = useState('')
 
   // ── 验证码两段式 ──
-  const [captcha, setCaptcha] = useState(null) // {kind, xnm, xqm, image, err, submitting}
+  const [captcha, setCaptcha] = useState(null)
   const [capInput, setCapInput] = useState('')
+  const [autoCaptchaUsed, setAutoCaptchaUsed] = useState(false)
 
-  // 请求竞态防护：断开连接后丢弃迟到的查询响应
+  // 请求竞态防护
   const epochRef = useRef(0)
   const busyRef = useRef(false)
 
@@ -72,13 +90,11 @@ export default function CampusServicePage() {
     }
   }, [token, authHeaders])
 
-  // 初始状态
   useEffect(() => {
     if (!token) return
     fetchStatus()
   }, [token, fetchStatus])
 
-  // creating/connecting 时每 3 秒轮询
   const shouldPoll = !!(status && !unavailable && (status.status === 'creating' || status.status === 'connecting'))
   useEffect(() => {
     if (!token || !shouldPoll) return
@@ -119,8 +135,7 @@ export default function CampusServicePage() {
     setStatusBusy(true)
     try {
       await fetch('/api/campus/disconnect', { method: 'POST', headers: authHeaders() })
-    } catch { /* 忽略：随后以状态查询结果为准 */ }
-    // 作废在途查询响应，清空全部结果区
+    } catch { /* 忽略 */ }
     epochRef.current += 1
     setStatusBusy(false)
     setQBusy(null)
@@ -133,11 +148,15 @@ export default function CampusServicePage() {
     setCaptcha(null)
     setCapInput('')
     setErrMsg('')
+    setAutoCaptchaUsed(false)
     fetchStatus()
+    // 断开后回到主页
+    if (isSubPage) navigate('/tools/campus-service')
   }
 
   // ── 结果写入 ──
-  const applyResult = (kind, data) => {
+  const applyResult = (kind, data, autoCaptcha) => {
+    if (autoCaptcha) setAutoCaptchaUsed(true)
     if (kind === 'score') {
       setScoreData((data && data.score) || data || null)
     } else if (kind === 'grades') {
@@ -151,13 +170,14 @@ export default function CampusServicePage() {
     }
   }
 
-  // ── 统一查询（含验证码两段式入口）──
+  // ── 统一查询 ──
   const doQuery = async (kind, params = {}) => {
     if (!token || busyRef.current) return
     busyRef.current = true
     const ep = epochRef.current
     setQBusy(kind)
     setErrMsg('')
+    setAutoCaptchaUsed(false)
     if (captcha) { setCaptcha(null); setCapInput('') }
     try {
       const res = await fetch(`/api/campus/query/${kind}`, {
@@ -173,6 +193,11 @@ export default function CampusServicePage() {
       }
       if (!res.ok) {
         setErrMsg(b && b.detail ? String(b.detail) : t('campusService.error'))
+        return
+      }
+      // auto_captcha_used：AI 自动识别验证码，直接展示结果
+      if (b && b.auto_captcha_used) {
+        if (b.data) applyResult(kind, b.data, true)
         return
       }
       if (b && b.need_captcha) {
@@ -228,19 +253,18 @@ export default function CampusServicePage() {
     }
   }
 
-  // ── 校园卡动态码自动刷新（按后端 refresh 秒数倒计时）──
+  // ── 校园卡动态码自动刷新 ──
   useEffect(() => {
     if (!token || !status || status.status !== 'connected' || !ecardData || !ecardData.refresh) {
       setEcardCount(0)
       return
     }
-    if (captcha) return // 验证码弹窗期间暂停倒计时，关闭后重新计时
+    if (captcha) return
     let n = ecardData.refresh
     setEcardCount(n)
     const timer = setInterval(() => {
       n -= 1
       if (n <= 0) {
-        // 触发自动刷新；无论成功失败都从整周期重新计时（成功会换新 ecardData 重建本计时器）
         n = ecardData.refresh
         doQuery('ecard')
       }
@@ -250,9 +274,29 @@ export default function CampusServicePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, status, ecardData, captcha])
 
+  // 子页面进入时自动查询对应功能
+  useEffect(() => {
+    if (isSubPage && connected && !qBusy && !captcha) {
+      // 仅在对应数据为空时自动查询
+      if (feature === 'score' && !scoreData) doQuery('score')
+      else if (feature === 'grades' && !gradeData) doQuery('grades')
+      else if (feature === 'ecard' && !ecardData) doQuery('ecard')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSubPage, feature, connected])
+
   const goFillCreds = () => {
     localStorage.setItem('my_tab', 'campus')
     navigate('/my')
+  }
+
+  const handleCopyProxy = (kind) => {
+    if (!status || !status.host) return
+    const port = kind === 'socks' ? status.socks_port : status.http_port
+    const addr = `${status.host}:${port}`
+    copyText(addr)
+    setCopyLabel(kind)
+    setTimeout(() => setCopyLabel(''), 1500)
   }
 
   // ── 渲染：状态卡 ──
@@ -305,6 +349,34 @@ export default function CampusServicePage() {
           )}
         </div>
         {st === 'failed' && status.error && <p className="cs-status-err">{status.error}</p>}
+        {connected && status.host && (
+          <div className="cs-proxy-info">
+            <div className="cs-proxy-row">
+              <span className="cs-proxy-label">{t('campusService.proxy.socks')}</span>
+              <span className="cs-proxy-addr">{status.host}:{status.socks_port}</span>
+              <button type="button" className="cs-proxy-copy" onClick={() => handleCopyProxy('socks')}>
+                {copyLabel === 'socks' ? t('campusService.proxy.copied') : t('campusService.proxy.copy')}
+              </button>
+            </div>
+            <div className="cs-proxy-row">
+              <span className="cs-proxy-label">{t('campusService.proxy.http')}</span>
+              <span className="cs-proxy-addr">{status.host}:{status.http_port}</span>
+              <button type="button" className="cs-proxy-copy" onClick={() => handleCopyProxy('http')}>
+                {copyLabel === 'http' ? t('campusService.proxy.copied') : t('campusService.proxy.copy')}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // ── 渲染：auto_captcha_used 提示 ──
+  const renderAutoCaptchaBanner = () => {
+    if (!autoCaptchaUsed) return null
+    return (
+      <div className="cs-auto-banner">
+        {t('campusService.captcha.autoSolved')}
       </div>
     )
   }
@@ -508,6 +580,55 @@ export default function CampusServicePage() {
 
   const connected = !!(status && !unavailable && status.status === 'connected')
 
+  // ── 主页渲染 ──
+  const renderMainPage = () => (
+    <>
+      {token && renderStatusCard()}
+
+      {token && connected && (
+        <>
+          <h2 className="cs-queries-title">{t('campusService.queriesTitle')}</h2>
+          <div className="cs-queries">
+            <Link to="/tools/campus-service/score" className="cs-qcard">
+              <span className="cs-qcard-name">{t('campusService.query.score')}</span>
+              <span className="cs-qcard-desc">{t('campusService.query.scoreDesc')}</span>
+              <span className="cs-qcard-state">{'›'}</span>
+            </Link>
+            <Link to="/tools/campus-service/grades" className="cs-qcard">
+              <span className="cs-qcard-name">{t('campusService.query.grades')}</span>
+              <span className="cs-qcard-desc">{t('campusService.query.gradesDesc')}</span>
+              <span className="cs-qcard-state">{'›'}</span>
+            </Link>
+            <Link to="/tools/campus-service/ecard" className="cs-qcard">
+              <span className="cs-qcard-name">{t('campusService.query.ecard')}</span>
+              <span className="cs-qcard-desc">{t('campusService.query.ecardDesc')}</span>
+              <span className="cs-qcard-state">{'›'}</span>
+            </Link>
+          </div>
+        </>
+      )}
+    </>
+  )
+
+  // ── 子页面渲染 ──
+  const renderSubPage = () => (
+    <>
+      <Link to="/tools/campus-service" className="tool-back">{t('campusService.backToCampus')}</Link>
+      <h2 className="cs-sub-title">{t(KIND_LABELS[feature])}</h2>
+
+      {token && renderStatusCard()}
+
+      {token && connected && (
+        <>
+          {renderAutoCaptchaBanner()}
+          {feature === 'score' && renderScore()}
+          {feature === 'grades' && renderGrades()}
+          {feature === 'ecard' && renderEcard()}
+        </>
+      )}
+    </>
+  )
+
   return (
     <div className="tool-page">
       <Navbar activePage="tools" />
@@ -536,46 +657,7 @@ export default function CampusServicePage() {
 
         {errMsg && <div className="tool-error">{errMsg}</div>}
 
-        {token && renderStatusCard()}
-
-        {token && connected && (
-          <>
-            <h2 className="cs-queries-title">{t('campusService.queriesTitle')}</h2>
-            <div className="cs-queries">
-              <button type="button" className="cs-qcard" onClick={() => doQuery('score')} disabled={!!qBusy || !!captcha}>
-                <span className="cs-qcard-name">{t('campusService.query.score')}</span>
-                <span className="cs-qcard-desc">{t('campusService.query.scoreDesc')}</span>
-                {qBusy === 'score' ? (
-                  <span className="cs-qcard-state"><span className="cs-spinner" />{t('campusService.query.scoreLoading')}</span>
-                ) : (
-                  <span className="cs-qcard-state">{'›'}</span>
-                )}
-              </button>
-              <button type="button" className="cs-qcard" onClick={() => doQuery('grades')} disabled={!!qBusy || !!captcha}>
-                <span className="cs-qcard-name">{t('campusService.query.grades')}</span>
-                <span className="cs-qcard-desc">{t('campusService.query.gradesDesc')}</span>
-                {qBusy === 'grades' ? (
-                  <span className="cs-qcard-state"><span className="cs-spinner" />{t('campusService.query.gradesLoading')}</span>
-                ) : (
-                  <span className="cs-qcard-state">{'›'}</span>
-                )}
-              </button>
-              <button type="button" className="cs-qcard" onClick={() => doQuery('ecard')} disabled={!!qBusy || !!captcha}>
-                <span className="cs-qcard-name">{t('campusService.query.ecard')}</span>
-                <span className="cs-qcard-desc">{t('campusService.query.ecardDesc')}</span>
-                {qBusy === 'ecard' ? (
-                  <span className="cs-qcard-state"><span className="cs-spinner" />{t('campusService.query.ecardLoading')}</span>
-                ) : (
-                  <span className="cs-qcard-state">{'›'}</span>
-                )}
-              </button>
-            </div>
-
-            {renderScore()}
-            {renderGrades()}
-            {renderEcard()}
-          </>
-        )}
+        {isSubPage ? renderSubPage() : renderMainPage()}
       </div>
 
       {renderCaptchaModal()}

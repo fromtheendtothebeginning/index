@@ -491,6 +491,74 @@
   font-size: 13px;
 }
 
+/* ── 子页面标题 ── */
+.cs-sub-title {
+  margin: 0 0 16px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* ── 代理地址信息 ── */
+.cs-proxy-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border-color);
+}
+
+.cs-proxy-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+
+.cs-proxy-label {
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.cs-proxy-addr {
+  font-family: monospace;
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.cs-proxy-copy {
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 2px 10px;
+  font-size: 12px;
+  color: var(--accent-1);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.cs-proxy-copy:hover {
+  background: var(--accent-1-soft);
+}
+
+/* ── AI 自动识别验证码提示 ── */
+.cs-auto-banner {
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--success, #2ea043);
+  background: var(--success-soft, rgba(46, 160, 67, 0.12));
+  border: 1px solid var(--success, #2ea043);
+}
+
 /* ── 响应式 ── */
 @media (max-width: 640px) {
   .cs-queries {

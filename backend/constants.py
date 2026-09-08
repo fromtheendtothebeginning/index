@@ -23,7 +23,8 @@ DEFAULT_CORS_ORIGINS = (
 #   DeepSeek 视觉在 *-vision-exp；Grok/GPT 系原生多模态。
 VISION_MODEL_PATTERNS = (
     "vision", "multimodal", "gemini", "gpt-4o", "gpt-4-vision", "gpt-5",
-    "grok", "minimax-m3", "minimax-vl", "kimi", "qwen3.8", "qwen3.7",
+    "grok", "minimax-m3", "minimax-vl", "kimi", "mimo",
+    "qwen3.8", "qwen3.7",
     "qwen3.5-omni", "qwen-vl", "qwen2.5-vl", "-vl", "4v", "internvl",
     "glm-5v", "glm-4v", "glm-ocr",
 )

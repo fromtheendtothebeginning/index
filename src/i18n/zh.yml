@@ -865,6 +865,12 @@ campusService:
   notConfigured: 尚未填写校园服务凭据，无法连接校园网
   notConfiguredHint: 凭据在「我的 → 校园服务」中填写（学号 + VPN 密码），填写保存后回来重新连接即可
   goFill: 去填写
+  proxy:
+    socks: SOCKS5 代理
+    http: HTTP 代理
+    copy: 复制
+    copied: 已复制
+  backToCampus: ← 返回校园服务
   queriesTitle: 选择查询
   query:
     score: 第二课堂分
@@ -910,6 +916,7 @@ campusService:
   captcha:
     title: 登录验证
     prompt: 首次查询需要图形验证码完成登录，请输入后提交
+    autoSolved: AI 已自动识别验证码并完成登录
     placeholder: 输入图中验证码
     confirm: 提交
     refetch: 换一张
@@ -927,6 +934,8 @@ campusService:
     payPassword: 校付宝支付密码
     payHint: 暂未使用，可留空
     keepHint: 留空表示保留原密码不变
+    autoCaptcha: AI 自动识别验证码
+    autoCaptchaHint: 开启后查询时自动使用你配置的识图模型识别图形验证码
     save: 保存
     saving: 保存中…
     saved: 已保存

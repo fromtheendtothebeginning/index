@@ -3,7 +3,7 @@ import ActionButton from '../../components/ActionButton'
 import { t } from '../../i18n'
 import './CampusCredPanel.css'
 
-const EMPTY_FORM = { student_id: '', real_name: '', vpn_password: '', pay_password: '' }
+const EMPTY_FORM = { student_id: '', real_name: '', vpn_password: '', pay_password: '', auto_captcha: false }
 
 /**
  * 「我的 → 校园服务」凭据填写面板（MyPage 第三个 tab 内容）。
@@ -29,7 +29,7 @@ export default function CampusCredPanel() {
       setInfo(b)
       setLoadErr(false)
       if (!keepForm) {
-        setForm(f => ({ ...f, student_id: '', real_name: b.real_name || '' }))
+        setForm(f => ({ ...f, student_id: '', real_name: b.real_name || '', auto_captcha: !!b.auto_captcha }))
       }
       return b
     } catch {
@@ -60,6 +60,7 @@ export default function CampusCredPanel() {
           real_name: form.real_name.trim(),
           vpn_password: form.vpn_password,
           pay_password: form.pay_password,
+          auto_captcha: !!form.auto_captcha,
         }),
       })
       const b = await res.json().catch(() => null)
@@ -157,6 +158,16 @@ export default function CampusCredPanel() {
               />
               {info.configured && <p className="ccp-hint">{t('campusService.cred.keepHint')}</p>}
             </div>
+
+            <label className="ccp-row ccp-checkbox-row">
+              <input
+                type="checkbox"
+                checked={!!form.auto_captcha}
+                onChange={e => setForm({...form, auto_captcha: e.target.checked})}
+              />
+              <span>{t('campusService.cred.autoCaptcha')}</span>
+              <span className="ccp-hint">{t('campusService.cred.autoCaptchaHint')}</span>
+            </label>
 
             <div className="ccp-field">
               <label className="ccp-label" htmlFor="ccp-pay-pwd">{t('campusService.cred.payPassword')}</label>

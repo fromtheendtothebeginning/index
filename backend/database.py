@@ -327,12 +327,19 @@ def run_migrations():
                 real_name VARCHAR(50) NOT NULL DEFAULT '',
                 vpn_password_enc TEXT NULL,
                 pay_password_enc TEXT NULL,
+                auto_captcha TINYINT(1) NOT NULL DEFAULT 0,
                 updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 UNIQUE KEY uq_campus_user (user_id),
                 CONSTRAINT fk_campus_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """))
         conn.commit()
+        cc_cols = {row[0] for row in conn.execute(text(
+            "SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'campus_creds'"
+        ))}
+        if "auto_captcha" not in cc_cols:
+            conn.execute(text("ALTER TABLE campus_creds ADD COLUMN auto_captcha TINYINT(1) NOT NULL DEFAULT 0"))
+            conn.commit()
 
     # 为所有没有专属邀请码的已存在用户分配一个邀请码
     from sqlalchemy.orm import Session

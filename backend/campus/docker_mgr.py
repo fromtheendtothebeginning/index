@@ -41,8 +41,8 @@ class DockerManager:
     def create_container(self, sess):
         cli_opts = "-d %s -u %s -p %s" % (self.cfg.vpn_addr, sess.student_id, sess.password)
         ports = {
-            "1080/tcp": ("127.0.0.1", str(sess.socks_port)),
-            "8888/tcp": ("127.0.0.1", str(sess.http_port)),
+            "1080/tcp": ("0.0.0.0", str(sess.socks_port)),
+            "8888/tcp": ("0.0.0.0", str(sess.http_port)),
         }
         env = {
             "EC_VER": self.cfg.ec_ver,

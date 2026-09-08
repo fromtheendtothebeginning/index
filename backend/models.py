@@ -358,6 +358,7 @@ class CampusCred(Base):
     real_name = Column(String(50), nullable=False, default="", server_default="", comment="姓名")
     vpn_password_enc = Column(Text, nullable=True, comment="VPN 密码（加密存储）")
     pay_password_enc = Column(Text, nullable=True, comment="校付宝支付密码（加密存储，暂未使用）")
+    auto_captcha = Column(Boolean, nullable=False, default=False, server_default="0", comment="启用 AI 自动识别验证码")
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), comment="更新时间"
     )
