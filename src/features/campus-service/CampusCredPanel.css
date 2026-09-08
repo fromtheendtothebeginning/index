@@ -1,0 +1,157 @@
+/* ============================================
+   校园服务凭据面板（ccp- 前缀，「我的 → 校园服务」tab）
+   观感对齐 MyPage 的 .ai-section 卡片体系
+   ============================================ */
+
+.ccp-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+}
+
+.ccp-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ccp-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ccp-sub {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+
+.ccp-loading {
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 8px 0;
+}
+
+/* ── 当前配置摘要 ── */
+.ccp-current {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bg-elevated);
+}
+
+.ccp-current-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-right: 4px;
+}
+
+.ccp-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  padding: 3px 12px;
+}
+
+.ccp-chip-ok {
+  color: var(--success, #2ea043);
+  background: var(--success-soft, rgba(46, 160, 67, 0.12));
+  border-color: var(--success, #2ea043);
+}
+
+.ccp-chip-off {
+  color: var(--text-muted);
+}
+
+.ccp-none {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* ── 表单 ── */
+.ccp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ccp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ccp-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ccp-input {
+  padding: 9px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.ccp-input:focus {
+  border-color: var(--accent-1);
+}
+
+.ccp-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.75;
+}
+
+.ccp-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.ccp-err {
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--danger);
+  background: var(--danger-soft-strong);
+  border: 1px solid var(--danger-border);
+}
+
+.ccp-err-ops {
+  margin-top: 8px;
+}
+
+.ccp-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.ccp-saved {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--success, #2ea043);
+}

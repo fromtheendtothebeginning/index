@@ -133,6 +133,17 @@ const UI_ICONS = {
       <line x1="8.5" y1="15" x2="12" y2="15" />
     </>
   ),
+  campus: (
+    <>
+      <path d="M3 21h18" />
+      <path d="M5 21V8l7-5 7 5v13" />
+      <path d="M10 21v-6h4v6" />
+      <line x1="9" y1="10" x2="10" y2="10" />
+      <line x1="14" y1="10" x2="15" y2="10" />
+      <line x1="9" y1="14" x2="10" y2="14" />
+      <line x1="14" y1="14" x2="15" y2="14" />
+    </>
+  ),
 }
 
 export function UiIcon({ name, filled = false, size = 16, className }) {

@@ -1,0 +1,513 @@
+/* ============================================
+   校园服务工具页（cs- 前缀，主题变量配色）
+   ============================================ */
+
+/* ── 凭据缺失横幅 ── */
+.cs-banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  border-radius: 12px;
+  background: var(--danger-soft-strong);
+  border: 1px solid var(--danger-border);
+}
+
+.cs-banner-title {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--danger);
+}
+
+.cs-banner-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* ── 状态卡 ── */
+.cs-status-card {
+  padding: 16px 18px;
+  margin-bottom: 20px;
+  border-radius: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+}
+
+.cs-status-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cs-status-row .btn {
+  margin-left: auto;
+}
+
+.cs-status-err {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--danger);
+}
+
+.cs-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cs-badge-ok {
+  background: var(--success-soft, rgba(46, 160, 67, 0.12));
+  border: 1px solid var(--success, #2ea043);
+  color: var(--success, #2ea043);
+}
+
+.cs-badge-danger {
+  background: var(--danger-soft-strong);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
+}
+
+.cs-badge-muted {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+}
+
+.cs-badge-busy {
+  background: var(--accent-1-soft);
+  border: 1px solid var(--accent-1-border);
+  color: var(--accent-1);
+}
+
+.cs-status-sid {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.cs-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: cs-spin 0.8s linear infinite;
+  vertical-align: -2px;
+}
+
+@keyframes cs-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── 查询入口卡片 ── */
+.cs-queries-title {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.cs-queries {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.cs-qcard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+.cs-qcard:hover:not(:disabled) {
+  border-color: var(--accent-1);
+  background: var(--accent-1-soft);
+  box-shadow: 0 0 0 1px var(--accent-1);
+  transform: translateY(-1px);
+}
+
+.cs-qcard:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.cs-qcard-name {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.cs-qcard-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.cs-qcard-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--accent-1);
+}
+
+/* ── 结果面板通用 ── */
+.cs-panel {
+  padding: 16px 18px;
+  margin-bottom: 20px;
+  border-radius: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+}
+
+.cs-empty {
+  margin: 4px 0;
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 12px 0;
+}
+
+.cs-student-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 14px;
+}
+
+.cs-sep {
+  font-style: normal;
+  margin-right: 6px;
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.cs-stats {
+  display: flex;
+  gap: 28px;
+  margin-bottom: 16px;
+}
+
+.cs-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cs-stat-label {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.cs-stat b {
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.1;
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ── 第二课堂分组折叠 ── */
+.cs-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cs-group {
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-primary);
+  overflow: hidden;
+}
+
+.cs-group summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 14px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  position: relative;
+  padding-right: 34px;
+}
+
+.cs-group summary::-webkit-details-marker {
+  display: none;
+}
+
+.cs-group summary::after {
+  content: '';
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  margin-top: -3px;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid var(--text-muted);
+  transition: transform 0.2s;
+}
+
+.cs-group[open] summary::after {
+  transform: rotate(180deg);
+}
+
+.cs-group-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cs-group-sub {
+  font-size: 11px;
+  color: var(--accent-1);
+  background: var(--accent-1-soft);
+  border: 1px solid var(--accent-1-border);
+  padding: 1px 10px;
+  border-radius: 999px;
+  margin-left: auto;
+  margin-right: 6px;
+}
+
+.cs-group-body {
+  padding: 4px 14px 10px;
+  border-top: 1px dashed var(--border-color);
+}
+
+.cs-mini-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.cs-mini-table td {
+  padding: 7px 4px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.cs-mini-table tr:last-child td {
+  border-bottom: none;
+}
+
+.cs-mini-table td.cs-mini-val {
+  text-align: right;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 成绩 ── */
+.cs-grades-hero {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.cs-grade-count {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.cs-term-select {
+  margin-left: auto;
+}
+
+.cs-grades-hero .category-btn {
+  font-size: 12px;
+}
+
+.cs-table-wrap {
+  overflow-x: auto;
+}
+
+.cs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 640px;
+}
+
+.cs-table th,
+.cs-table td {
+  padding: 9px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.cs-table th {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.cs-table td {
+  color: var(--text-secondary);
+}
+
+.cs-table td.cs-cell-course {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.cs-table tbody tr:hover {
+  background: var(--bg-elevated);
+}
+
+/* ── 校园卡动态码 ── */
+.cs-ecard-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.cs-ecard-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cs-ecard-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cs-ecard-countdown {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.cs-ecard-img {
+  width: 220px;
+  height: 220px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  object-fit: contain;
+}
+
+.cs-ecard-code {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 4px;
+  color: var(--text-primary);
+  margin: 8px 0;
+}
+
+.cs-ecard-tip {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* ── 验证码弹窗 ── */
+.cs-captcha {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cs-captcha-prompt {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.cs-captcha-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cs-captcha-img {
+  height: 44px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+}
+
+.cs-captcha-noimg {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.cs-captcha-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.cs-captcha-err {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--danger);
+  background: var(--danger-soft-strong);
+  border: 1px solid var(--danger-border);
+}
+
+.cs-captcha .btn-secondary {
+  align-self: flex-start;
+  padding: 6px 16px;
+  font-size: 13px;
+}
+
+/* ── 响应式 ── */
+@media (max-width: 640px) {
+  .cs-queries {
+    grid-template-columns: 1fr;
+  }
+
+  .cs-term-select {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .cs-status-row .btn {
+    margin-left: 0;
+  }
+
+  .cs-ecard-img {
+    width: 180px;
+    height: 180px;
+  }
+}

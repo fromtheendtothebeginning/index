@@ -85,6 +85,10 @@
     "img2latex": {
       "name": "图文转LaTeX",
       "desc": "上传图片与说明，AI 生成 LaTeX 代码并在线编译为 PDF"
+    },
+    "campusService": {
+      "name": "校园服务",
+      "desc": "连接校园网 VPN，查询第二课堂分、成绩与校园卡动态码"
     }
   },
   "img2latex": {
@@ -728,7 +732,8 @@
     "loading": "加载中...",
     "tab": {
       "notifications": "通知",
-      "aiSettings": "AI 设置"
+      "aiSettings": "AI 设置",
+      "campus": "校园服务"
     },
     "notify": {
       "unreadBadge": "未读红点",
@@ -938,5 +943,109 @@
     "copyCode": "复制代码",
     "copied": "已复制",
     "copyFailed": "复制失败，请手动选中文本复制"
+  },
+  "campusService": {
+    "navLabel": "校园服务",
+    "title": "校园服务",
+    "subtitle": "连接校园网 VPN，查询第二课堂分 / 成绩 / 校园卡动态码（凭据在「我的 → 校园服务」填写）",
+    "backToTools": "← 返回工具主页",
+    "needLogin": "校园服务需要登录后使用",
+    "goAuth": "去登录",
+    "loading": "正在获取连接状态…",
+    "error": "请求失败，请稍后重试",
+    "retry": "重试",
+    "connect": "连接校园网",
+    "connecting": "正在连接校园网…",
+    "connected": "已连接",
+    "notConnected": "未连接",
+    "disconnect": "断开连接",
+    "disconnecting": "断开中…",
+    "failed": "连接失败",
+    "studentId": "学号 {sid}",
+    "serverUnavailable": "服务器 VPN 服务未启用",
+    "notConfigured": "尚未填写校园服务凭据，无法连接校园网",
+    "notConfiguredHint": "凭据在「我的 → 校园服务」中填写（学号 + VPN 密码），填写保存后回来重新连接即可",
+    "goFill": "去填写",
+    "queriesTitle": "选择查询",
+    "query": {
+      "score": "第二课堂分",
+      "scoreDesc": "德智体美劳各分项得分与学时",
+      "scoreLoading": "查询中…",
+      "grades": "成绩查询",
+      "gradesDesc": "各学年学期课程成绩与绩点",
+      "gradesLoading": "查询中…",
+      "ecard": "校园卡动态码",
+      "ecardDesc": "食堂 / 超市付款动态码",
+      "ecardLoading": "获取中…"
+    },
+    "score": {
+      "total": "总得分",
+      "credit": "实践学分",
+      "empty": "暂无第二课堂数据，请稍后重试",
+      "group": "小计",
+      "student": {
+        "xh": "学号",
+        "xm": "姓名",
+        "nj": "年级",
+        "bmmc": "学院",
+        "zymc": "专业",
+        "bjmc": "班级"
+      }
+    },
+    "grades": {
+      "gpa": "平均绩点",
+      "count": "共 {n} 门",
+      "selectTerm": "按学年学期筛选",
+      "allTerms": "全部学期",
+      "empty": "暂无成绩记录",
+      "col": {
+        "course": "课程",
+        "score": "成绩",
+        "credit": "学分",
+        "gpa": "绩点",
+        "method": "考核方式",
+        "year": "学年",
+        "term": "学期"
+      }
+    },
+    "ecard": {
+      "tip": "动态码仅供本人付款使用，请勿截图转发",
+      "refresh": "立即刷新",
+      "refreshing": "刷新中…",
+      "countdown": "{n} 秒后自动刷新"
+    },
+    "captcha": {
+      "title": "登录验证",
+      "prompt": "首次查询需要图形验证码完成登录，请输入后提交",
+      "placeholder": "输入图中验证码",
+      "confirm": "提交",
+      "refetch": "换一张",
+      "noImage": "验证码图片获取失败，请点击「换一张」重试"
+    },
+    "cred": {
+      "title": "校园服务凭据",
+      "subtitle": "学号与 VPN 密码用于连接校园网 VPN；教务 / 校园卡系统使用同一账号。密码经加密后保存，请放心填写",
+      "current": "当前配置",
+      "notConfigured": "未配置",
+      "sidMasked": "已配置：{sid}",
+      "sidHint": "服务器仅存打码学号，修改时需填写完整学号",
+      "studentId": "学号",
+      "realName": "姓名",
+      "vpnPassword": "VPN 密码",
+      "payPassword": "校付宝支付密码",
+      "payHint": "暂未使用，可留空",
+      "keepHint": "留空表示保留原密码不变",
+      "save": "保存",
+      "saving": "保存中…",
+      "saved": "已保存",
+      "paySet": "已设置支付密码",
+      "payNotSet": "未设置支付密码",
+      "noneHint": "保存后即可在「工具 → 校园服务」连接校园网使用查询",
+      "errStudentId": "请填写学号",
+      "errVpnFirst": "首次配置必须填写 VPN 密码",
+      "saveFailed": "保存失败：{error}",
+      "loadFailed": "配置加载失败，请刷新重试",
+      "networkError": "网络错误，请稍后重试"
+    }
   }
 }

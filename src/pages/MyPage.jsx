@@ -7,6 +7,7 @@ import Modal from '../components/Modal'
 import ActionButton from '../components/ActionButton'
 import { PROVIDERS, getProvider, getThinkingLevels, isValidThinkingLevel, AI_DEFAULTS } from '../utils/aiProviders'
 import { t } from '../i18n'
+import CampusCredPanel from '../features/campus-service/CampusCredPanel'
 import './MyPage.css'
 
 const TYPE_META = {
@@ -568,6 +569,9 @@ function MyPage() {
             <button type="button" className={`my-tab ${tab === 'ai' ? 'active' : ''}`} onClick={() => switchTab('ai')}>
               {t('myPage.tab.aiSettings')}
             </button>
+            <button type="button" className={`my-tab ${tab === 'campus' ? 'active' : ''}`} onClick={() => switchTab('campus')}>
+              {t('myPage.tab.campus')}
+            </button>
           </div>
         </div>
 
@@ -869,6 +873,8 @@ function MyPage() {
             )}
           </div>
         )}
+
+        {tab === 'campus' && <CampusCredPanel />}
       </div>
 
       {/* ═══ 二级弹窗（新增/编辑 Key）═══ */}

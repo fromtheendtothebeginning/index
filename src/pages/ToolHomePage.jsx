@@ -41,6 +41,15 @@ function ToolHomePage() {
             </div>
             <span className="tool-card-arrow">→</span>
           </Link>
+
+          <Link to="/tools/campus-service" className="tool-card-link">
+            <div className="tool-card-icon"><UiIcon name="campus" size={28} className="tool-brand-icon" /></div>
+            <div className="tool-card-info">
+              <h2 className="tool-card-name">{t('toolHome.campusService.name')}</h2>
+              <p className="tool-card-desc">{t('toolHome.campusService.desc')}</p>
+            </div>
+            <span className="tool-card-arrow">→</span>
+          </Link>
         </div>
       </div>
     </div>
