@@ -11,3 +11,9 @@ python-multipart==0.0.20
 yt-dlp==2026.8.19
 rapidocr==3.9.2
 onnxruntime
+# 校园服务（SCHOOLALY 移植）：EasyConnect VPN 容器 + 校园网查询
+docker==7.2.0
+pycryptodome==3.23.0
+PySocks==1.7.1
+qrcode==8.2
+pillow==12.3.0

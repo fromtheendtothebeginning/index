@@ -318,6 +318,21 @@ def run_migrations():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """))
         conn.commit()
+        # campus_creds 表（校园服务凭据；新表 create_all 已建时 IF NOT EXISTS 无副作用）
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS campus_creds (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                student_id VARCHAR(50) NOT NULL DEFAULT '',
+                real_name VARCHAR(50) NOT NULL DEFAULT '',
+                vpn_password_enc TEXT NULL,
+                pay_password_enc TEXT NULL,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY uq_campus_user (user_id),
+                CONSTRAINT fk_campus_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """))
+        conn.commit()
 
     # 为所有没有专属邀请码的已存在用户分配一个邀请码
     from sqlalchemy.orm import Session

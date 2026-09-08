@@ -346,3 +346,23 @@ class SiteSetting(Base):
 
     def __repr__(self):
         return f"<SiteSetting(id={self.id}, email='{self.email}')>"
+
+
+class CampusCred(Base):
+    """校园服务凭据 —— 每用户一行：学号/姓名/VPN密码/校付宝支付密码（后两者加密存储）"""
+    __tablename__ = "campus_creds"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True, comment="所属用户 ID")
+    student_id = Column(String(50), nullable=False, default="", server_default="", comment="学号")
+    real_name = Column(String(50), nullable=False, default="", server_default="", comment="姓名")
+    vpn_password_enc = Column(Text, nullable=True, comment="VPN 密码（加密存储）")
+    pay_password_enc = Column(Text, nullable=True, comment="校付宝支付密码（加密存储，暂未使用）")
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), comment="更新时间"
+    )
+
+    user = relationship("User")
+
+    def __repr__(self):
+        return f"<CampusCred(id={self.id}, user_id={self.user_id})>"
