@@ -512,8 +512,20 @@ def _b64(data: bytes) -> str:
 # ============================================================
 
 def _get_electricity_client(sess=None):
-    """电费客户端：epeortal API 公网可达，直连即可（无需 VPN）。"""
+    """电费客户端：VPN 已连接时走隧道，否则直连。
+
+    epeortal 在家庭/校园网可直连，但云服务器直连会被拒（超时），
+    此时借用已建立的 VPN 隧道；本地未连 VPN 时仍走直连。
+    """
     from campus.electricity import ElectricityClient
+    try:
+        m = _get_managers()
+        if "error" not in m:
+            s = sess or m["sessions"].get()
+            if s and s.status == "connected":
+                return ElectricityClient(proxy_host=s.proxy_host, socks_port=s.socks_port)
+    except Exception:
+        pass
     return ElectricityClient()
 
 
