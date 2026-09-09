@@ -110,8 +110,10 @@ class DockerManager:
         else:
             kwargs["network_mode"] = "host"
         # 容器内 DNS 偶发解析失败（curl error:6 Couldn't resolve host name）：
-        # 在宿主侧预解析 VPN 域名，写入容器 /etc/hosts 兜底
+        # 宿主侧预解析 VPN 域名写入容器 /etc/hosts；宿主也解析不了时用配置的 IP 兜底
         extra = self._resolve_hosts(self.cfg.vpn_addr)
+        if not extra.get(self.cfg.vpn_addr) and getattr(self.cfg, "vpn_ip", ""):
+            extra[self.cfg.vpn_addr] = self.cfg.vpn_ip
         if extra:
             kwargs["extra_hosts"] = extra
         for attempt in range(2):

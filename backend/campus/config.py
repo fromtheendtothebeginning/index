@@ -5,6 +5,8 @@ import os
 
 class Config:
     vpn_addr = os.environ.get("VPN_ADDR", "myvpn.sit.edu.cn")
+    # VPN 服务器 IP 兜底：部分云服务器 DNS 解析不了该域名，容器内直接写 hosts
+    vpn_ip = os.environ.get("CAMPUS_VPN_IP", "210.35.64.4")
     ec_ver = os.environ.get("EC_VER", "7.6.7")
     ec_image = os.environ.get("EC_IMAGE", "hagb/docker-easyconnect:cli")
     max_sessions = int(os.environ.get("CAMPUS_MAX_SESSIONS", "6"))
