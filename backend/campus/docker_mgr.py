@@ -11,11 +11,30 @@ from docker.errors import NotFound
 class DockerManager:
     def __init__(self, cfg):
         self.cfg = cfg
-        if cfg.docker_host:
-            self.client = docker.DockerClient(base_url=cfg.docker_host)
-        else:
-            self.client = docker.from_env()
         self._lock = threading.Lock()
+        self.client = self._connect(cfg)
+
+    @staticmethod
+    def _connect(cfg):
+        """连接 Docker：优先 DOCKER_HOST，失败则回退本机 Unix socket。
+
+        服务器上 DOCKER_HOST 若仍指向 tcp://127.0.0.1:2375 但守护进程只监听
+        unix socket 时，回退可避免整个校园服务不可用。
+        """
+        host = (cfg.docker_host or "").strip()
+        candidates = []
+        if host:
+            candidates.append(host)
+        candidates.append("unix:///var/run/docker.sock")
+        last_err = None
+        for base in candidates:
+            try:
+                client = docker.DockerClient(base_url=base)
+                client.ping()
+                return client
+            except Exception as e:
+                last_err = e
+        raise last_err
 
     def _used_ports(self):
         used = set()

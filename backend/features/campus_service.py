@@ -32,21 +32,22 @@ def _get_managers():
     global _singletons
     with _singletons_lock:
         if _singletons is None:
-            from campus.config import Config
-            from campus.dekt import DektManager
-            from campus.docker_mgr import DockerManager
-            from campus.sessions import SessionManager
-
-            cfg = Config()
             try:
+                from campus.config import Config
+                from campus.dekt import DektManager
+                from campus.docker_mgr import DockerManager
+                from campus.sessions import SessionManager
+
+                cfg = Config()
                 docker = DockerManager(cfg)
                 docker.cleanup_orphans()
                 sessions = SessionManager(cfg, docker)
                 dekt = DektManager(cfg)
                 _singletons = {"cfg": cfg, "docker": docker, "sessions": sessions, "dekt": dekt}
             except Exception as e:
-                _log(f"campus docker init failed: {str(e)[:200]}")
-                _singletons = {"error": str(e)[:300]}
+                # 含依赖缺失（如 docker 包未装）与 Docker 守护进程不可达
+                _log(f"campus init failed: {type(e).__name__}: {str(e)[:200]}")
+                _singletons = {"error": f"{type(e).__name__}: {str(e)[:250]}"}
     return _singletons
 
 
