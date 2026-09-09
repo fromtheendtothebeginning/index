@@ -3,7 +3,7 @@ import ActionButton from '../../components/ActionButton'
 import { t } from '../../i18n'
 import './CampusCredPanel.css'
 
-const EMPTY_FORM = { student_id: '', real_name: '', vpn_password: '', pay_password: '', auto_captcha: false }
+const EMPTY_FORM = { student_id: '', real_name: '', vpn_password: '', pay_password: '', auto_captcha: false, dorm: '' }
 
 /**
  * 「我的 → 校园服务」凭据填写面板（MyPage 第三个 tab 内容）。
@@ -29,7 +29,7 @@ export default function CampusCredPanel() {
       setInfo(b)
       setLoadErr(false)
       if (!keepForm) {
-        setForm(f => ({ ...f, student_id: '', real_name: b.real_name || '', auto_captcha: !!b.auto_captcha }))
+        setForm(f => ({ ...f, student_id: '', real_name: b.real_name || '', auto_captcha: !!b.auto_captcha, dorm: b.dorm || '' }))
       }
       return b
     } catch {
@@ -61,6 +61,7 @@ export default function CampusCredPanel() {
           vpn_password: form.vpn_password,
           pay_password: form.pay_password,
           auto_captcha: !!form.auto_captcha,
+          dorm: form.dorm.trim(),
         }),
       })
       const b = await res.json().catch(() => null)
@@ -73,7 +74,7 @@ export default function CampusCredPanel() {
       // 重新拉取当前配置并回填姓名（学号只回打码值，不可回填输入框）
       setForm(f => ({ ...f, vpn_password: '', pay_password: '' }))
       refreshInfo(true).then(b => {
-        if (b) setForm(f => ({ ...f, real_name: b.real_name || '' }))
+        if (b) setForm(f => ({ ...f, real_name: b.real_name || '', dorm: b.dorm || '' }))
       })
     } catch {
       setErr(t('campusService.cred.networkError'))
@@ -181,6 +182,21 @@ export default function CampusCredPanel() {
                 onChange={e => setField('pay_password', e.target.value)}
               />
               <p className="ccp-hint">{t('campusService.cred.payHint')}</p>
+            </div>
+
+            <div className="ccp-field">
+              <label className="ccp-label" htmlFor="ccp-dorm">{t('campusService.cred.dorm')}</label>
+              <input
+                id="ccp-dorm"
+                className="ccp-input"
+                type="text"
+                value={form.dorm}
+                maxLength={100}
+                autoComplete="off"
+                placeholder={t('campusService.electricity.dormPlaceholder')}
+                onChange={e => setField('dorm', e.target.value)}
+              />
+              <p className="ccp-hint">{t('campusService.cred.dormHint')}</p>
             </div>
 
             {err && <div className="ccp-err">{err}</div>}

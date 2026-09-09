@@ -781,6 +781,26 @@
   font-size: 14px;
   font-weight: 600;
 }
+
+.admin-campus-proxy {
+  font-family: monospace;
+  font-size: 13px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+}
+
+.admin-settings-error {
+  margin: 0;
+  font-size: 13px;
+  color: var(--danger);
+}
+
+.admin-settings-value {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
 .admin-leetcode-debug {
   display: flex;
   flex-direction: column;

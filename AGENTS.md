@@ -1,6 +1,6 @@
 # AGENTS.md — anticraft · 逆匠
 
-全栈博客：React 18 + Vite 5 前端 / FastAPI + SQLAlchemy 后端 / MySQL 8。完整文档见 `README.md`，部署排错见 `warning.md`，任务清单见 `todo.md`。
+全栈博客：React 18 + Vite 5 前端 / FastAPI + SQLAlchemy 后端 / MySQL 8。完整文档见 `README.md`，全仓逐文件代码地图见 `CODEMAP.md`（改代码前先查对应文件职责），部署排错见 `warning.md`，任务清单见 `todo.md`。
 
 ## 常用命令
 - `npm run dev` — Vite 前端，端口 3000，`/api` 代理到 `127.0.0.1:8000`
@@ -8,6 +8,7 @@
 - **重启服务一律用 `cmd /c restart-backend.bat` / `cmd /c restart-frontend.bat`**（已 gitignore）：bat 内部用**一次性 schtasks 计划任务**拉起 `run-backend-hidden.cmd`（pythonw 直启、日志重定向到 log/），完全脱离调用方控制台/管道/进程树，bat 瞬间自我退出——绝不内联 Start-Process/cmd 包装（实测会被工具会话回收或挂住）。子进程（ffmpeg 等）必须带 `creationflags=CREATE_NO_WINDOW`，否则 pythonw 下反复闪黑窗。验证：隔几秒单独一条 curl http://127.0.0.1:8000/api/health；Vite 只监听 IPv6 `[::1]:3000`，探测用 `http://localhost:3000`。bat 必须纯 ASCII + CRLF；**不要在使用者跑后台任务时重启后端**（会中断在跑的任务）。
 - `npm run start` — 两个新窗口分别启动前后端
 - `npm run build` — 构建前端到 `dist/`
+- `npm run i18n` — 从 `src/i18n/zh.yml` 构建 `zh.json`（改文案后需重跑；`t()` 已改为直接读 zh.json，另有 yaml 依赖）
 - **没有测试框架、没有 linter/typecheck**。验证方式：启动后 `curl http://127.0.0.1:8000/api/health`，或 `npm run build` 确认构建通过。
 
 ## 完成后的默认动作
@@ -45,9 +46,10 @@
 
 ## 前端
 - 无 UI 组件库；Markdown 渲染为自研 `src/utils/markdown.js`，新增语法改它。
+- **i18n**：中文文案集中 `src/i18n/zh.yml`（源），构建期转 `zh.json`；代码用 `t('顶层.子键')` 取词（`src/i18n/index.js`），新增/改动文案同步 yml 后跑 `npm run i18n`。不要硬编码中文文案。
 - 确认弹窗统一用 `src/components/Modal.jsx`，不用 `window.confirm`。
 - 每页独立 CSS 文件；主题色在 `src/index.css` 的 CSS 变量（`--bg-primary` / `--text-primary` / `--accent-1` / `--accent-2`）。
-- react-router-dom v7，路由集中在 `src/App.jsx`，页面在 `src/pages/`。
+- react-router-dom v7，路由在 `src/appRoutes.jsx` 汇总：`src/legacyRoutes.jsx`（`src/pages/` 存量页面）+ `src/features/*/routes.{js,jsx}` 自动 glob 合并（新增功能页不必改 App.jsx）。
 - **图标一律不用 emoji**：统一用镂空简笔 SVG 图标（`src/components/Icons.jsx` 的 `UiIcon` 组件，Feather 风格 stroke；品牌图标用 `ContactIcon`）。新增图标先看 Icons.jsx 是否已有，没有则按相同风格补一个。
 
 ## harness（AI 智能体管控框架，顶层目录）

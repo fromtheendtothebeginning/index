@@ -29,6 +29,10 @@ function AdminPage() {
   const [lcDebug, setLcDebug] = useState(null)
   const [lcDebugInput, setLcDebugInput] = useState({ easy: 0, medium: 0, hard: 0 })
   const [lcDebugBusy, setLcDebugBusy] = useState(false)
+  // 校园网 VPN（全局共享）
+  const [campusStatus, setCampusStatus] = useState(null)
+  const [campusBusy, setCampusBusy] = useState(false)
+  const [campusErr, setCampusErr] = useState('')
   const [editingUserId, setEditingUserId] = useState(null)
   const [editForm, setEditForm] = useState({ nickname: '', avatar_url: '', password: '' })
   const [loading, setLoading] = useState(false)
@@ -381,6 +385,55 @@ function AdminPage() {
     if (authChecked && tab === 'leetcode') loadLcDebug()
   }, [authChecked, tab])
 
+  // ── 校园网 VPN（全局共享） ──
+  const loadCampusStatus = useCallback(async () => {
+    try {
+      const res = await fetch('/api/campus/status', { headers: authHeaders() })
+      if (res.ok) {
+        const b = await res.json().catch(() => null)
+        if (b) setCampusStatus(b)
+      } else {
+        const b = await res.json().catch(() => null)
+        setCampusErr(b && b.detail ? String(b.detail) : t('admin.campus.serverUnavailable'))
+      }
+    } catch { /* 忽略 */ }
+  }, [])
+
+  useEffect(() => {
+    if (authChecked && tab === 'campus') {
+      loadCampusStatus()
+      const timer = setInterval(loadCampusStatus, 3000)
+      return () => clearInterval(timer)
+    }
+  }, [authChecked, tab, loadCampusStatus])
+
+  const handleCampusConnect = async () => {
+    setCampusBusy(true)
+    setCampusErr('')
+    try {
+      const res = await fetch('/api/campus/connect', { method: 'POST', headers: authHeaders() })
+      const b = await res.json().catch(() => null)
+      if (!res.ok) {
+        setCampusErr(b && b.detail ? String(b.detail) : t('admin.campus.connectFailed'))
+        return
+      }
+      setCampusStatus(b)
+    } catch {
+      setCampusErr(t('admin.campus.networkError'))
+    } finally {
+      setCampusBusy(false)
+    }
+  }
+
+  const handleCampusDisconnect = async () => {
+    setCampusBusy(true)
+    try {
+      await fetch('/api/campus/disconnect', { method: 'POST', headers: authHeaders() })
+      await loadCampusStatus()
+    } catch { /* 忽略 */ }
+    finally { setCampusBusy(false) }
+  }
+
   const handleLcDebugToggle = async (on) => {
     setLcDebugBusy(true)
     try {
@@ -464,6 +517,7 @@ function AdminPage() {
           <button className={`admin-tab ${tab === 'links' ? 'active' : ''}`} onClick={() => setTab('links')}>{t('admin.tabs.links')}</button>
           <button className={`admin-tab ${tab === 'settings' ? 'active' : ''}`} onClick={() => setTab('settings')}>{t('admin.tabs.settings')}</button>
           <button className={`admin-tab ${tab === 'leetcode' ? 'active' : ''}`} onClick={() => setTab('leetcode')}>{t('admin.tabs.leetcode')}</button>
+          <button className={`admin-tab ${tab === 'campus' ? 'active' : ''}`} onClick={() => setTab('campus')}>{t('admin.tabs.campus')}</button>
         </div>
 
         {error && <div className="admin-error">{error}</div>}
@@ -945,6 +999,75 @@ function AdminPage() {
                   )}
                 </>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* 校园网 VPN（全局共享） */}
+        {tab === 'campus' && !loading && (
+          <div className="admin-section">
+            <div className="admin-section-head">
+              <h2>{t('admin.campus.title')}</h2>
+            </div>
+            <div className="admin-settings-form">
+              <p className="admin-settings-hint">{t('admin.campus.hint')}</p>
+
+              <div className="admin-settings-row">
+                <span className="admin-settings-label">{t('admin.campus.status')}</span>
+                {!campusStatus ? (
+                  <span className="cs-badge cs-badge-muted">{t('admin.campus.loading')}</span>
+                ) : campusStatus.status === 'connected' ? (
+                  <span className="cs-badge cs-badge-ok">{t('admin.campus.connected')}</span>
+                ) : campusStatus.status === 'creating' || campusStatus.status === 'connecting' ? (
+                  <span className="cs-badge cs-badge-busy">
+                    <span className="cs-spinner" />{t('admin.campus.connecting')}
+                  </span>
+                ) : (
+                  <span className={`cs-badge ${campusStatus.status === 'failed' ? 'cs-badge-danger' : 'cs-badge-muted'}`}>
+                    {campusStatus.status === 'failed' ? t('admin.campus.failed') : t('admin.campus.notConnected')}
+                  </span>
+                )}
+              </div>
+
+              {campusStatus && campusStatus.student_id_masked && (
+                <div className="admin-settings-row">
+                  <span className="admin-settings-label">{t('admin.campus.account')}</span>
+                  <span className="admin-settings-value">{campusStatus.student_id_masked}</span>
+                </div>
+              )}
+
+              {campusStatus && campusStatus.status === 'connected' && campusStatus.host && (
+                <>
+                  <div className="admin-settings-row">
+                    <span className="admin-settings-label">{t('admin.campus.socks')}</span>
+                    <code className="admin-campus-proxy">{campusStatus.host}:{campusStatus.socks_port}</code>
+                  </div>
+                  <div className="admin-settings-row">
+                    <span className="admin-settings-label">{t('admin.campus.http')}</span>
+                    <code className="admin-campus-proxy">{campusStatus.host}:{campusStatus.http_port}</code>
+                  </div>
+                </>
+              )}
+
+              {campusStatus && campusStatus.error && (
+                <p className="admin-settings-error">{campusStatus.error}</p>
+              )}
+              {campusErr && <p className="admin-settings-error">{campusErr}</p>}
+
+              <div className="admin-settings-row">
+                <span className="admin-settings-label" />
+                {campusStatus && campusStatus.status === 'connected' ? (
+                  <button className="btn btn-danger btn-sm" onClick={handleCampusDisconnect} disabled={campusBusy}>
+                    {campusBusy ? t('admin.campus.disconnecting') : t('admin.campus.disconnect')}
+                  </button>
+                ) : (
+                  <button className="btn btn-primary btn-sm" onClick={handleCampusConnect} disabled={campusBusy}>
+                    {campusBusy ? t('admin.campus.connecting') : t('admin.campus.connect')}
+                  </button>
+                )}
+              </div>
+
+              <p className="admin-settings-hint">{t('admin.campus.credHint')}</p>
             </div>
           </div>
         )}

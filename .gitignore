@@ -64,6 +64,7 @@ __pycache__/
 *.egg-info/
 .venv/
 backend/.venv/
+backend/.venv-wsl/
 
 # 项目上下文
 context.md
@@ -86,3 +87,6 @@ opencode.json
 # 图文转 LaTeX 会话文件（用户上传的临时文件，运行时生成）
 backend/img2latex_files/
 
+
+# WSL 端口转发脚本（架构改为共享端口后已废弃）
+setup-wsl-portforward.ps1

@@ -39,12 +39,9 @@ class DockerManager:
         return socks, http
 
     def create_container(self, sess):
-        # bridge 模式 + 端口映射，EasyConnect 需要独立网络命名空间建 tun
+        # host 模式：容器共享宿主网络栈，tun/路由正常工作
+        # EasyConnect 默认 SOCKS5=1080, HTTP=8888，不传 -l 参数
         cli_opts = "-d %s -u %s -p %s" % (self.cfg.vpn_addr, sess.student_id, sess.password)
-        ports = {
-            "1080/tcp": ("0.0.0.0", str(sess.socks_port)),
-            "8888/tcp": ("0.0.0.0", str(sess.http_port)),
-        }
         env = {
             "EC_VER": self.cfg.ec_ver,
             "CLI_OPTS": cli_opts,
@@ -60,8 +57,8 @@ class DockerManager:
                     remove=True,
                     devices=["/dev/net/tun"],
                     privileged=True,
+                    network_mode="host",
                     environment=env,
-                    ports=ports,
                     mem_limit=self.cfg.mem_limit,
                 )
                 return
@@ -87,11 +84,23 @@ class DockerManager:
         return {"running": bool(state.get("Running")), "exited": not state.get("Running")}
 
     def get_logs(self, sess, tail=200):
+        """容器 stdout 日志 + EasyConnect 内部日志（含 curl 错误码，用于诊断失败原因）"""
         try:
             c = self.client.containers.get(sess.container_name)
-            return (c.logs(tail=tail) or b"").decode("utf-8", "replace")
         except NotFound:
             return ""
+        out = ""
+        try:
+            out = (c.logs(tail=tail) or b"").decode("utf-8", "replace")
+        except Exception:
+            pass
+        try:
+            r = c.exec_run("sh -c 'tail -60 /usr/share/sangfor/EasyConnect/resources/logs/easyconn.log 2>/dev/null'")
+            if r.exit_code == 0 and r.output:
+                out += "\n" + r.output.decode("utf-8", "replace")
+        except Exception:
+            pass
+        return out
 
     def has_tun(self, sess):
         """容器内 VPN 隧道(tun0)是否存在"""

@@ -340,6 +340,26 @@ def run_migrations():
         if "auto_captcha" not in cc_cols:
             conn.execute(text("ALTER TABLE campus_creds ADD COLUMN auto_captcha TINYINT(1) NOT NULL DEFAULT 0"))
             conn.commit()
+        if "dorm" not in cc_cols:
+            conn.execute(text("ALTER TABLE campus_creds ADD COLUMN dorm VARCHAR(100) NOT NULL DEFAULT ''"))
+            conn.commit()
+
+        # electricity_records 表（电费历史记录）
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS electricity_records (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                dorm VARCHAR(100) NOT NULL DEFAULT '',
+                balance FLOAT NULL,
+                remain FLOAT NULL,
+                raw_json TEXT NULL,
+                queried_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                KEY idx_er_user (user_id),
+                KEY idx_er_time (queried_at),
+                CONSTRAINT fk_er_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """))
+        conn.commit()
 
     # 为所有没有专属邀请码的已存在用户分配一个邀请码
     from sqlalchemy.orm import Session

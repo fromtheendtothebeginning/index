@@ -55,6 +55,13 @@
   color: var(--danger);
 }
 
+.cs-status-hint {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
 .cs-badge {
   display: inline-flex;
   align-items: center;
@@ -119,7 +126,7 @@
 
 .cs-queries {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
   margin-bottom: 20px;
 }
@@ -171,6 +178,14 @@
   color: var(--accent-1);
 }
 
+.cs-qcard-locked {
+  opacity: 0.6;
+}
+
+.cs-qcard-locked .cs-qcard-state {
+  color: var(--text-muted);
+}
+
 /* ── 结果面板通用 ── */
 .cs-panel {
   padding: 16px 18px;
@@ -216,6 +231,12 @@
   gap: 2px;
 }
 
+.cs-stat-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
 .cs-stat-label {
   font-size: 11px;
   color: var(--text-muted);
@@ -225,10 +246,22 @@
   font-size: 30px;
   font-weight: 800;
   line-height: 1.1;
-  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--text-primary);
+}
+
+.cs-stat-target {
+  font-size: 16px;
+  font-weight: 700;
+  margin-left: 4px;
+  opacity: 0.8;
+}
+
+.cs-stat b.cs-score-ok {
+  color: var(--success, #2ea043);
+}
+
+.cs-stat b.cs-score-warn {
+  color: var(--danger);
 }
 
 /* ── 第二课堂分组折叠 ── */
@@ -295,6 +328,38 @@
   border-radius: 999px;
   margin-left: auto;
   margin-right: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cs-group-ok {
+  color: var(--success, #2ea043) !important;
+  background: var(--success-soft, rgba(46, 160, 67, 0.12)) !important;
+  border-color: var(--success, #2ea043) !important;
+}
+
+.cs-group-warn {
+  color: var(--danger) !important;
+  background: var(--danger-soft-strong) !important;
+  border-color: var(--danger-border) !important;
+}
+
+.cs-group-flat {
+  padding: 9px 14px;
+}
+
+.cs-group-flat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cs-sub-ok {
+  color: var(--success, #2ea043) !important;
+}
+
+.cs-sub-warn {
+  color: var(--danger) !important;
 }
 
 .cs-group-body {
@@ -492,11 +557,24 @@
 }
 
 /* ── 子页面标题 ── */
+.cs-sub-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
 .cs-sub-title {
-  margin: 0 0 16px;
+  margin: 0;
   font-size: 20px;
   font-weight: 700;
   color: var(--text-primary);
+}
+
+.cs-refresh-btn {
+  margin-left: auto;
+  font-size: 13px;
+  padding: 5px 14px;
 }
 
 /* ── 代理地址信息 ── */
@@ -557,6 +635,143 @@
   color: var(--success, #2ea043);
   background: var(--success-soft, rgba(46, 160, 67, 0.12));
   border: 1px solid var(--success, #2ea043);
+}
+
+/* ── 电费 ── */
+.cs-elec-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cs-elec-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.cs-elec-stats {
+  display: flex;
+  gap: 28px;
+}
+
+.cs-elec-dorm {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.cs-elec-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+}
+
+.cs-elec-chart {
+  border-top: 1px dashed var(--border-color);
+  padding-top: 14px;
+}
+
+.cs-elec-chart-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.cs-elec-chart-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.cs-elec-view-btns {
+  display: flex;
+  gap: 4px;
+}
+
+.cs-elec-view-btn {
+  padding: 3px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.cs-elec-view-btn.active {
+  background: var(--accent-1-soft);
+  border-color: var(--accent-1-border);
+  color: var(--accent-1);
+}
+
+.cs-elec-view-btn:hover:not(.active) {
+  background: var(--bg-elevated);
+}
+
+.cs-elec-svg {
+  width: 100%;
+  height: auto;
+  max-height: 200px;
+}
+
+.cs-elec-auto {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.cs-elec-btns {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.cs-recharge {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cs-recharge-current {
+  font-size: 14px;
+  color: var(--text-secondary);
+  padding: 8px 12px;
+  background: var(--bg-elevated);
+  border-radius: 8px;
+}
+
+.cs-recharge-current b {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.cs-recharge-msg {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cs-recharge-msg.ok {
+  color: var(--success, #2ea043);
+  background: var(--success-soft, rgba(46, 160, 67, 0.12));
+  border: 1px solid var(--success, #2ea043);
+}
+
+.cs-recharge-msg.err {
+  color: var(--danger);
+  background: var(--danger-soft-strong);
+  border: 1px solid var(--danger-border);
 }
 
 /* ── 响应式 ── */

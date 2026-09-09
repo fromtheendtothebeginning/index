@@ -75,7 +75,7 @@ toolHome:
     desc: 上传图片与说明，AI 生成 LaTeX 代码并在线编译为 PDF
   campusService:
     name: 校园服务
-    desc: 连接校园网 VPN，查询第二课堂分、成绩与校园卡动态码
+    desc: 连接校园网 VPN，查询第二课堂分、成绩、电费与校园卡动态码
 img2latex:
   navLabel: 图文转LaTeX
   title: 图文转LaTeX
@@ -556,6 +556,26 @@ admin:
     links: 友情链接
     settings: 站点设置
     leetcode: LeetCode 调试
+    campus: 校园网 VPN
+  campus:
+    title: 校园网 VPN（全局共享）
+    hint: 连接后所有用户共用同一 SOCKS5 代理访问校园内网；断开则所有校园服务查询不可用
+    status: 连接状态
+    account: 登录账号
+    socks: SOCKS5 代理
+    http: HTTP 代理
+    connect: 连接校园网
+    connecting: 连接中…
+    disconnect: 断开连接
+    disconnecting: 断开中…
+    connected: 已连接
+    notConnected: 未连接
+    failed: 连接失败
+    loading: 加载中…
+    connectFailed: 连接失败
+    networkError: 网络错误
+    serverUnavailable: 服务器 VPN 服务未启用
+    credHint: 连接使用管理员自己的校园服务凭据（「我的 → 校园服务」中填写）
   users:
     all: 所有用户（{count}）
     colId: ID
@@ -846,7 +866,7 @@ md:
 campusService:
   navLabel: 校园服务
   title: 校园服务
-  subtitle: 连接校园网 VPN，查询第二课堂分 / 成绩 / 校园卡动态码（凭据在「我的 → 校园服务」填写）
+  subtitle: 连接校园网 VPN，查询第二课堂分 / 成绩 / 电费 / 校园卡动态码（凭据在「我的 → 校园服务」填写）
   backToTools: ← 返回工具主页
   needLogin: 校园服务需要登录后使用
   goAuth: 去登录
@@ -857,6 +877,9 @@ campusService:
   connecting: 正在连接校园网…
   connected: 已连接
   notConnected: 未连接
+  adminHint: 校园网由管理员统一连接，无需自行操作；如需使用代理请等待管理员连接
+  needVpn: 需校园网
+  vpnRequired: 该功能需要校园网连接，当前校园网未连接，请联系管理员在「管理后台 → 校园网 VPN」中连接
   disconnect: 断开连接
   disconnecting: 断开中…
   failed: 连接失败
@@ -871,6 +894,8 @@ campusService:
     copy: 复制
     copied: 已复制
   backToCampus: ← 返回校园服务
+  refresh: 刷新
+  refreshing: 查询中…
   queriesTitle: 选择查询
   query:
     score: 第二课堂分
@@ -913,6 +938,32 @@ campusService:
     refresh: 立即刷新
     refreshing: 刷新中…
     countdown: '{n} 秒后自动刷新'
+  electricity:
+    name: 电费查询
+    desc: 查询寝室电费余额与历史用量
+    balance: 宿舍电费余额
+    cardBalance: 校园卡余额
+    remain: 剩余电量
+    unit: 度
+    yuan: 元
+    empty: 暂无电费记录
+    history: 历史用量
+    viewDay: 日视图
+    viewWeek: 周视图
+    viewMonth: 月视图
+    noDorm: 请先在「我的 → 校园服务」填写默认寝室
+    queryFailed: 电费查询失败：{error}
+    autoQueried: 每晚 22:00 自动查询并记录
+    dormLabel: 默认寝室
+    dormPlaceholder: 例：24号楼1016（楼号会自动+1）
+    recharge: 充值
+    rechargeTitle: 电费充值
+    rechargeAmount: 充值金额（元）
+    rechargeConfirm: 确认充值
+    rechargeSuccess: 充值成功
+    rechargeFailed: 充值失败：{error}
+    rechargePlaceholder: 输入充值金额
+    rechargeRange: 金额须在 0.01 - 500 元之间
   captcha:
     title: 登录验证
     prompt: 首次查询需要图形验证码完成登录，请输入后提交
@@ -933,6 +984,8 @@ campusService:
     vpnPassword: VPN 密码
     payPassword: 校付宝支付密码
     payHint: 暂未使用，可留空
+    dorm: 默认寝室
+    dormHint: 用于电费查询，格式如「奉贤校区 1 号楼 301」
     keepHint: 留空表示保留原密码不变
     autoCaptcha: AI 自动识别验证码
     autoCaptchaHint: 开启后查询时自动使用你配置的识图模型识别图形验证码
