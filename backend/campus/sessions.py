@@ -12,7 +12,11 @@ class Session:
         self.password = password
         self.socks_port = socks_port
         self.http_port = http_port
+        # proxy_host：后端实际连接用（bridge 模式下会被替换为容器 IP，
+        # 因为 WSL2 mirrored 模式下宿主访问不到 Docker 端口映射）
         self.proxy_host = proxy_host
+        # display_host：对外展示给用户的地址（公网域名/IP）
+        self.display_host = proxy_host
         self.container_name = "ec-shared"
         self.status = "creating"
         self.error = None

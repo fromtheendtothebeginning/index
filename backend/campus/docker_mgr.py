@@ -58,28 +58,45 @@ class DockerManager:
         return socks, http
 
     def create_container(self, sess):
-        # host 模式：容器共享宿主网络栈，tun/路由正常工作
-        # EasyConnect 默认 SOCKS5=1080, HTTP=8888，不传 -l 参数
+        # 关键：WSL2 上必须用 legacy iptables，否则容器内 `ip route flush table 2`
+        # 报 "FIB table does not exist"，EasyConnect 的 doRouteAdd2 失败、tun0 建不起来。
+        # 网络用 bridge + 端口映射（与宿主 1080/8888 对应），代理由后端直连 127.0.0.1。
         cli_opts = "-d %s -u %s -p %s" % (self.cfg.vpn_addr, sess.student_id, sess.password)
+        ports = {
+            "1080/tcp": ("0.0.0.0", str(sess.socks_port)),
+            "8888/tcp": ("0.0.0.0", str(sess.http_port)),
+        }
         env = {
             "EC_VER": self.cfg.ec_ver,
             "CLI_OPTS": cli_opts,
+            "IPTABLES_LEGACY": "1",
             "PING_ADDR": self.cfg.keepalive_addr,
             "PING_INTERVAL": self.cfg.ping_interval,
         }
         for attempt in range(2):
             try:
-                self.client.containers.run(
+                c = self.client.containers.run(
                     self.cfg.ec_image,
                     name=sess.container_name,
                     detach=True,
                     remove=True,
                     devices=["/dev/net/tun"],
                     privileged=True,
-                    network_mode="host",
                     environment=env,
+                    ports=ports,
                     mem_limit=self.cfg.mem_limit,
                 )
+                # WSL2 mirrored 模式下宿主访问不到 Docker 端口映射（127.0.0.1:1080
+                # 连不上），但能直连容器 IP，故后端改用容器 IP 连接代理；
+                # 对用户展示的地址仍用 display_host（公网域名/IP）。
+                try:
+                    c.reload()
+                    nets = c.attrs.get("NetworkSettings", {}).get("Networks", {})
+                    ip = next((n.get("IPAddress") for n in nets.values() if n.get("IPAddress")), "")
+                    if ip:
+                        sess.proxy_host = ip
+                except Exception:
+                    pass
                 return
             except docker.errors.APIError as e:
                 if "Conflict" in str(e) and attempt == 0:

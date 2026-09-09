@@ -150,7 +150,8 @@ def _session_payload(sess, request=None) -> dict:
         "student_id_masked": sess.student_id_masked,
         "socks_port": sess.socks_port,
         "http_port": sess.http_port,
-        "host": getattr(sess, "proxy_host", "127.0.0.1"),
+        # 对外展示用 display_host（公网域名/IP）；sess.proxy_host 是后端连接用的容器 IP
+        "host": getattr(sess, "display_host", None) or getattr(sess, "proxy_host", "127.0.0.1"),
     }
 
 
