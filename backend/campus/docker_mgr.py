@@ -13,6 +13,16 @@ class DockerManager:
         self.cfg = cfg
         self._lock = threading.Lock()
         self.client = self._connect(cfg)
+        # WSL2 需要 bridge+legacy iptables 才能建 tun0；原生 Linux 用 host 模式最省事
+        self.is_wsl = self._detect_wsl()
+
+    @staticmethod
+    def _detect_wsl():
+        try:
+            with open("/proc/version", "r") as f:
+                return "microsoft" in f.read().lower()
+        except Exception:
+            return False
 
     @staticmethod
     def _connect(cfg):
@@ -58,21 +68,30 @@ class DockerManager:
         return socks, http
 
     def create_container(self, sess):
-        # 关键：WSL2 上必须用 legacy iptables，否则容器内 `ip route flush table 2`
-        # 报 "FIB table does not exist"，EasyConnect 的 doRouteAdd2 失败、tun0 建不起来。
-        # 网络用 bridge + 端口映射（与宿主 1080/8888 对应），代理由后端直连 127.0.0.1。
+        """按运行环境选择网络模式：
+
+        - 原生 Linux（服务器）：host 模式，容器直接监听宿主 1080/8888，后端连 127.0.0.1
+        - WSL2：必须 bridge + IPTABLES_LEGACY=1。host 模式下 EasyConnect 登录超时；
+          不开 legacy iptables 则 `ip route flush table 2` 报 "FIB table does not exist"，
+          doRouteAdd2 失败、tun0 建不起来。且 mirrored 模式宿主访问不到端口映射，
+          故后端改用容器 IP 连代理（display_host 仍为对外地址）。
+        """
         cli_opts = "-d %s -u %s -p %s" % (self.cfg.vpn_addr, sess.student_id, sess.password)
-        ports = {
-            "1080/tcp": ("0.0.0.0", str(sess.socks_port)),
-            "8888/tcp": ("0.0.0.0", str(sess.http_port)),
-        }
         env = {
             "EC_VER": self.cfg.ec_ver,
             "CLI_OPTS": cli_opts,
-            "IPTABLES_LEGACY": "1",
             "PING_ADDR": self.cfg.keepalive_addr,
             "PING_INTERVAL": self.cfg.ping_interval,
         }
+        kwargs = {}
+        if self.is_wsl:
+            env["IPTABLES_LEGACY"] = "1"
+            kwargs["ports"] = {
+                "1080/tcp": ("0.0.0.0", str(sess.socks_port)),
+                "8888/tcp": ("0.0.0.0", str(sess.http_port)),
+            }
+        else:
+            kwargs["network_mode"] = "host"
         for attempt in range(2):
             try:
                 c = self.client.containers.run(
@@ -83,20 +102,19 @@ class DockerManager:
                     devices=["/dev/net/tun"],
                     privileged=True,
                     environment=env,
-                    ports=ports,
                     mem_limit=self.cfg.mem_limit,
+                    **kwargs,
                 )
-                # WSL2 mirrored 模式下宿主访问不到 Docker 端口映射（127.0.0.1:1080
-                # 连不上），但能直连容器 IP，故后端改用容器 IP 连接代理；
-                # 对用户展示的地址仍用 display_host（公网域名/IP）。
-                try:
-                    c.reload()
-                    nets = c.attrs.get("NetworkSettings", {}).get("Networks", {})
-                    ip = next((n.get("IPAddress") for n in nets.values() if n.get("IPAddress")), "")
-                    if ip:
-                        sess.proxy_host = ip
-                except Exception:
-                    pass
+                if self.is_wsl:
+                    # WSL mirrored 模式：宿主访问不到端口映射，改用容器 IP 连代理
+                    try:
+                        c.reload()
+                        nets = c.attrs.get("NetworkSettings", {}).get("Networks", {})
+                        ip = next((n.get("IPAddress") for n in nets.values() if n.get("IPAddress")), "")
+                        if ip:
+                            sess.proxy_host = ip
+                    except Exception:
+                        pass
                 return
             except docker.errors.APIError as e:
                 if "Conflict" in str(e) and attempt == 0:
