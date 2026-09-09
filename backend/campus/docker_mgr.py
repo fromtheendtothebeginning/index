@@ -151,19 +151,22 @@ class DockerManager:
 
     @staticmethod
     def _forward_ports(container, sess):
-        """host 模式下把对外端口转发到容器实际监听的 1080/8888。"""
+        """host 模式下把对外端口重定向到容器实际监听的 1080/8888。
+
+        用内核 iptables REDIRECT（而非 socat）：socat 用户态转发在服务器上
+        会让 HTTPS 握手卡死（实测 TLS 直接断开），iptables 没有这个问题。
+        """
         if (sess.socks_port, sess.http_port) == (1080, 8888):
             return
-        cmd = (
-            "sh -c '"
-            f"socat tcp-listen:{sess.socks_port},reuseaddr,fork tcp:127.0.0.1:1080 >/dev/null 2>&1 & "
-            f"socat tcp-listen:{sess.http_port},reuseaddr,fork tcp:127.0.0.1:8888 >/dev/null 2>&1 & "
-            "sleep 1'"
-        )
-        try:
-            container.exec_run(cmd, detach=True)
-        except Exception:
-            pass
+        rules = [
+            f"iptables -t nat -A PREROUTING -p tcp --dport {sess.socks_port} -j REDIRECT --to-port 1080",
+            f"iptables -t nat -A PREROUTING -p tcp --dport {sess.http_port} -j REDIRECT --to-port 8888",
+        ]
+        for rule in rules:
+            try:
+                container.exec_run(["sh", "-c", rule])
+            except Exception:
+                pass
 
     def remove(self, sess):
         try:
