@@ -175,6 +175,28 @@ def campus_status(request: Request, current_user: User = Depends(get_current_use
     return _session_payload(m["sessions"].get(), request)
 
 
+@router.get("/api/campus/debug/logs", tags=["校园服务"])
+def campus_debug_logs(current_user: User = Depends(require_admin)):
+    """管理员排查用：返回 VPN 容器日志尾部与探测结果"""
+    m = _get_managers()
+    if "error" in m:
+        return {"docker_error": m["error"]}
+    sess = m["sessions"].get()
+    if not sess:
+        return {"session": None}
+    d = m["docker"]
+    return {
+        "status": sess.status,
+        "error": sess.error,
+        "container": sess.container_name,
+        "proxy_host": sess.proxy_host,
+        "has_tun": d.has_tun(sess),
+        "state": d.container_state(sess),
+        "is_wsl": d.is_wsl,
+        "logs_tail": (d.get_logs(sess) or "")[-2500:],
+    }
+
+
 @router.post("/api/campus/disconnect", tags=["校园服务"])
 def campus_disconnect(current_user: User = Depends(require_admin)):
     """管理员断开校园网 VPN"""

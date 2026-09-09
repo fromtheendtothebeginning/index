@@ -128,8 +128,10 @@ class SessionManager:
 
     @staticmethod
     def _diagnose(logs):
-        """根据容器日志区分失败原因：网络不通 vs 账号密码错误。"""
+        """根据容器日志区分失败原因：DNS / 网络不通 / 账号密码错误。"""
         low = (logs or "").lower()
+        if "couldn't resolve host" in low or "error:6" in low:
+            return "连接失败：无法解析校园 VPN 域名（DNS 异常，请检查服务器 DNS 配置）"
         # 网络类特征（EasyConnect 内部 curl 错误码）
         if "couldn't connect to server" in low or "error:7" in low:
             return "连接失败：无法连接校园 VPN 服务器（网络不通，请检查网络或服务器地址）"

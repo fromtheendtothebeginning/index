@@ -2,6 +2,7 @@
 # 移植自 SCHOOLALY（server/app/docker_mgr.py），配置改读 campus.config.Config
 
 import random
+import socket
 import threading
 
 import docker
@@ -23,6 +24,21 @@ class DockerManager:
                 return "microsoft" in f.read().lower()
         except Exception:
             return False
+
+    @staticmethod
+    def _resolve_hosts(*hosts):
+        """宿主侧预解析域名 → {host: ip}，用于注入容器 /etc/hosts。"""
+        out = {}
+        for h in hosts:
+            if not h:
+                continue
+            try:
+                ip = socket.gethostbyname(h)
+                if ip:
+                    out[h] = ip
+            except Exception:
+                pass
+        return out
 
     @staticmethod
     def _connect(cfg):
@@ -93,6 +109,11 @@ class DockerManager:
             }
         else:
             kwargs["network_mode"] = "host"
+        # 容器内 DNS 偶发解析失败（curl error:6 Couldn't resolve host name）：
+        # 在宿主侧预解析 VPN 域名，写入容器 /etc/hosts 兜底
+        extra = self._resolve_hosts(self.cfg.vpn_addr)
+        if extra:
+            kwargs["extra_hosts"] = extra
         for attempt in range(2):
             try:
                 c = self.client.containers.run(
