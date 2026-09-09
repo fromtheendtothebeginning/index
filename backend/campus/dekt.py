@@ -477,8 +477,9 @@ class DektManager:
     def get(self, user_id, sess):
         with self.lock:
             c = self.clients.get(user_id)
-            if c is None or c.socks_port != sess.socks_port:
-                c = DektClient(user_id, sess.socks_port, self.cfg, proxy_host=getattr(sess, "proxy_host", "127.0.0.1"))
+            conn_port = getattr(sess, "connect_socks_port", sess.socks_port)
+            if c is None or c.socks_port != conn_port:
+                c = DektClient(user_id, conn_port, self.cfg, proxy_host=getattr(sess, "proxy_host", "127.0.0.1"))
                 self.clients[user_id] = c
             return c
 

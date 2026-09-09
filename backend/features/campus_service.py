@@ -523,7 +523,8 @@ def _get_electricity_client(sess=None):
         if "error" not in m:
             s = sess or m["sessions"].get()
             if s and s.status == "connected":
-                return ElectricityClient(proxy_host=s.proxy_host, socks_port=s.socks_port)
+                return ElectricityClient(proxy_host=s.proxy_host,
+                                        socks_port=getattr(s, "connect_socks_port", s.socks_port))
     except Exception:
         pass
     return ElectricityClient()

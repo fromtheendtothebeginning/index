@@ -10,10 +10,13 @@ class Session:
     def __init__(self, student_id, password, socks_port, http_port, proxy_host="127.0.0.1"):
         self.student_id = student_id
         self.password = password
+        # 对外端口（映射到宿主的端口，展示给用户）
         self.socks_port = socks_port
         self.http_port = http_port
-        # proxy_host：后端实际连接用（bridge 模式下会被替换为容器 IP，
-        # 因为 WSL2 mirrored 模式下宿主访问不到 Docker 端口映射）
+        # 容器内部端口（EasyConnect 写死 1080/8888，后端经容器 IP 连接）
+        self.connect_socks_port = 1080
+        self.connect_http_port = 8888
+        # proxy_host：后端实际连接用（容器 IP，两平台都可达）
         self.proxy_host = proxy_host
         # display_host：对外展示给用户的地址（公网域名/IP）
         self.display_host = proxy_host
@@ -48,7 +51,7 @@ class SessionManager:
         threading.Thread(target=self._watchdog, daemon=True).start()
 
     def create(self, student_id, password):
-        """建立（或重建）全局 VPN 会话。host 模式用 EasyConnect 默认端口 1080/8888。"""
+        """建立（或重建）全局 VPN 会话。对外端口固定 10003(SOCKS5)/10004(HTTP)。"""
         student_id = (student_id or "").strip()
         password = password or ""
         if not student_id or not password:
@@ -56,7 +59,7 @@ class SessionManager:
         with self._lock:
             if self.session:
                 self._drop_locked()
-            self.session = Session(student_id, password, 1080, 8888,
+            self.session = Session(student_id, password, 10003, 10004,
                                    proxy_host=self.cfg.proxy_host)
         threading.Thread(target=self._run, daemon=True).start()
 
