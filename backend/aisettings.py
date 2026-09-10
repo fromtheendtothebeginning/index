@@ -343,7 +343,9 @@ def apply_thinking(payload: dict, provider_id: str, level: str) -> dict:
             payload["thinking"] = {"type": "disabled" if level == "off" else "enabled"}
     elif pid in ("qwen", "dashscope"):
         payload["enable_thinking"] = level != "off"
-    elif pid in ("gpt", "openai", "gemini", "google"):
+    elif pid in ("gpt", "openai", "gemini", "google", "mimo"):
+        # mimo 实测（api.xiaomimimo.com，2026-09-10）：reasoning_effort none/high 都生效
+        # （none 时 reasoning_tokens=0）；thinking{"type":"disabled"} 虽被接受但会把结果弄错，不用它
         payload["reasoning_effort"] = "none" if level == "off" else level
     # 其它 provider（opencode-go / glm / mimo / custom 等）：思考字段格式不确定，不加参数
     return payload
