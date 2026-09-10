@@ -318,6 +318,7 @@ class AiSetting(Base):
     top_k = Column(Integer, nullable=False, default=40, server_default="40", comment="Top-K 1~100")
     vision_key_id = Column(Integer, nullable=True, comment="识图模型使用的 AI Key ID（视频总结等）")
     vision_model = Column(String(100), nullable=True, server_default="", comment="识图模型 ID（多模态 chat）")
+    vision_thinking = Column(String(10), nullable=False, default="", server_default="", comment="识图模型思考深度（空=不发送该参数，跟随模型默认）")
     speech_key_id = Column(Integer, nullable=True, comment="语音模型使用的 AI Key ID（ASR 转写）")
     speech_model = Column(String(100), nullable=True, server_default="", comment="语音模型 ID（audio/transcriptions）")
     created_at = Column(DateTime(timezone=True), server_default=func.now(), comment="创建时间")
@@ -359,6 +360,7 @@ class CampusCred(Base):
     vpn_password_enc = Column(Text, nullable=True, comment="VPN 密码（加密存储）")
     pay_password_enc = Column(Text, nullable=True, comment="校付宝支付密码（加密存储，暂未使用）")
     auto_captcha = Column(Boolean, nullable=False, default=False, server_default="0", comment="启用 AI 自动识别验证码")
+    dorm = Column(String(100), nullable=False, default="", server_default="", comment="默认寝室（电费查询用）")
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), comment="更新时间"
     )
@@ -367,3 +369,22 @@ class CampusCred(Base):
 
     def __repr__(self):
         return f"<CampusCred(id={self.id}, user_id={self.user_id})>"
+
+
+class ElectricityRecord(Base):
+    """电费记录 —— 每次查询/自动采集写一行，用于折线图展示"""
+    __tablename__ = "electricity_records"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True, comment="所属用户 ID")
+    dorm = Column(String(100), nullable=False, default="", comment="寝室号（查询时快照）")
+    balance = Column(Float, nullable=True, comment="余额（元）")
+    remain = Column(Float, nullable=True, comment="剩余电量（度）")
+    recharge_amount = Column(Float, nullable=True, comment="本次充值金额（元），仅充值产生的记录有值")
+    raw_json = Column(Text, nullable=True, comment="原始 API 返回 JSON（调试用）")
+    queried_at = Column(DateTime(timezone=True), server_default=func.now(), index=True, comment="查询时间")
+
+    user = relationship("User")
+
+    def __repr__(self):
+        return f"<ElectricityRecord(id={self.id}, user_id={self.user_id}, balance={self.balance})>"

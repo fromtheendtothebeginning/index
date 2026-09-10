@@ -8,6 +8,7 @@
 import base64
 import json
 import threading
+import urllib.error
 import urllib.request
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -67,6 +68,7 @@ class CredSaveRequest(BaseModel):
     vpn_password: str = ""
     pay_password: str = ""
     auto_captcha: bool = False
+    dorm: str = ""
 
 
 def _mask_sid(sid: str) -> str:
@@ -87,6 +89,7 @@ def campus_cred_get(current_user: User = Depends(get_current_user_obj), db: OrmS
         "real_name": c.real_name,
         "has_pay_password": bool(c.pay_password_enc),
         "auto_captcha": bool(c.auto_captcha),
+        "dorm": c.dorm or "",
     }
 
 
@@ -113,6 +116,7 @@ def campus_cred_save(req: CredSaveRequest, current_user: User = Depends(get_curr
     if req.pay_password:
         c.pay_password_enc = aisettings.encrypt_secret(req.pay_password)
     c.auto_captcha = bool(req.auto_captcha)
+    c.dorm = (req.dorm or "").strip()[:100]
     db.commit()
     return {"ok": True}
 
@@ -207,7 +211,8 @@ def _resolve_vision_model(user_id, db):
         return None
     provider = key.provider or "deepseek"
     base_url = key.custom_base_url or ""
-    return {"provider": provider, "api_key": api_key, "model": s.vision_model, "base_url": base_url}
+    return {"provider": provider, "api_key": api_key, "model": s.vision_model, "base_url": base_url,
+            "thinking": s.vision_thinking or ""}
 
 
 def _ai_solve_captcha(captcha_b64, vision_info, timeout=30):
@@ -218,11 +223,14 @@ def _ai_solve_captcha(captcha_b64, vision_info, timeout=30):
     base_url = vision_info["base_url"]
 
     if not base_url:
-        # 从 provider 默认 base_url 取
-        from utils import aiProviders as _aip
-        p = _aip.get_provider(provider)
-        base_url = p.get("base_url", "") if p else ""
+        # 从后端 provider 表取默认 base_url
+        # （此前误引前端的 utils/aiProviders，后端没这个模块 → ModuleNotFoundError → 查询 500）
+        p = aisettings.get_provider(provider)
+        base_url = (p.get("base_url") or "") if p else ""
     base_url = base_url.rstrip("/")
+    if not base_url:
+        _log(f"campus auto captcha skipped: provider={provider} 无默认 base_url")
+        return None
 
     # 构造 vision chat 请求（openai 兼容格式）
     url = f"{base_url}/chat/completions"
@@ -230,12 +238,12 @@ def _ai_solve_captcha(captcha_b64, vision_info, timeout=30):
         # anthropic 格式：messages content 带 image 类型
         payload = {
             "model": model,
-            "max_tokens": 100,
+            "max_tokens": 512,  # 推理型视觉模型会先花 token 思考，100 会被 reasoning 吃光导致 content 为空
             "messages": [{
                 "role": "user",
                 "content": [
                     {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": captcha_b64}},
-                    {"type": "text", "text": "请识别图片中的验证码文字，只返回纯文字内容，不要任何解释或其他内容。"}
+                    {"type": "text", "text": "请只输出图片中的验证码字符本身（区分大小写；不要空格、标点、引号，也不要任何解释或说明）。"}
                 ]
             }]
         }
@@ -244,28 +252,44 @@ def _ai_solve_captcha(captcha_b64, vision_info, timeout=30):
         # openai 兼容格式
         payload = {
             "model": model,
-            "max_tokens": 100,
+            "max_tokens": 512,  # 推理型视觉模型会先花 token 思考，100 会被 reasoning 吃光导致 content 为空
             "messages": [{
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": "请识别图片中的验证码文字，只返回纯文字内容，不要任何解释或其他内容。"},
+                    {"type": "text", "text": "请只输出图片中的验证码字符本身（区分大小写；不要空格、标点、引号，也不要任何解释或说明）。"},
                     {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{captcha_b64}"}}
                 ]
             }]
         }
         headers = aisettings._build_headers("openai", api_key)
 
-    req = urllib.request.Request(
-        url, data=json.dumps(payload).encode("utf-8"),
-        headers={**headers, "Content-Type": "application/json"},
-        method="POST",
-    )
-    try:
+    # 思考深度：按 provider 写入思考参数（未配置则不加，跟随模型默认）
+    base_keys = set(payload)
+    payload = aisettings.apply_thinking(payload, provider, vision_info.get("thinking"))
+    thinking_keys = [k for k in payload if k not in base_keys]
+
+    def _post(body):
+        req = urllib.request.Request(
+            url, data=json.dumps(body).encode("utf-8"),
+            headers={**headers, "Content-Type": "application/json"},
+            method="POST",
+        )
         with urllib.request.urlopen(req, timeout=timeout) as resp:
-            data = json.loads(resp.read().decode())
+            return json.loads(resp.read().decode())
+
+    try:
+        try:
+            data = _post(payload)
+        except urllib.error.HTTPError as e:
+            # 400 且本次确实加了思考参数：去掉该参数重试一次（部分模型/兼容层不认）
+            if e.code != 400 or not thinking_keys:
+                raise
+            _log("campus auto captcha: thinking param rejected, retry without it")
+            data = _post({k: v for k, v in payload.items() if k not in thinking_keys})
         text = (data.get("choices") or [{}])[0].get("message", {}).get("content", "").strip()
         # 去掉可能的引号/空格
         text = text.strip("\"' \n\r\t")
+        _log(f"campus auto captcha recognized: {text!r}")
         return text if text else None
     except Exception as e:
         _log(f"campus auto captcha failed: {str(e)[:150]}")
@@ -304,6 +328,25 @@ class QueryRequest(BaseModel):
     codetype: str = "O5"
 
 
+def _auto_captcha_flow(client, sess, user_id, db, kind, prepare, req, attempts=2):
+    """开启 auto_captcha 时的识码流程：最多 attempts 轮「取新验证码 → AI 识别 → 提交登录」。
+
+    全部失败时**再取一张全新验证码**交回前端手动输入。此前是把失败的验证码直接退回，
+    而那张已被登录尝试消耗掉，用户手填必然报「验证码错误」，看起来像"勾了 AI 识别就再也过不去"。
+    返回 (成功结果 | None, 待验证码对象 | None)。
+    """
+    pending = None
+    for _ in range(max(1, attempts)):
+        pending = _safe_prepare(client, prepare)
+        if pending is None:
+            return None, None
+        r = _try_auto_captcha(client, sess, pending.captcha, kind, user_id, db,
+                              xnm=req.xnm, xqm=req.xqm, codetype=req.codetype)
+        if r is not None:
+            return r, None
+    return None, (_safe_prepare(client, prepare) or pending)
+
+
 @router.post("/api/campus/query/{kind}", tags=["校园服务"])
 def campus_query(kind: str, req: QueryRequest, request: Request,
                  current_user: User = Depends(get_current_user_obj),
@@ -315,13 +358,14 @@ def campus_query(kind: str, req: QueryRequest, request: Request,
     # score / grades / ecard 共用逻辑：若需要验证码且开启 auto_captcha → AI 自动填码
     if kind == "score":
         if client.session is None:
-            pending = _safe_prepare(client, lambda: client.prepare_login(sess.student_id, password))
+            prepare = lambda: client.prepare_login(sess.student_id, password)
+            if auto:
+                r, pending = _auto_captcha_flow(client, sess, current_user.id, db, "score", prepare, req)
+                if r is not None:
+                    return r
+            else:
+                pending = _safe_prepare(client, prepare)
             if pending is not None:
-                if auto:
-                    r = _try_auto_captcha(client, sess, pending.captcha, "score",
-                                          current_user.id, db, xnm=req.xnm, xqm=req.xqm, codetype=req.codetype)
-                    if r is not None:
-                        return r
                 return {"need_captcha": True, "kind": "score",
                         "captcha_base64": _b64(pending.captcha)}
         try:
@@ -332,13 +376,14 @@ def campus_query(kind: str, req: QueryRequest, request: Request,
 
     if kind == "grades":
         if client.jwxt_session is None:
-            pending = _safe_prepare(client, lambda: client.prepare_jwxt_login(sess.student_id, password))
+            prepare = lambda: client.prepare_jwxt_login(sess.student_id, password)
+            if auto:
+                r, pending = _auto_captcha_flow(client, sess, current_user.id, db, "grades", prepare, req)
+                if r is not None:
+                    return r
+            else:
+                pending = _safe_prepare(client, prepare)
             if pending is not None:
-                if auto:
-                    r = _try_auto_captcha(client, sess, pending.captcha, "grades",
-                                          current_user.id, db, xnm=req.xnm, xqm=req.xqm, codetype=req.codetype)
-                    if r is not None:
-                        return r
                 return {"need_captcha": True, "kind": "grades",
                         "captcha_base64": _b64(pending.captcha)}
         try:
@@ -350,13 +395,14 @@ def campus_query(kind: str, req: QueryRequest, request: Request,
 
     if kind == "ecard":
         if client.session is None:
-            pending = _safe_prepare(client, lambda: client.prepare_login(sess.student_id, password))
+            prepare = lambda: client.prepare_login(sess.student_id, password)
+            if auto:
+                r, pending = _auto_captcha_flow(client, sess, current_user.id, db, "ecard", prepare, req)
+                if r is not None:
+                    return r
+            else:
+                pending = _safe_prepare(client, prepare)
             if pending is not None:
-                if auto:
-                    r = _try_auto_captcha(client, sess, pending.captcha, "ecard",
-                                          current_user.id, db, xnm=req.xnm, xqm=req.xqm, codetype=req.codetype)
-                    if r is not None:
-                        return r
                 return {"need_captcha": True, "kind": "ecard",
                         "captcha_base64": _b64(pending.captcha)}
         try:

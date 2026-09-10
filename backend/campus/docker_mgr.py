@@ -48,6 +48,10 @@ class DockerManager:
         env = {
             "EC_VER": self.cfg.ec_ver,
             "CLI_OPTS": cli_opts,
+            # WSL2 环境沿用 legacy iptables（排查 WSL 隧道问题时的既有做法）。
+            # 注意：容器内 "FIB table does not exist" 与"校园网同账号只能一个会话"是另外两回事，
+            # 后者会让 tun0 时有时无、查询 30s 超时，见 AGENTS.md 运行注意事项。
+            "IPTABLES_LEGACY": "1",
             "PING_ADDR": self.cfg.keepalive_addr,
             "PING_INTERVAL": self.cfg.ping_interval,
         }

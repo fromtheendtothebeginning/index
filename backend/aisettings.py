@@ -297,6 +297,59 @@ def resolve_thinking_levels(provider_id: str, model: str = None):
 
 
 # ============================================
+# 思考参数适配（把统一档位 off/low/high/max 翻译成各家的请求字段）
+# ============================================
+
+# 思考档位 → Anthropic thinking budget_tokens
+_ANTHROPIC_BUDGETS = {"low": 1024, "high": 8192, "max": 16384}
+
+
+def apply_thinking(payload: dict, provider_id: str, level: str) -> dict:
+    """按 provider 把思考深度写进请求体；返回修改后的 payload（调用方按返回值用）。
+
+    level 为空/None → 原样返回，不加任何字段（跟随模型默认）。
+    各家协议不同，未识别的 provider 一律不加参数（乱加会 400）：
+      deepseek  : off→thinking{type:disabled}；low/high/max→reasoning_effort（无 medium 档）
+      claude    : off→thinking{type:disabled}；其余→thinking{type:enabled,budget_tokens}
+      kimi      : kimi-k3 用 reasoning_effort（off→none）；K2.x 用 thinking{enabled|disabled}
+      qwen      : enable_thinking true/false
+      gpt/gemini: reasoning_effort（off→none）
+    """
+    if not level:
+        return payload
+    pid = (provider_id or "").lower()
+    model = str(payload.get("model") or "")
+
+    if pid == "deepseek":
+        if level == "off":
+            payload["thinking"] = {"type": "disabled"}
+        else:
+            # deepseek 只接受 none/minimal/low/high/max，medium 归一到 high 避免 400
+            payload["reasoning_effort"] = "high" if level == "medium" else level
+    elif pid in ("claude", "anthropic"):
+        if level == "off":
+            payload["thinking"] = {"type": "disabled"}
+        else:
+            budget = _ANTHROPIC_BUDGETS.get(level, 8192)
+            payload["thinking"] = {"type": "enabled", "budget_tokens": budget}
+            # anthropic 要求 max_tokens > budget_tokens，否则直接 400；
+            # 识图这类调用原来只给 512，必须相应抬高
+            if isinstance(payload.get("max_tokens"), int) and payload["max_tokens"] <= budget:
+                payload["max_tokens"] = budget + 512
+    elif pid == "kimi":
+        if model.startswith("kimi-k3"):
+            payload["reasoning_effort"] = "none" if level == "off" else ("high" if level == "medium" else level)
+        else:
+            payload["thinking"] = {"type": "disabled" if level == "off" else "enabled"}
+    elif pid in ("qwen", "dashscope"):
+        payload["enable_thinking"] = level != "off"
+    elif pid in ("gpt", "openai", "gemini", "google"):
+        payload["reasoning_effort"] = "none" if level == "off" else level
+    # 其它 provider（opencode-go / glm / mimo / custom 等）：思考字段格式不确定，不加参数
+    return payload
+
+
+# ============================================
 # API Key 加密（纯标准库：HMAC-SHA256 密钥流 + nonce + HMAC 校验）
 # 密钥从 SECRET_KEY 派生；拿到数据库泄露的密文没有 SECRET_KEY 无法还原。
 # ============================================

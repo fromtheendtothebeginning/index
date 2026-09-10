@@ -1,5 +1,7 @@
 # features/ai_settings_api.py — AI 设置（多 Key 管理 + 动态模型 + 收藏 + 当前选择）
 
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
@@ -18,6 +20,17 @@ from schemas import (
 )
 
 router = APIRouter()
+
+
+# schemas.py 本次不动：识图思考深度字段在 API 层用子类扩展（其余字段/校验全部继承）
+class AiSettingsResponseVision(AiSettingsResponse):
+    """AI 设置响应 + 识图模型思考深度（空串=跟随模型默认）"""
+    vision_thinking: str = ""
+
+
+class UpdateAiSettingsRequestVision(UpdateAiSettingsRequest):
+    """AI 设置请求 + 识图模型思考深度（None=不改）"""
+    vision_thinking: Optional[str] = None
 
 
 def _ai_key_response(k: AiKey) -> AiKeyResponse:
@@ -60,10 +73,10 @@ def _get_key(db: Session, key_id: int, user_id: int) -> AiKey:
 
 # ── 当前选择（thinking/temperature/top_k/key_id/model）──
 
-@router.get("/api/user/ai-settings", response_model=AiSettingsResponse, tags=["AI 设置"])
+@router.get("/api/user/ai-settings", response_model=AiSettingsResponseVision, tags=["AI 设置"])
 def get_ai_settings(current_user: User = Depends(get_current_user_obj), db: Session = Depends(get_db)):
     s = _get_or_create_ai_setting(db, current_user.id)
-    return AiSettingsResponse(
+    return AiSettingsResponseVision(
         key_id=s.key_id,
         model=s.model or "",
         thinking_level=s.thinking_level,
@@ -71,15 +84,16 @@ def get_ai_settings(current_user: User = Depends(get_current_user_obj), db: Sess
         top_k=int(s.top_k),
         vision_key_id=s.vision_key_id,
         vision_model=s.vision_model or "",
+        vision_thinking=s.vision_thinking or "",
         speech_key_id=s.speech_key_id,
         speech_model=s.speech_model or "",
         updated_at=s.updated_at,
     )
 
 
-@router.put("/api/user/ai-settings", response_model=AiSettingsResponse, tags=["AI 设置"])
+@router.put("/api/user/ai-settings", response_model=AiSettingsResponseVision, tags=["AI 设置"])
 def update_ai_settings(
-    req: UpdateAiSettingsRequest,
+    req: UpdateAiSettingsRequestVision,
     current_user: User = Depends(get_current_user_obj),
     db: Session = Depends(get_db),
 ):
@@ -128,6 +142,8 @@ def update_ai_settings(
             s.vision_key_id = None if req.vision_key_id == 0 else _get_key(db, req.vision_key_id, current_user.id).id
         if req.vision_model is not None:
             s.vision_model = (req.vision_model or "").strip()[:100]
+        if req.vision_thinking is not None:
+            s.vision_thinking = (req.vision_thinking or "")[:10]
         if req.speech_key_id is not None:
             s.speech_key_id = None if req.speech_key_id == 0 else _get_key(db, req.speech_key_id, current_user.id).id
         if req.speech_model is not None:
@@ -135,10 +151,11 @@ def update_ai_settings(
 
     db.commit()
     db.refresh(s)
-    return AiSettingsResponse(
+    return AiSettingsResponseVision(
         key_id=s.key_id, model=s.model or "", thinking_level=s.thinking_level,
         temperature=float(s.temperature), top_k=int(s.top_k),
         vision_key_id=s.vision_key_id, vision_model=s.vision_model or "",
+        vision_thinking=s.vision_thinking or "",
         speech_key_id=s.speech_key_id, speech_model=s.speech_model or "",
         updated_at=s.updated_at,
     )

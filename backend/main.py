@@ -48,7 +48,13 @@ async def _log_requests(request: Request, call_next):
 
 @app.on_event("startup")
 def on_startup():
-    """首次启动自动建表 + 迁移新字段"""
+    """首次启动自动建表 + 迁移新字段 + 定时任务"""
+    import threading
+    from datetime import datetime, timedelta, timezone
+
+    # 服务器可能是 UTC，定时任务一律按北京时间（UTC+8）计算
+    CN_TZ = timezone(timedelta(hours=8))
+
     _log("=" * 50)
     _log("anticraft API 启动")
     _log(f"端口 {os.getenv('PORT', '8000')} · 视频工具已加载 (yt-dlp) · HOST={os.getenv('HOST', '127.0.0.1')}")
@@ -56,6 +62,26 @@ def on_startup():
     init_db()
     run_migrations()
     _log("启动完成：数据库就绪，心跳已启动")
+
+    # ── 电费自动采集定时任务（每晚 22:00 北京时间，直连不依赖 VPN） ──
+    def _electricity_scheduler():
+        while True:
+            now = datetime.now(CN_TZ)
+            target = now.replace(hour=22, minute=0, second=0, microsecond=0)
+            if now >= target:
+                target += timedelta(days=1)
+            wait = (target - now).total_seconds()
+            _log(f"[electricity-scheduler] 下次执行: {target.strftime('%Y-%m-%d %H:%M')} (等待 {wait/3600:.1f}h)")
+            _time.sleep(wait)
+            try:
+                from features.electricity import auto_query_electricity
+                _log("[electricity-scheduler] 开始执行自动电费查询")
+                auto_query_electricity()
+                _log("[electricity-scheduler] 自动电费查询完成")
+            except Exception as e:
+                _log(f"[electricity-scheduler] 执行失败: {str(e)[:200]}")
+
+    threading.Thread(target=_electricity_scheduler, daemon=True, name="electricity-scheduler").start()
 
 
 # ============================================

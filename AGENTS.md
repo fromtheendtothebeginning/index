@@ -18,10 +18,6 @@
 - **任务完成提醒**：每个任务完成并验证通过后，发出声音提醒用户——播放 Undertale《His Theme》9 秒节奏（`python play_ring.py`，脚本与 `ringtone/his_theme.wav` 已 gitignore，零依赖 winsound，音量已调低；**用分离子进程播放且无黑窗口（DETACHED_PROCESS+CREATE_NO_WINDOW），主进程立即返回不阻塞总结**）。
 - **部署红线：未经用户明确同意，禁止运行任何部署脚本（`deploy.bat` / `deploy-backend.bat` / `deploy-fresh-server.bat` 等，`deploy-config.bat` 是共享凭据来源）或发布到服务器**。完成功能后只启动本地服务供验收，等用户指示「发布到服务器并git」再部署。**代理不得读取、展示或上传这些脚本中的任何凭据/密码**——凭据仅由用户本人运行脚本时使用，代理一概不接触。
 
-## 协作与流程规则
-- **Todo 管理**：每个 todo 完成并验证后立即在 todo 列表打钩（`todowrite` 更新状态）；**全部完成后归档清理**，不要遗留已完成的旧 todo 一直挂在右侧，进入下一任务前清空/替换列表。
-- **读图**：需要读图/截图/分析图片时，**先判断当前模型是否能直接读图**——用 read 工具读取图片，若返回的图片可解析（模型支持图像输入）则直接读，**不用 skill**；若返回「模型不支持图像输入」（本仓库当前模型 deepseek-v4-flash 即如此），再走 `vision-reader` skill。**本机该 skill 的脚本缺 PIL/torch 等重型依赖未安装——优先用零依赖现成方案**：Windows 自带 OCR（WinRT，PowerShell 调用）+ System.Drawing 像素采样（`GetPixel` 验证颜色），实测可读截图文字与按钮颜色；避免为一次性读图安装 GB 级依赖。
-- **分工**：主代理负责分发任务（派子代理）、定接口契约与验收总结，保持上下文清洁；具体实现由子代理（general/explore）完成。
 
 ## 后端
 - 虚拟环境 `backend/.venv`（Python 3.14）。入口是根目录的 `python backend/main.py`，main.py 内部用同目录相对导入（`from database import ...`）。
@@ -85,6 +81,15 @@
 8. **CSS hover 下拉经验**：下拉菜单与触发按钮之间留 gap 会导致鼠标移动时 hover 断链、菜单收起（gap 归零 + `padding-top` 桥接热区）；列表项 `animation ... both` 保留的 transform 会创建 stacking context、导致相邻行遮挡下拉菜单（hover 行加 `position: relative; z-index: 5`）。
 9. `deploy.bat` 输出末尾的 `Input redirection is not supported` 是 systemd status 重定向的已知噪音（warning.md #2/#10），不影响部署结果。
 10. **深色模式排查**：任何组件"深色下看不清/仍是白底"，先查其 background 是否用了 `var(--white)`（恒定纯白）——应改用 `var(--bg-card)`（跟随主题）。
+11. **校园服务「Docker 不可用（127.0.0.1:2375）」= `.env` 里残留本地开发的 `DOCKER_HOST`**（2026-09-09 事故根因，排查样板）：
+    - `database.py` 用 `load_dotenv(dotenv_path=..., override=True)` 加载 `.env`（优先项目根，回退 `backend/.env`），所以 `.env` 里的 `DOCKER_HOST` 会进进程环境；**服务器 dockerd 只监听 `/var/run/docker.sock`**（`ss -lntp | grep 2375` 为空）。旧版 `campus/docker_mgr.py` 只认 `DOCKER_HOST`、没有 socket 回退 → 报 `校园服务未就绪（Docker 不可用）：... port=2375 ... Connection refused`；b965165 起的改写版加了 unix socket 回退，所以"新代码反而能连上"。
+    - 本地根 `.env` / `backend/.env` 里那行 `DOCKER_HOST=tcp://127.0.0.1:2375` 是给"Windows 侧后端连 WSL dockerd"的，已注释；它指向的 WSL 2375 本来就没监听（本地后端跑在 WSL 里，走默认 socket）。**服务器 `/var/www/anticraft/backend/.env` 里这行必须保持注释**，修复时的备份是 `.env.bak-20260909`。
+    - 排查手法：`ssh root@47.100.125.150 "journalctl -u anticraft-api --since '2026-09-08' | grep -i 'campus docker init failed'"` 看首次失败时间；`systemctl show anticraft-api -p Environment -p EnvironmentFile`；注意 `/proc/<pid>/environ` **看不到**运行时 `load_dotenv` 注入的变量，要在服务器上按应用方式复现：`cd /var/www/anticraft/backend && .venv/bin/python -c "import database,os;print(os.environ.get('DOCKER_HOST'))"`，再 `DockerManager(Config())` 试连。
+12. **服务器实际路径与部署边界**：后端在 `/var/www/anticraft/backend`（**不是** `/root/anticraft`），systemd 单元 `/etc/systemd/system/anticraft-api.service`（2026-06-26 创建，仅 `Environment=PYTHONUNBUFFERED=1`，`ExecStart=.../backend/.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000`）。`deploy.bat` 对已存在的 service/venv 只重启不重写（日志里 `[EXISTS] service` / `[EXISTS] venv`），而且**不会更新服务器上的 `.env`**（本地 `backend/.env` 被重新生成 ≠ 服务器 `.env` 被更新）；要改服务器配置得直接改服务器文件。
+13. **服务器可免密 SSH 排查**：`ssh root@47.100.125.150`（密钥已就绪，无需任何密码），排查线上问题优先用它读 journal / 看 `.env` / 看 docker 状态。**但部署脚本与其中的凭据依旧禁止读取/展示，部署仍须用户明确同意**。
+14. **2026-09-09 git 状态**：`main` 已回滚到 `3560dd7` 并 force-push（线上同版本）；电费 + VPN 单端口共享的改写（`5e2d16a..bbf9e22`，10 个提交）保留在分支 `backup/campus-rewrite`（本地与 origin 都有）。另注意本地 WSL 后端跑在 `/home/dev/anticraft/index`（只有 `backend/` + `log/`，**不是 git 仓库**），是 Windows 仓库的独立副本——回滚/改代码后要手动同步，否则本地后端仍是旧代码。
+15. **校园网 VPN「同账号只能一个会话」→ 本地与服务器会互相踢**（2026-09-10 排查结论；症状：第二课堂/成绩查询很慢、提交验证码常失败、`SOCKSHTTPSConnectionPool ... xg.sit.edu.cn ... connect timeout=30`）：学校侧限制一个账号同时只有一个 EasyConnect 会话，本地 WSL 容器与服务器 `ec-c1` 同时在线时会互相踢下线，两边容器日志都出现 `login successfully!` → `svpn stop!` → `Terminated` 的反复；被踢那一刻容器内 `tun0` 消失、隧道路由清零（`docker exec ec-c1 ip route | grep -c tun0` → 0，正常应为几百条），SOCKS 流量按 `ip rule` 进表 2 后走默认路由从 eth0 出网，于是校园内网 IP（`xg.sit.edu.cn` → 172.24.9.11）必然 connect timeout。**排查手法**：`docker exec ec-c1 ip route get 172.24.9.11`（应为 `dev tun0`）+ 两侧容器日志对比。**处置**：同一时间只在一侧连接（本地测试前先断开服务器：`POST /api/campus/disconnect`，反之亦然）。
+16. **3560dd7 的「已连接」判定偏弱**：只看容器日志有没有 `login successfully`（`campus/sessions.py:_run`），不校验 `tun0`/隧道路由，所以会话被踢后界面仍显示已连接、查询却必然 30s 超时。改写版（b965165 之后）改成连续 3 次看到 tun0 才置 connected，需要时可从 `backup/campus-rewrite` 取回该判定。容器日志里的 `Error: ipv4: FIB table does not exist. Flush terminated` 是 WSL2 下的既有噪音，不影响隧道建立（实测有该报错时 tun0 仍有 643 条路由）。
 
 ## 部署（Windows → 阿里云 47.100.125.150）
 - 迭代部署跑本地 `deploy.bat`（已 gitignore，仅本机存在）：构建前端、SCP 上传前后端、装依赖、重启 systemd 服务 `anticraft-api`、reload Nginx。同目录还有 `deploy-backend.bat`（仅传后端+重启）、`deploy-fresh-server.bat`（全新服务器初始化）、`deploy-config.bat`（SSH/凭据共享配置，被其余脚本引用）——均含服务器凭据，同样禁止未经同意运行。**代理不得读取/展示这些脚本中的凭据内容**，部署与凭据处理只由用户本人执行。

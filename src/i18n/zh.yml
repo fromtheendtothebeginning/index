@@ -75,7 +75,7 @@ toolHome:
     desc: 上传图片与说明，AI 生成 LaTeX 代码并在线编译为 PDF
   campusService:
     name: 校园服务
-    desc: 连接校园网 VPN，查询第二课堂分、成绩与校园卡动态码
+    desc: 连接校园网 VPN，查询第二课堂分、成绩、电费与校园卡动态码
 img2latex:
   navLabel: 图文转LaTeX
   title: 图文转LaTeX
@@ -759,6 +759,9 @@ myPage:
     visionModel: 识图模型
     speechModel: 语音模型
     visionHint: 需支持多模态图片输入的模型（如 *-vision-exp、qwen-vl 系列）
+    thinking: 识图模型思考深度
+    thinkingHint: 空=跟随模型默认；识码这类任务选 Off 更快
+    thinkingDefault: 默认（不指定）
     speechHint: 需支持 OpenAI 兼容 /audio/transcriptions 接口的模型（如 whisper 系列、sensevoice 等）
   sampling:
     title: 采样参数
@@ -846,7 +849,7 @@ md:
 campusService:
   navLabel: 校园服务
   title: 校园服务
-  subtitle: 连接校园网 VPN，查询第二课堂分 / 成绩 / 校园卡动态码（凭据在「我的 → 校园服务」填写）
+  subtitle: 连接校园网 VPN，查询第二课堂分 / 成绩 / 电费 / 校园卡动态码（凭据在「我的 → 校园服务」填写）
   backToTools: ← 返回工具主页
   needLogin: 校园服务需要登录后使用
   goAuth: 去登录
@@ -871,6 +874,10 @@ campusService:
     copy: 复制
     copied: 已复制
   backToCampus: ← 返回校园服务
+  refresh: 刷新
+  refreshing: 查询中…
+  vpnHint: 该功能需要连接校园网
+  goConnect: 返回主页连接
   queriesTitle: 选择查询
   query:
     score: 第二课堂分
@@ -913,6 +920,31 @@ campusService:
     refresh: 立即刷新
     refreshing: 刷新中…
     countdown: '{n} 秒后自动刷新'
+  electricity:
+    name: 电费查询
+    desc: 查询寝室电费余额与历史用量
+    balance: 宿舍电费余额
+    cardBalance: 校园卡余额
+    empty: 暂无电费记录
+    history: 历史用量
+    viewDay: 日视图
+    viewWeek: 周视图
+    viewMonth: 月视图
+    noDorm: 请先在「我的 → 校园服务」填写默认寝室
+    autoQueried: 每晚 22:00 自动查询并记录
+    dormPlaceholder: 例：24号楼1016（楼号会自动+1）
+    recharge: 充值
+    rechargeTitle: 电费充值
+    rechargeAmount: 充值金额（元）
+    rechargeConfirm: 确认充值
+    rechargeSuccess: 充值成功
+    rechargeFailed: 充值失败：{error}
+    rechargePlaceholder: 输入充值金额
+    rechargeRange: 金额须在 0.01 - 500 元之间
+    avgWeek: 本周日均
+    avgMonth: 本月日均
+    avgUnit: 元/天
+    avgInsufficient: 数据不足，需至少两天记录
   captcha:
     title: 登录验证
     prompt: 首次查询需要图形验证码完成登录，请输入后提交
@@ -927,12 +959,20 @@ campusService:
     current: 当前配置
     notConfigured: 未配置
     sidMasked: 已配置：{sid}
-    sidHint: 服务器仅存打码学号，修改时需填写完整学号
     studentId: 学号
     realName: 姓名
     vpnPassword: VPN 密码
     payPassword: 校付宝支付密码
     payHint: 暂未使用，可留空
+    dorm: 默认寝室
+    campus: 校区
+    building: 楼号
+    room: 宿舍号
+    campusFengxian: 奉贤校区
+    campusXuhui: 徐汇校区
+    dormHint: 用于电费查询，楼号在查询时会自动 +1
+    dormIncomplete: 楼号和宿舍号请一起填写
+    dormPreview: '将保存为：{dorm}'
     keepHint: 留空表示保留原密码不变
     autoCaptcha: AI 自动识别验证码
     autoCaptchaHint: 开启后查询时自动使用你配置的识图模型识别图形验证码

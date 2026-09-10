@@ -57,6 +57,7 @@ function MyPage() {
   const [visionKeyId, setVisionKeyId] = useState(null)
   const [visionModel, setVisionModel] = useState('')
   const [visionModels, setVisionModels] = useState([])
+  const [visionThinking, setVisionThinking] = useState('')
   const [speechKeyId, setSpeechKeyId] = useState(null)
   const [speechModel, setSpeechModel] = useState('')
   const [speechModels, setSpeechModels] = useState([])
@@ -74,6 +75,10 @@ function MyPage() {
 
   const currentKey = keys.find(k => k.id === currentKeyId) || null
   const currentProv = useMemo(() => getProvider(currentKey ? currentKey.provider : 'deepseek'), [currentKey])
+  // 识图思考档位按「识图 Key 的厂商 + 识图模型」解析（与对话模型互不影响）
+  const visionKey = keys.find(k => k.id === visionKeyId) || null
+  const visionProv = useMemo(() => (visionKey ? getProvider(visionKey.provider) : null), [visionKey])
+  const visionThinkingEnabled = !!visionProv && visionProv.thinking !== false
 
   // 可用模型 = 动态 + 自定义 去重合并
   const availableModels = useMemo(() => {
@@ -161,6 +166,7 @@ function MyPage() {
         setCustomModels((m.models || []).map(mm => ({ model: mm })))
         setVisionKeyId(s.vision_key_id || null)
         setVisionModel(s.vision_model || '')
+        setVisionThinking(s.vision_thinking || '')
         setSpeechKeyId(s.speech_key_id || null)
         setSpeechModel(s.speech_model || '')
         if (s.vision_key_id) fetchKeyModelList(s.vision_key_id, setVisionModels, 'vision')
@@ -247,6 +253,13 @@ function MyPage() {
       setThinking(def ? def.value : (levels[0] ? levels[0].value : AI_DEFAULTS.thinkingLevel))
     }
   }, [currentKeyId, currentKey, model])
+
+  // 识图思考深度净化：厂商不支持思考档位时清空；切换识图 key/模型后档位失效则回退默认（''）
+  useEffect(() => {
+    if (!visionKeyId) return
+    if (!visionProv || visionProv.thinking === false) { setVisionThinking(''); return }
+    if (visionThinking && !isValidThinkingLevel(visionProv.id, visionThinking, visionModel)) setVisionThinking('')
+  }, [visionKeyId, visionProv, visionModel])
 
   // ── Key 弹窗 ──
 
@@ -482,6 +495,8 @@ function MyPage() {
       if (currentKeyId) body.key_id = currentKeyId
       body.vision_key_id = visionKeyId || 0
       body.vision_model = visionModel || ''
+      // 识图厂商不支持思考档位时不提交档位（保持 ''）
+      body.vision_thinking = visionThinkingEnabled ? visionThinking : ''
       body.speech_key_id = speechKeyId || 0
       body.speech_model = speechModel || ''
       const res = await fetch('/api/user/ai-settings', {
@@ -767,6 +782,25 @@ function MyPage() {
                     </div>
                     <p className="ai-hint">{t('myPage.visionSpeech.visionHint')}</p>
                   </div>
+
+                  {/* 识图思考深度：档位按识图 Key 的厂商/模型解析；厂商不支持则不显示 */}
+                  {visionThinkingEnabled && (
+                    <div className="ai-field">
+                      <label className="ai-label">{t('myPage.visionSpeech.thinking')}</label>
+                      <CategoryDropdown
+                        value={visionThinking}
+                        onChange={setVisionThinking}
+                        options={[
+                          { value: '', label: t('myPage.visionSpeech.thinkingDefault') },
+                          ...getThinkingLevels(visionProv.id, visionModel).map(l => ({ value: l.value, label: l.label })),
+                        ]}
+                        placeholder={t('myPage.visionSpeech.thinkingDefault')}
+                        hideClear
+                        closeOnSelect
+                      />
+                      <p className="ai-hint">{t('myPage.visionSpeech.thinkingHint')}</p>
+                    </div>
+                  )}
 
                   <div className="ai-field">
                     <label className="ai-label">{t('myPage.visionSpeech.speechLabel')}</label>

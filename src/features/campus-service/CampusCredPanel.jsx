@@ -1,14 +1,24 @@
 import { useState, useEffect } from 'react'
 import ActionButton from '../../components/ActionButton'
 import { t } from '../../i18n'
+import { CAMPUSES, DEFAULT_CAMPUS, parseDorm, buildDorm } from './dorm'
 import './CampusCredPanel.css'
 
-const EMPTY_FORM = { student_id: '', real_name: '', vpn_password: '', pay_password: '', auto_captcha: false }
+const EMPTY_FORM = {
+  student_id: '', real_name: '', vpn_password: '', pay_password: '', auto_captcha: false,
+  campus: DEFAULT_CAMPUS, building: '', room: '',
+}
+
+// 校区选项：value 是写进 dorm 串的中文名（后端按串解析），文案走 i18n
+const CAMPUS_LABEL_KEYS = {
+  '奉贤校区': 'campusService.cred.campusFengxian',
+  '徐汇校区': 'campusService.cred.campusXuhui',
+}
 
 /**
  * 「我的 → 校园服务」凭据填写面板（MyPage 第三个 tab 内容）。
  * GET /api/campus/cred 展示当前配置；PUT /api/campus/cred 保存。
- * 密码留空 = 保留原值；GET 只回打码学号，故学号不可回填（输入框占位提示）。
+ * 密码留空 = 保留原值；GET 同时回完整学号（student_id，回填输入框）与打码学号（student_id_masked，仅顶部展示）。
  */
 export default function CampusCredPanel() {
   const [loading, setLoading] = useState(true)
@@ -29,7 +39,10 @@ export default function CampusCredPanel() {
       setInfo(b)
       setLoadErr(false)
       if (!keepForm) {
-        setForm(f => ({ ...f, student_id: '', real_name: b.real_name || '', auto_captcha: !!b.auto_captcha }))
+        setForm(f => ({
+          ...f, student_id: b.student_id || '', real_name: b.real_name || '', auto_captcha: !!b.auto_captcha,
+          ...parseDorm(b.dorm),
+        }))
       }
       return b
     } catch {
@@ -48,6 +61,10 @@ export default function CampusCredPanel() {
   const handleSave = async () => {
     if (!form.student_id.trim()) { setErr(t('campusService.cred.errStudentId')); return }
     if (!info.configured && !form.vpn_password.trim()) { setErr(t('campusService.cred.errVpnFirst')); return }
+    // 楼号与宿舍号必须成对：只填其一 → 报错且不发请求（都为空 = 清空寝室，允许）
+    const building = form.building.trim()
+    const room = form.room.trim()
+    if (!!building !== !!room) { setErr(t('campusService.cred.dormIncomplete')); return }
     setSaving(true)
     setErr('')
     setSaved(false)
@@ -61,6 +78,7 @@ export default function CampusCredPanel() {
           vpn_password: form.vpn_password,
           pay_password: form.pay_password,
           auto_captcha: !!form.auto_captcha,
+          dorm: buildDorm(form.campus, building, room),
         }),
       })
       const b = await res.json().catch(() => null)
@@ -70,10 +88,10 @@ export default function CampusCredPanel() {
       }
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
-      // 重新拉取当前配置并回填姓名（学号只回打码值，不可回填输入框）
+      // 重新拉取当前配置并回填学号、姓名
       setForm(f => ({ ...f, vpn_password: '', pay_password: '' }))
       refreshInfo(true).then(b => {
-        if (b) setForm(f => ({ ...f, real_name: b.real_name || '' }))
+        if (b) setForm(f => ({ ...f, student_id: b.student_id || '', real_name: b.real_name || '', ...parseDorm(b.dorm) }))
       })
     } catch {
       setErr(t('campusService.cred.networkError'))
@@ -81,6 +99,8 @@ export default function CampusCredPanel() {
       setSaving(false)
     }
   }
+
+  const dormPreview = buildDorm(form.campus, form.building, form.room)
 
   return (
     <div className="ccp-panel">
@@ -129,7 +149,6 @@ export default function CampusCredPanel() {
                 placeholder={info.configured ? `${t('campusService.cred.sidMasked', { sid: info.student_id_masked })}` : ''}
                 onChange={e => setField('student_id', e.target.value)}
               />
-              {info.configured && <p className="ccp-hint">{t('campusService.cred.sidHint')}</p>}
             </div>
 
             <div className="ccp-field">
@@ -182,6 +201,52 @@ export default function CampusCredPanel() {
               />
               <p className="ccp-hint">{t('campusService.cred.payHint')}</p>
             </div>
+
+            <div className="ccp-dorm-grid">
+              <div className="ccp-field">
+                <label className="ccp-label" htmlFor="ccp-dorm-campus">{t('campusService.cred.campus')}</label>
+                <select
+                  id="ccp-dorm-campus"
+                  className="ccp-input"
+                  value={form.campus}
+                  onChange={e => setField('campus', e.target.value)}
+                >
+                  {CAMPUSES.map(c => (
+                    <option key={c} value={c}>{t(CAMPUS_LABEL_KEYS[c])}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="ccp-field">
+                <label className="ccp-label" htmlFor="ccp-dorm-building">{t('campusService.cred.building')}</label>
+                <input
+                  id="ccp-dorm-building"
+                  className="ccp-input"
+                  type="text"
+                  inputMode="numeric"
+                  value={form.building}
+                  maxLength={4}
+                  autoComplete="off"
+                  onChange={e => setField('building', e.target.value.replace(/\D/g, ''))}
+                />
+              </div>
+
+              <div className="ccp-field">
+                <label className="ccp-label" htmlFor="ccp-dorm-room">{t('campusService.cred.room')}</label>
+                <input
+                  id="ccp-dorm-room"
+                  className="ccp-input"
+                  type="text"
+                  value={form.room}
+                  maxLength={12}
+                  autoComplete="off"
+                  onChange={e => setField('room', e.target.value.replace(/[^0-9A-Za-z]/g, ''))}
+                />
+              </div>
+            </div>
+
+            {dormPreview && <p className="ccp-hint">{t('campusService.cred.dormPreview', { dorm: dormPreview })}</p>}
+            <p className="ccp-hint">{t('campusService.cred.dormHint')}</p>
 
             {err && <div className="ccp-err">{err}</div>}
 

@@ -263,13 +263,14 @@ def run_migrations():
         if "last_top_k" not in ak_cols:
             conn.execute(text("ALTER TABLE ai_keys ADD COLUMN last_top_k INT NULL"))
             conn.commit()
-        # ai_settings 补列：识图模型 / 语音模型配置（视频总结工具使用）
+        # ai_settings 补列：识图模型（含思考深度）/ 语音模型配置（视频总结工具使用）
         as_cols = {row[0] for row in conn.execute(text(
             "SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'ai_settings'"
         ))}
         for col, typ in [
             ("vision_key_id", "INT NULL"),
             ("vision_model", "VARCHAR(100) NULL"),
+            ("vision_thinking", "VARCHAR(10) NOT NULL DEFAULT ''"),
             ("speech_key_id", "INT NULL"),
             ("speech_model", "VARCHAR(100) NULL"),
         ]:
@@ -339,6 +340,33 @@ def run_migrations():
         ))}
         if "auto_captcha" not in cc_cols:
             conn.execute(text("ALTER TABLE campus_creds ADD COLUMN auto_captcha TINYINT(1) NOT NULL DEFAULT 0"))
+            conn.commit()
+        if "dorm" not in cc_cols:
+            conn.execute(text("ALTER TABLE campus_creds ADD COLUMN dorm VARCHAR(100) NOT NULL DEFAULT ''"))
+            conn.commit()
+
+        # electricity_records 表（电费历史记录）
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS electricity_records (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                dorm VARCHAR(100) NOT NULL DEFAULT '',
+                balance FLOAT NULL,
+                remain FLOAT NULL,
+                raw_json TEXT NULL,
+                queried_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                KEY idx_er_user (user_id),
+                KEY idx_er_time (queried_at),
+                CONSTRAINT fk_er_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """))
+        conn.commit()
+        # electricity_records 补列：充值金额（充值记录专用，查询记录为 NULL）
+        er_cols = {row[0] for row in conn.execute(text(
+            "SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'electricity_records'"
+        ))}
+        if "recharge_amount" not in er_cols:
+            conn.execute(text("ALTER TABLE electricity_records ADD COLUMN recharge_amount FLOAT NULL"))
             conn.commit()
 
     # 为所有没有专属邀请码的已存在用户分配一个邀请码

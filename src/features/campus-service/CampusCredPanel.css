@@ -151,6 +151,22 @@
   color: var(--text-muted);
 }
 
+/* ── 默认寝室：校区 / 楼号 / 宿舍号 三项并排 ── */
+.ccp-dorm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+
+.ccp-dorm-grid .ccp-field {
+  min-width: 0;
+}
+
+.ccp-dorm-grid select.ccp-input {
+  cursor: pointer;
+}
+
 .ccp-err {
   padding: 10px 12px;
   border-radius: 8px;
