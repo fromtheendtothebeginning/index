@@ -63,21 +63,6 @@ function matchSubTarget(rowName) {
 
 // ── 电费历史曲线：按视图聚合成点 ──
 const DAY_MS = 86400000
-const BUCKET_LIMIT = 12 // 周 / 月视图：最多展示最近 12 个桶
-
-// ISO 周键（周一为一周起点），如 2026-W36
-function isoWeekKey(d) {
-  const dt = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
-  const day = dt.getUTCDay() || 7
-  dt.setUTCDate(dt.getUTCDate() + 4 - day)
-  const yearStart = new Date(Date.UTC(dt.getUTCFullYear(), 0, 1))
-  const week = Math.ceil(((dt - yearStart) / DAY_MS + 1) / 7)
-  return `${dt.getUTCFullYear()}-W${String(week).padStart(2, '0')}`
-}
-
-function monthKey(d) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-}
 
 // 日视图：某一天 0-23 时每小时的余额（元），该小时没查询就沿用上一小时的值（前值填充）
 // 取 balance 非空的记录（充值后复查余额失败的记录跳过），换算成本机时间戳后升序
@@ -110,36 +95,58 @@ function hourlyBalanceSeries(records) {
   return { series, date }
 }
 
-// 日 = 当天 0-23 时每小时余额（前值填充）；周 = 按 ISO 周取余额均值；月 = 按自然月取余额均值
-// 返回 { series, note }：note 为标题小字所需说明（仅日视图有值 =「M月D日」），无数据时为空串
-// remain / balance 都为空的记录（充值后复查余额失败）跳过，避免被当成 0 拉低曲线
+// 周 / 月视图：最近 days 天，每天的值 = 当天所有有效记录里余额的最小值（元），label 为 M/D
+// 结束日 = 最后一条有效记录所在的本机自然日，向前推 days-1 天；某天没记录沿用前一天的值，
+// 窗口开头几天没记录时用「窗口内最早有数据那天」的值兜底（等价于把最早已知余额向前平推）
+function dailyMinSeries(records, days) {
+  const pts = (records || [])
+    .filter(r => r && r.time && r.balance != null)
+    .map(r => ({ ts: new Date(r.time).getTime(), v: Number(r.balance) }))
+    .filter(p => Number.isFinite(p.ts) && Number.isFinite(p.v))
+    .sort((a, b) => a.ts - b.ts)
+  if (pts.length === 0) return { series: [], note: '' }
+
+  const dayKey = ts => {
+    const d = new Date(ts)
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+  }
+  const minOfDay = new Map()
+  for (const p of pts) {
+    const k = dayKey(p.ts)
+    minOfDay.set(k, Math.min(minOfDay.has(k) ? minOfDay.get(k) : Infinity, p.v))
+  }
+
+  const last = new Date(pts[pts.length - 1].ts)
+  const end = new Date(last.getFullYear(), last.getMonth(), last.getDate())
+  const values = []
+  const labels = []
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(end.getFullYear(), end.getMonth(), end.getDate() - i)
+    const k = d.getTime()
+    values.push(minOfDay.has(k) ? minOfDay.get(k) : null)
+    labels.push(`${d.getMonth() + 1}/${d.getDate()}`)
+  }
+
+  const firstIdx = values.findIndex(v => v != null)
+  let prev = values[firstIdx] // 窗口开头兜底值 = 最早有数据那天的值
+  const series = values.map((v, i) => {
+    if (v != null) prev = v
+    return { label: labels[i], v: prev }
+  })
+  const start = new Date(end.getFullYear(), end.getMonth(), end.getDate() - (days - 1))
+  const note = `${start.getMonth() + 1}/${start.getDate()}–${end.getMonth() + 1}/${end.getDate()}`
+  return { series, note }
+}
+
+// 日 = 当天 0-23 时每小时余额（前值填充）；周 = 最近 7 天每天最低余额；月 = 最近 30 天每天最低余额
+// 返回 { series, note }：note 为标题小字所需说明（日视图 =「M月D日」，周 / 月 = 窗口起止），无数据时为空串
+// balance 为空的记录（充值后复查余额失败）跳过，避免被当成 0 拉低曲线
 function buildSeries(records, view) {
   if (view === 'day') {
     const { series, date } = hourlyBalanceSeries(records)
     return { series, note: date }
   }
-
-  const points = (records || [])
-    .filter(r => r && r.time && (r.remain != null || r.balance != null))
-    .map(r => ({ dt: new Date(r.time), v: Number(r.remain != null ? r.remain : r.balance) }))
-    .filter(p => !Number.isNaN(p.dt.getTime()) && Number.isFinite(p.v))
-    .sort((a, b) => a.dt - b.dt)
-  if (points.length === 0) return { series: [], note: '' }
-
-  const keyOf = view === 'week' ? isoWeekKey : monthKey
-  const buckets = new Map()
-  for (const p of points) {
-    const k = keyOf(p.dt)
-    const b = buckets.get(k) || { first: p.dt, sum: 0, n: 0 }
-    b.sum += p.v
-    b.n += 1
-    buckets.set(k, b)
-  }
-  const series = [...buckets.entries()].slice(-BUCKET_LIMIT).map(([k, b]) => ({
-    label: view === 'week' ? `${b.first.getMonth() + 1}/${b.first.getDate()}` : k,
-    v: b.sum / b.n,
-  }))
-  return { series, note: '' }
+  return dailyMinSeries(records, view === 'week' ? 7 : 30)
 }
 
 // ── 周期平均每天耗电（本周 / 本月） ──
@@ -1103,7 +1110,7 @@ export default function CampusServicePage() {
           <div className="cs-elec-chart-head">
             <div className="cs-elec-chart-title">
               <span>{t('campusService.electricity.history')}</span>
-              {/* 小字说明：看的是什么 + 单位（日 = 某天每小时余额，周 / 月 = 平均余额） */}
+              {/* 小字说明：看的是什么 + 单位（日 = 某天每小时余额，周 / 月 = 每天最低余额） */}
               {elecView === 'day' ? (
                 elecNote && (
                   <span className="cs-elec-chart-sub">
