@@ -12,7 +12,6 @@ nav:
   project: 项目
   ranking: 榜单
   tools: 工具
-  videoParse: 视频解析
   my: 我的
   home: 首页
   start: 开始
@@ -64,12 +63,6 @@ home:
 toolHome:
   title: 工具
   subtitle: 实用小工具，助力效率与创作（需登录）
-  videoParse:
-    name: 视频解析
-    desc: 解析 B站视频信息与清晰度，并下载为 mp4
-  videoSummary:
-    name: 视频AI总结
-    desc: 提取视频字幕，用你自己的 AI Key 生成 Markdown 总结
   img2latex:
     name: 图文转LaTeX
     desc: 上传图片与说明，AI 生成 LaTeX 代码并在线编译为 PDF
@@ -120,39 +113,7 @@ img2latex:
     title: AI 模型不可用
     messageMain: 使用本工具（纯文字 / Markdown 输入）需要先在「我的 → AI 设置」选择当前使用的 Key 与模型。
     messageVision: 使用本工具（含图片输入）需要先在「我的 → AI 设置」配置识图模型（支持图片输入的模型）。
-videoParse:
-  loginRequired: 请先登录后使用工具
-  inputUrlRequired: 请输入视频链接
-  parseFailed: 解析失败
-  noCover: 无封面可下载
-  fetchCoverFailed: 获取封面失败
-  createTaskFailed: 创建任务失败
-  fetchFileFailed: 获取文件失败
-  downloadFailed: 下载失败
-  backToTools: 返回工具主页
-  title: 视频解析
-  subtitle: 解析 B站视频信息与清晰度，并可下载为 mp4（需登录）
-  loginHint: 工具需要登录后使用。
-  goLogin: 去登录
-  inputPlaceholder: 粘贴视频链接，如 https://www.bilibili.com/video/BVxxxx
-  parsing: 解析中...
-  parse: 解析
-  uploader: UP 主
-  duration: 时长
-  formats: 可用清晰度
-  selectFormat: 选择清晰度
-  selectDlMode: 选择下载方式
-  dlMerged: 下载视频（带音频）
-  dlVideoOnly: 下载视频（无音频）
-  dlAudioOnly: 下载音频
-  dlSeparate: 视频音频分开
-  dlCover: 下载封面
-  saving: 保存中...
-  download: 下载
-  merging: 正在合并视频，请稍候...
-  downloading: 下载中 {progress}%
-  originLink: 前往原视频页
-  disclaimer: 仅供个人学习与研究使用，请遵守相关平台条款与版权法规。
+    goToSettings: 前往 AI 设置
 blogList:
   anonymous: 匿名
   networkError: 网络错误
@@ -751,18 +712,15 @@ myPage:
       modelIdPlaceholder: 如 my-custom-v1
       hint: 手动添加一个模型到「可用模型」列表，供当前 Key 选择
   visionSpeech:
-    title: 识图与语音模型
-    sub: 视频 AI 总结等工具使用
-    visionLabel: 识图模型（提取视频画面）
-    speechLabel: 语音模型（转写音频）
+    title: 识图模型
+    sub: 识图类工具使用
+    visionLabel: 识图模型（识别图片内容）
     selectKey: 选择 Key
     visionModel: 识图模型
-    speechModel: 语音模型
     visionHint: 需支持多模态图片输入的模型（如 *-vision-exp、qwen-vl 系列）
     thinking: 识图模型思考深度
     thinkingHint: 空=跟随模型默认；识码这类任务选 Off 更快
     thinkingDefault: 默认（不指定）
-    speechHint: 需支持 OpenAI 兼容 /audio/transcriptions 接口的模型（如 whisper 系列、sensevoice 等）
   sampling:
     title: 采样参数
     currentModel: 当前模型：{model}
@@ -789,59 +747,6 @@ myPage:
     unknownError: 未知错误
     failed: 测试失败
     networkError: 网络错误，请稍后重试
-videoSummary:
-  navLabel: 视频总结
-  title: 视频 AI 总结
-  subtitle: 语音转写 + 画面 OCR 提取内容，用你在「AI 设置」中选择的模型生成结构化 Markdown 总结（需登录）
-  backToTools: ← 返回工具主页
-  loginHint: 工具需要登录后使用。
-  goLogin: 去登录
-  generate: 生成总结
-  generating: 生成中…
-  loadingHint: 正在提取字幕并调用 AI 总结，长视频可能需要一分钟以上…
-  streamingGenerating: 正在生成
-  streamingProofreading: （排版校对中…）
-  copyMd: 复制 MD
-  copied: ✓ 已复制
-  copyFailed: 复制失败，请手动选中文本复制
-  disclaimer: 总结由 AI 生成，可能存在偏差；仅供个人学习与研究使用。
-  useAsr: 转写音频（使用「AI 设置」中配置的语音模型）
-  stage:
-    preparing: 准备中
-  input:
-    invalidUrl: 请输入有效的视频链接（支持 B 站、YouTube 等 yt-dlp 兼容站点）
-  error:
-    request: 请求失败
-    requestWithStatus: 请求失败（{status}）
-  source:
-    placeholder: 粘贴视频链接，如 https://www.bilibili.com/video/BVxxxx
-    asr: 语音转写
-    ocr: 画面OCR
-    asrOcr: 语音转写+画面OCR
-    subtitle: 手写字幕
-    autoSubtitle: 自动字幕
-    metadata: 仅元信息（未获取到字幕）
-  history:
-    title: 历史记录
-    empty: 暂无历史记录
-    unnamed: （未命名视频）
-    loadError: 加载历史失败
-    deleteTitle: 删除记录
-    deleteConfirm: 确定删除「{title}」的总结记录？此操作不可恢复。
-    deleteConfirmText: 删除
-    deleteFailed: 删除失败
-  status:
-    failed: 失败
-  meta:
-    source: 来源：
-    duration: '{minutes} 分 {seconds} 秒'
-    transcript: 转录 {chars} 字
-    truncated: （已截断）
-  configModal:
-    title: AI 模型不可用
-    message: 当前使用的模型无法完成总结。请前往「我的 → AI 设置」检查 API Key 与模型配置后重试。
-    goToSettings: 前往 AI 设置
-    cancel: 取消
 md:
   copyCode: 复制代码
   copied: 已复制
@@ -945,6 +850,9 @@ campusService:
     avgMonth: 本月日均
     avgUnit: 元/天
     avgInsufficient: 数据不足，需至少两天记录
+    hourlyCaption: '{date} 每小时电费余额（元）'
+    weekCaption: '每周平均 · 电费余额（元）'
+    monthCaption: '每月平均 · 电费余额（元）'
   captcha:
     title: 登录验证
     prompt: 首次查询需要图形验证码完成登录，请输入后提交

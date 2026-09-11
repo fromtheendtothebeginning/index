@@ -53,14 +53,11 @@ function MyPage() {
   const [aiSaved, setAiSaved] = useState(false)
   const [aiError, setAiError] = useState('')
   const [testResult, setTestResult] = useState(null)
-  // 识图 / 语音模型配置（视频总结等工具使用）
+  // 识图模型配置（识图类工具使用）
   const [visionKeyId, setVisionKeyId] = useState(null)
   const [visionModel, setVisionModel] = useState('')
   const [visionModels, setVisionModels] = useState([])
   const [visionThinking, setVisionThinking] = useState('')
-  const [speechKeyId, setSpeechKeyId] = useState(null)
-  const [speechModel, setSpeechModel] = useState('')
-  const [speechModels, setSpeechModels] = useState([])
 
   // ── 弹窗状态 ──
   const [addKeyOpen, setAddKeyOpen] = useState(false)
@@ -167,10 +164,7 @@ function MyPage() {
         setVisionKeyId(s.vision_key_id || null)
         setVisionModel(s.vision_model || '')
         setVisionThinking(s.vision_thinking || '')
-        setSpeechKeyId(s.speech_key_id || null)
-        setSpeechModel(s.speech_model || '')
         if (s.vision_key_id) fetchKeyModelList(s.vision_key_id, setVisionModels, 'vision')
-        if (s.speech_key_id) fetchKeyModelList(s.speech_key_id, setSpeechModels, 'speech')
       })
       .catch(() => setAiError(t('myPage.ai.loadError')))
 
@@ -178,7 +172,7 @@ function MyPage() {
     return () => { cancelled = true }
   }, [tab])
 
-  // 拉取指定 Key 的可用模型列表（识图/语音配置用，带 localStorage 缓存；capability 过滤能力）
+  // 拉取指定 Key 的可用模型列表（识图配置用，带 localStorage 缓存；capability 过滤能力）
   const fetchKeyModelList = (keyId, setter, capability = '') => {
     if (!keyId) { setter([]); return }
     const cacheKey = `ai_models_${keyId}${capability ? '_' + capability : ''}`
@@ -497,8 +491,6 @@ function MyPage() {
       body.vision_model = visionModel || ''
       // 识图厂商不支持思考档位时不提交档位（保持 ''）
       body.vision_thinking = visionThinkingEnabled ? visionThinking : ''
-      body.speech_key_id = speechKeyId || 0
-      body.speech_model = speechModel || ''
       const res = await fetch('/api/user/ai-settings', {
         method: 'PUT',
         headers: { ...authHeaders(), 'Content-Type': 'application/json' },
@@ -750,7 +742,7 @@ function MyPage() {
                   )}
                 </div>
 
-                {/* ═══ 识图 / 语音模型（视频总结等工具使用）═══ */}
+                {/* ═══ 识图模型（识图类工具使用）═══ */}
                 <div className="ai-section">
                   <div className="ai-section-head">
                     <span className="ai-section-title">{t('myPage.visionSpeech.title')}</span>
@@ -801,32 +793,6 @@ function MyPage() {
                       <p className="ai-hint">{t('myPage.visionSpeech.thinkingHint')}</p>
                     </div>
                   )}
-
-                  <div className="ai-field">
-                    <label className="ai-label">{t('myPage.visionSpeech.speechLabel')}</label>
-                    <div className="vs-config-row">
-                      <CategoryDropdown
-                        value={speechKeyId || ''}
-                        onChange={v => {
-                          const id = v ? Number(v) : null
-                          setSpeechKeyId(id)
-                          setSpeechModel('')
-                          fetchKeyModelList(id, setSpeechModels, 'speech')
-                        }}
-                        options={keys.map(k => ({ value: k.id, label: `${k.provider} · ${k.label || k.key_hint || k.id}` }))}
-                        placeholder={t('myPage.visionSpeech.selectKey')}
-                        closeOnSelect
-                      />
-                      <CategoryDropdown
-                        value={speechModel}
-                        onChange={setSpeechModel}
-                        options={(speechKeyId ? speechModels : []).map(mm => ({ value: mm, label: mm }))}
-                        placeholder={t('myPage.visionSpeech.speechModel')}
-                        closeOnSelect
-                      />
-                    </div>
-                    <p className="ai-hint">{t('myPage.visionSpeech.speechHint')}</p>
-                  </div>
                 </div>
 
                 {/* ═══ 采样参数（先选模型后呈现）═══ */}

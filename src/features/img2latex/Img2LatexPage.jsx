@@ -425,7 +425,7 @@ function Img2LatexPage() {
         open={showConfigModal}
         title={t('img2latex.configModal.title')}
         message={t(files.some(f => f.kind === 'image') ? 'img2latex.configModal.messageVision' : 'img2latex.configModal.messageMain')}
-        confirmText={t('videoSummary.configModal.goToSettings')}
+        confirmText={t('img2latex.configModal.goToSettings')}
         cancelText={t('modal.cancel')}
         showCancel
         onConfirm={gotoAiSettings}

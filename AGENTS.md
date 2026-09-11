@@ -5,7 +5,7 @@
 ## 常用命令
 - `npm run dev` — Vite 前端，端口 3000，`/api` 代理到 `127.0.0.1:8000`
 - `npm run back`（=`backend`）— 后端：`cmd /c "backend\.venv\Scripts\activate.bat && python backend\main.py"`，uvicorn `main:app` 端口 8000，`reload=False`（改后端代码后需手动重启）
-- **重启服务一律用 `cmd /c restart-backend.bat` / `cmd /c restart-frontend.bat`**（已 gitignore）：bat 内部用**一次性 schtasks 计划任务**拉起 `run-backend-hidden.cmd`（pythonw 直启、日志重定向到 log/），完全脱离调用方控制台/管道/进程树，bat 瞬间自我退出——绝不内联 Start-Process/cmd 包装（实测会被工具会话回收或挂住）。子进程（ffmpeg 等）必须带 `creationflags=CREATE_NO_WINDOW`，否则 pythonw 下反复闪黑窗。验证：隔几秒单独一条 curl http://127.0.0.1:8000/api/health；Vite 只监听 IPv6 `[::1]:3000`，探测用 `http://localhost:3000`。bat 必须纯 ASCII + CRLF；**不要在使用者跑后台任务时重启后端**（会中断在跑的任务）。
+- **重启服务一律用 `cmd /c restart-backend.bat` / `cmd /c restart-frontend.bat`**（已 gitignore）：bat 内部用**一次性 schtasks 计划任务**拉起 `run-backend-hidden.cmd`（pythonw 直启、日志重定向到 log/），完全脱离调用方控制台/管道/进程树，bat 瞬间自我退出——绝不内联 Start-Process/cmd 包装（实测会被工具会话回收或挂住）。子进程（如校园服务的容器命令）必须带 `creationflags=CREATE_NO_WINDOW`，否则 pythonw 下反复闪黑窗。验证：隔几秒单独一条 curl http://127.0.0.1:8000/api/health；Vite 只监听 IPv6 `[::1]:3000`，探测用 `http://localhost:3000`。bat 必须纯 ASCII + CRLF；**不要在使用者跑后台任务时重启后端**（会中断在跑的任务）。
 - `npm run start` — 两个新窗口分别启动前后端
 - `npm run build` — 构建前端到 `dist/`
 - **没有测试框架、没有 linter/typecheck**。验证方式：启动后 `curl http://127.0.0.1:8000/api/health`，或 `npm run build` 确认构建通过。
@@ -54,7 +54,7 @@
 ## 经验与提醒（重构后勿回退）
 - 登录/注册统一走 `/auth`（双 Tab 合一页），`/login` 仅重定向到 `/auth`。新增认证链接/跳转一律指 `/auth`，勿重建 `LoginPage`/`RegisterPage`。
 - 共享组件样式（`.btn` / `.navbar` / `.modal-*` 弹窗）统一在 `App.css`。Modal 弹窗样式必须在 App.css，勿搬回页面私有 CSS（如 Blog.css），否则 AdminPage 等不加载 Blog.css 的页面弹窗样式丢失。
-- 已删除文件勿恢复：`context.md`（过时）、`log/2026-06-30.md`（描述已移除的 Project/Category 功能）、`anticraft.nginx.conf`（与 deploy.bat 内联生成的 Nginx 配置重复）。
+- 已删除文件勿恢复：`context.md`（过时）、`log/2026-06-30.md`（描述已移除的 Project/Category 功能）、`anticraft.nginx.conf`（与 deploy.bat 内联生成的 Nginx 配置重复）；**视频功能全量移除（2026-09-11）**：`backend/tools.py`、`backend/features/tool_api.py`、`backend/features/video_summary.py`、`src/pages/ToolParsePage.jsx`、`src/features/video-summary/`（注意 `src/pages/ToolParsePage.css` 是共享样式，图文转 LaTeX / 校园服务仍在 import，勿删）。
 - `check_db.sh` 含硬编码服务器密码，已 gitignore，勿提交 git。
 - models.py 勿新增仅序列化/零读写的字段（`User.email` 教训）；在 models.py 加列必须同步 `database.py` 的 `run_migrations()`。
 - 大型多步骤任务优先派子代理实施，主脑负责架构、接口约定与验证，保持上下文清洁。

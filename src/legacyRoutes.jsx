@@ -13,7 +13,6 @@ import ProfileEdit from './pages/ProfileEdit'
 import AdminPage from './pages/AdminPage'
 import MyPage from './pages/MyPage'
 import ToolHomePage from './pages/ToolHomePage'
-import ToolParsePage from './pages/ToolParsePage'
 
 export default [
   { path: '/', element: <HomePage /> },
@@ -30,7 +29,6 @@ export default [
   { path: '/projects/:id/edit', element: <ProjectEditorPage /> },
   { path: '/leetcode', element: <LeetCodePage /> },
   { path: '/tools', element: <ToolHomePage /> },
-  { path: '/tools/video-parse', element: <ToolParsePage /> },
   { path: '/profile', element: <ProfileEdit /> },
   { path: '/admin', element: <AdminPage /> },
   { path: '/my', element: <MyPage /> },

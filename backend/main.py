@@ -57,7 +57,7 @@ def on_startup():
 
     _log("=" * 50)
     _log("anticraft API 启动")
-    _log(f"端口 {os.getenv('PORT', '8000')} · 视频工具已加载 (yt-dlp) · HOST={os.getenv('HOST', '127.0.0.1')}")
+    _log(f"端口 {os.getenv('PORT', '8000')} · HOST={os.getenv('HOST', '127.0.0.1')}")
     _log("=" * 50)
     init_db()
     run_migrations()

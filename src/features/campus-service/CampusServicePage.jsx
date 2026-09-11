@@ -63,7 +63,6 @@ function matchSubTarget(rowName) {
 
 // ── 电费历史曲线：按视图聚合成点 ──
 const DAY_MS = 86400000
-const DAY_POINTS = 30 // 日视图：近 30 天每条记录一个点
 const BUCKET_LIMIT = 12 // 周 / 月视图：最多展示最近 12 个桶
 
 // ISO 周键（周一为一周起点），如 2026-W36
@@ -80,22 +79,52 @@ function monthKey(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
-// 日 = 近 30 天逐条记录；周 = 按 ISO 周取均值；月 = 按自然月取均值
+// 日视图：某一天 0-23 时每小时的余额（元），该小时没查询就沿用上一小时的值（前值填充）
+// 取 balance 非空的记录（充值后复查余额失败的记录跳过），换算成本机时间戳后升序
+function hourlyBalanceSeries(records) {
+  const pts = (records || [])
+    .filter(r => r && r.time && r.balance != null)
+    .map(r => ({ ts: new Date(r.time).getTime(), v: Number(r.balance) }))
+    .filter(p => Number.isFinite(p.ts) && Number.isFinite(p.v))
+    .sort((a, b) => a.ts - b.ts)
+  if (pts.length === 0) return { series: [], date: '' }
+
+  // 目标日 = 最后一条有效记录所在的本机自然日 00:00–24:00
+  const last = new Date(pts[pts.length - 1].ts)
+  const dayStart = new Date(last.getFullYear(), last.getMonth(), last.getDate()).getTime()
+  const date = `${last.getMonth() + 1}月${last.getDate()}日`
+
+  // 游标沿升序记录推进：cursor = 已进入当前小时的最后一条记录，i = 尚未排入的第一条记录。
+  // 当天之前的记录先全部排入 cursor，于是「昨天下班查的余额」会自然延续到今天首次查询（跨天继承）
+  let cursor = -1
+  let i = 0
+  for (; i < pts.length && pts[i].ts < dayStart; i++) cursor = i
+
+  const series = []
+  for (let h = 0; h < 24; h++) {
+    const he = dayStart + (h + 1) * 3600000 // 该小时结束时刻
+    while (i < pts.length && pts[i].ts < he) { cursor = i; i++ }
+    // cursor 仍为 -1（该小时之前一条记录都没有）时用最早那条的余额兜底
+    series.push({ label: `${h}时`, v: pts[cursor >= 0 ? cursor : 0].v })
+  }
+  return { series, date }
+}
+
+// 日 = 当天 0-23 时每小时余额（前值填充）；周 = 按 ISO 周取余额均值；月 = 按自然月取余额均值
+// 返回 { series, note }：note 为标题小字所需说明（仅日视图有值 =「M月D日」），无数据时为空串
 // remain / balance 都为空的记录（充值后复查余额失败）跳过，避免被当成 0 拉低曲线
 function buildSeries(records, view) {
+  if (view === 'day') {
+    const { series, date } = hourlyBalanceSeries(records)
+    return { series, note: date }
+  }
+
   const points = (records || [])
     .filter(r => r && r.time && (r.remain != null || r.balance != null))
     .map(r => ({ dt: new Date(r.time), v: Number(r.remain != null ? r.remain : r.balance) }))
     .filter(p => !Number.isNaN(p.dt.getTime()) && Number.isFinite(p.v))
     .sort((a, b) => a.dt - b.dt)
-  if (points.length === 0) return []
-
-  if (view === 'day') {
-    const cutoff = Date.now() - DAY_POINTS * DAY_MS
-    return points
-      .filter(p => p.dt.getTime() >= cutoff)
-      .map(p => ({ label: `${p.dt.getMonth() + 1}/${p.dt.getDate()}`, v: p.v }))
-  }
+  if (points.length === 0) return { series: [], note: '' }
 
   const keyOf = view === 'week' ? isoWeekKey : monthKey
   const buckets = new Map()
@@ -106,10 +135,11 @@ function buildSeries(records, view) {
     b.n += 1
     buckets.set(k, b)
   }
-  return [...buckets.entries()].slice(-BUCKET_LIMIT).map(([k, b]) => ({
+  const series = [...buckets.entries()].slice(-BUCKET_LIMIT).map(([k, b]) => ({
     label: view === 'week' ? `${b.first.getMonth() + 1}/${b.first.getDate()}` : k,
     v: b.sum / b.n,
   }))
+  return { series, note: '' }
 }
 
 // ── 周期平均每天耗电（本周 / 本月） ──
@@ -162,7 +192,7 @@ function avgDailyUsage(records, view) {
 
 // ── 简易 SVG 折线图 ──
 function MiniLineChart({ data, view }) {
-  const series = buildSeries(data, view)
+  const { series } = buildSeries(data, view)
   // 减弱动效偏好：不做入场动画，直接显示最终状态
   const reduceMotion = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -1013,6 +1043,8 @@ export default function CampusServicePage() {
       ['campusService.electricity.avgWeek', avgDailyUsage(elecHistory, 'week')],
       ['campusService.electricity.avgMonth', avgDailyUsage(elecHistory, 'month')],
     ]
+    // 折线图小字说明：与折线图共用同一套推导（该视图无数据时 note 为空串，小字隐藏）
+    const elecNote = buildSeries(elecHistory, elecView).note
     return (
     <div className="cs-panel cs-elec-panel">
       {elecData ? (
@@ -1069,7 +1101,23 @@ export default function CampusServicePage() {
       {elecHistory.length > 0 && (
         <div className="cs-elec-chart">
           <div className="cs-elec-chart-head">
-            <span className="cs-elec-chart-title">{t('campusService.electricity.history')}</span>
+            <div className="cs-elec-chart-title">
+              <span>{t('campusService.electricity.history')}</span>
+              {/* 小字说明：看的是什么 + 单位（日 = 某天每小时余额，周 / 月 = 平均余额） */}
+              {elecView === 'day' ? (
+                elecNote && (
+                  <span className="cs-elec-chart-sub">
+                    {t('campusService.electricity.hourlyCaption', { date: elecNote })}
+                  </span>
+                )
+              ) : (
+                <span className="cs-elec-chart-sub">
+                  {t(elecView === 'week'
+                    ? 'campusService.electricity.weekCaption'
+                    : 'campusService.electricity.monthCaption')}
+                </span>
+              )}
+            </div>
             <div className="cs-elec-view-btns">
               {['day', 'week', 'month'].map(v => (
                 <button

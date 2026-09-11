@@ -22,7 +22,6 @@ FastAPI + SQLAlchemy + MySQL 8。入口 `python backend/main.py`，模块间同�
 | `backend/ratelimit.py` | 纯标准库线程安全限流：`SlidingWindow` 滑动窗口计数器（注册/登录按 IP+用户名限速）、`AccountLock` 连续失败锁定账号。实例在 auth_routes 中创建使用。 |
 | `backend/constants.py` | 后端共享常量（与前端 src/constants.js 同步维护）：博客分类、角色值、LeetCode GraphQL 地址、CORS 默认来源、**VISION_MODEL_PATTERNS / SPEECH_MODEL_PATTERNS**（识图/语音模型 ID 特征匹配，用于 AI 设置选择器过滤）。 |
 | `backend/aisettings.py` | AI 多厂商适配层：`PROVIDERS` 注册表（opencode-go/deepseek/moonshot/qwen/zhipu/minimax/custom…各家的 base_url/api 风格/thinking_levels/sampling 支持位）；API Key **AES 加密存取**（encrypt_secret/decrypt_secret/mask_key，密钥派生自 SECRET_KEY）；`test_chat` 连接测试、`list_models` 拉取可用模型、`_endpoint_url/_build_headers/_build_payload` 请求构造（OpenAI 兼容 chat/completions 协议为主）。 |
-| `backend/tools.py` | 视频解析底层工具（供 tool_api 与 video_summary 复用）：B站请求头补丁 `_patch_bilibili_headers`、yt-dlp 参数集 `_ydl_opts`（含 BILIBILI_COOKIE 支持）、`extract_video_info` 元信息解析、`download_video` 三种下载模式（merged 合流/separate 分轨/audio），临时目录生命周期管理。 |
 
 ### 业务功能（features/ —— 新功能只加文件，不改旧文件）
 
@@ -39,9 +38,7 @@ FastAPI + SQLAlchemy + MySQL 8。入口 `python backend/main.py`，模块间同�
 | `features/admin.py` | 管理员接口（require_admin 门禁）：用户管理（列表/改角色/改昵称头像密码/删除）、评论管理（全量列表含博客标题**和项目标题 project_title**/删除）、博客管理（撤回/分类/精选）、邀请码（生成/列表/删/改可重复性）。 |
 | `features/site.py` | 友情链接 CRUD（公开读 + 管理员写）、站点设置（首页"保持联系"区块 contact_items JSON 单行配置）。 |
 | `features/leetcode.py` | LeetCode 刷题榜：绑定 leetcode.cn 用户名后经 GraphQL 抓增量（8.13 起算）；计分规则（简单2/中等4/困难8；困难模式减半、严肃模式简单不计、激励模式 -100 起步 3/6/9 互斥）；调试模式手动改数；公开榜单；60 秒后台心跳线程全量同步；管理员调试接口。 |
-| `features/tool_api.py` | 视频解析工具 API（需登录）：info 解析、下载任务（后台线程 + 进度轮询 + 文件下载流）、封面代理（SSRF 白名单校验 `_thumb_host_allowed`）。 |
-| `features/video_summary.py` | **视频 AI 总结工具**（最大单文件 ~1100 行）：yt-dlp 拉低清视频 → ffmpeg 音频分片（600s/片）→ 用户语音模型 ASR 转写（支持 OpenAI transcriptions 与小米 MiMo chat_audio 双协议，失败降级）→ 本地 RapidOCR 抽帧识别（**默认禁用**，`ANTICRAFT_ENABLE_OCR=1` 开启；SequenceMatcher 0.9 去重）→ 主模型流式生成 Markdown（SSE `/stream`）→ AI 排版校对 → `_latexize` 公式确定性转 LaTeX；任务状态内存表 + MySQL 历史（video_summaries 表，上限 20 条）+ 断线恢复 active 表；护栏：90 分钟时长上限、24k 字符截断、任务结束释放 OCR 引擎并 GC。 |
-| `features/ai_settings_api.py` | AI 设置 REST：多 Key CRUD（加密存储、掩码返回）、当前选择保存（主模型/识图模型/语音模型）、按 Key 拉取可用模型（`?capability=vision|speech` 按 constants 特征过滤）、收藏模型置顶、自定义模型增删、连接测试。 |
+| `features/ai_settings_api.py` | AI 设置 REST：多 Key CRUD（加密存储、掩码返回）、当前选择保存（主模型/识图模型）、按 Key 拉取可用模型（`?capability=vision` 按 constants 特征过滤）、收藏模型置顶、自定义模型增删、连接测试。 |
 
 ## 二、AI 智能体管控框架（harness/）
 
@@ -96,7 +93,7 @@ React 18 + Vite 5 + react-router-dom v7，无 UI 组件库；每页独立 CSS，
 | `components/Navbar.jsx` | 全局导航栏：桌面横排 + ≤768px 移动端抽屉（portal 到 body 规避 backdrop-filter 定位问题）；登录用户头像/未读徽标；登录态有效性轮询（401/404 清除本地态）；平滑滚动锚点跳转。导航文案走 t()。 |
 | `components/NavItem.jsx` | 单个导航项：label + 激活态样式 + 下拉 children。 |
 | `components/Modal.jsx` | 全站统一确认弹窗（title/message/confirmText/cancelText/onConfirm），替代 window.confirm；默认按钮文案走 i18n。 |
-| `components/Icons.jsx` | 图标库：`UiIcon` Feather 风格镂空 stroke 图标（heart/star/message/thumb/视频总结等全套），`ContactIcon` 品牌联系图标（GitHub/微信/B站/知乎等 fill 官方简化形）；CONTACT_ICON_OPTIONS 键清单（显示名经 t('icons.contact.*')）。 |
+| `components/Icons.jsx` | 图标库：`UiIcon` Feather 风格镂空 stroke 图标（heart/star/message/thumb 等全套），`ContactIcon` 品牌联系图标（GitHub/微信/B站/知乎等 fill 官方简化形）；CONTACT_ICON_OPTIONS 键清单（显示名经 t('icons.contact.*')）。 |
 | `components/CategoryDropdown.jsx` | 通用下拉选择器（复用 nav-dropdown 样式）：value/options/placeholder/closeOnSelect；用于分类筛选与 AI 模型选择。 |
 | `components/ActionButton.jsx` | 统一动作按钮（variant/size/icon），映射 .action-btn 样式族。 |
 | `components/Reveal.jsx` | 滚动进入视口渐显包装组件（IntersectionObserver），可 as 指定渲染标签；用于卡片列表入场动画。 |
@@ -118,17 +115,15 @@ React 18 + Vite 5 + react-router-dom v7，无 UI 组件库；每页独立 CSS，
 | `pages/ProjectEditorPage.jsx` | `/projects/new`、`/projects/:id/edit` | 项目编辑器：名称/简介 Markdown/封面/背景色/多条外链/关联博客勾选（仅编辑态）。 |
 | `pages/LeetCodePage.jsx` | `/leetcode` | 刷题榜：绑定/解绑、我的卡片（增量/累计 statsIncrement/statsTotal 粗体总刷题量/得分）、难度/严肃/激励模式互斥开关（激励进出确认弹窗）、调试模式、榜单表格、刷新与心跳状态。 |
 | `pages/AdminPage.jsx` | `/admin` | 管理后台七 Tab：用户（角色/资料/删除）、评论（跳转博主/项目原文 + 删除）、博客（撤回/分类/精选）、邀请码（生成/可重复切换）、友情链接 CRUD、站点设置（联系项 JSON 编辑）、LeetCode 调试。 |
-| `pages/MyPage.jsx` | `/my` | 个人中心双 Tab：①通知（未读红点开关、类型图标、全部已读、点击跳转）；②AI 设置（Key 管理 CRUD+设为当前、可用模型列表点选/收藏/自定义、识图与语音模型按能力过滤、思考深度 CategoryDropdown、温度/Top-K 按 provider 支持 显隐、测试连接、采样参数保存）。 |
+| `pages/MyPage.jsx` | `/my` | 个人中心双 Tab：①通知（未读红点开关、类型图标、全部已读、点击跳转）；②AI 设置（Key 管理 CRUD+设为当前、可用模型列表点选/收藏/自定义、识图模型按能力过滤、思考深度 CategoryDropdown、温度/Top-K 按 provider 支持 显隐、测试连接、采样参数保存）。 |
 | `pages/ProfileEdit.jsx` | `/profile` | 资料编辑：昵称/头像 URL、主题模式切换（system/light/dark 即时渐变）、退出登录、注销账号（输入账密双重确认）。 |
-| `pages/ToolHomePage.jsx` | `/tools` | 工具导航页：视频解析、视频 AI 总结两张卡片。 |
-| `pages/ToolParsePage.jsx` | `/tools/video-parse` | 视频解析工具：粘贴 B站链接 → 信息卡（UP主/时长/清晰度选择）→ 四种下载方式（合流/纯视频/纯音频/分轨）后台任务进度 + 文件下载。 |
+| `pages/ToolHomePage.jsx` | `/tools` | 工具导航页：图文转 LaTeX、校园服务两张卡片。 |
 
 ### features/（新架构：新功能页面放这里，App/Navbar 零改动）
 
 | 文件 | 职责 |
 |---|---|
-| `features/video-summary/routes.jsx` | 功能注册样板：default 导出路由数组 `[{path:'/tools/video-summary', element}]`，命名导出 `nav=[{label, path, parent:'/tools'}]`（parent 使条目进"工具"下拉而非顶层）。作为新功能的参考模板。 |
-| `features/video-summary/VideoSummaryPage.jsx` | 视频 AI 总结页：左侧历史记录栏（服务端持久化/active 任务恢复）、右侧行为区（链接输入/ASR 开关/生成）、阶段进度条（fetch+ReadableStream 轮询 progress）、SSE 流式渲染中间结果（streamSafeMd 抹掉未闭合数学分隔符防 KaTeX 报错）、复制 MD、AI 配置缺失引导弹窗。 |
+| `features/img2latex/routes.jsx` | 功能注册样板：default 导出路由数组 `[{path:'/tools/img2latex', element}]`，命名导出 `nav=[{label, path, parent:'/tools'}]`（parent 使条目进"工具"下拉而非顶层）。作为新功能的参考模板。 |
 
 ### 样式文件（CSS）
 
@@ -145,8 +140,7 @@ React 18 + Vite 5 + react-router-dom v7，无 UI 组件库；每页独立 CSS，
 | `src/pages/MyPage.css` | 个人中心：通知列表/徽标、AI 设置整套（Key 卡片、模型选择、采样参数滑块）。 |
 | `src/pages/LeetCodePage.css` | 榜单：绑定卡、我的成绩卡（模式标签含金色激励态）、榜单表格、调试面板。 |
 | `src/pages/ProfileEdit.css` | 资料编辑表单、主题切换控件、注销区。 |
-| `src/pages/ToolHomePage.css` / `ToolParsePage.css` | 工具导航卡片；视频解析页信息卡/下载任务面板。 |
-| `src/features/video-summary/VideoSummaryPage.css` | 视频 AI 总结页布局：左历史栏 + 右行为区双栏（复用 ToolParsePage.css 基础）。 |
+| `src/pages/ToolHomePage.css` / `ToolParsePage.css` | 工具导航卡片；工具页共享基础样式（图文转 LaTeX / 校园服务复用 `ToolParsePage.css` 的 tool-* 体系）。 |
 
 ## 四、说明
 

@@ -8,9 +8,6 @@ pyjwt==2.9.0
 pydantic==2.9.2
 python-dotenv==1.0.1
 python-multipart==0.0.20
-yt-dlp==2026.8.19
-rapidocr==3.9.2
-onnxruntime
 # 校园服务（SCHOOLALY 移植）：EasyConnect VPN 容器 + 校园网查询
 docker==7.2.0
 pycryptodome==3.23.0

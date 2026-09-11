@@ -743,6 +743,11 @@
   color: var(--text-secondary);
 }
 
+.cs-elec-chart-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
 .cs-elec-view-btns {
   display: flex;
   gap: 4px;
