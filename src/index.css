@@ -1,170 +1,179 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Source+Sans+3:wght@300;400;500;600&family=Noto+Serif+SC:wght@300;400;500;600&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+/* ============================================================================
+   anticraft · 逆匠 — Editorial（编辑杂志风）设计系统
+   ----------------------------------------------------------------------------
+   全站唯一权威取色/取字来源。页面私有 CSS 只允许通过下方变量取值，
+   禁止出现字面色值、圆角、阴影、渐变、彩色强调。
+
+   【绝对禁止】彩色强调（红蓝绿黄铜等任何色相）/ box-shadow / 渐变 /
+               background-clip:text / border-radius（含 50%、100px）/
+               粗边框 border-2 以上 / 装饰性几何背景
+   【必须遵守】标题衬线 400 字重 + 字距收紧；正文无衬线 leading ≥ 1.75；
+               灰度层级一律由 ink 透明度构建（/60 次要、/40 辅助、/20 输入框线、/10 分隔线）；
+               section 上下留白 ≥ 96px（桌面 160px）；容器内边距 24px（桌面 48px）
+   ============================================================================ */
 
 :root {
-  /* ── 背景 ── */
-  --bg-primary: #f8f9fa;
-  --bg-card: #ffffff;
-  --bg-elevated: #f5f5f8; /* 悬浮/次级卡片底 */
+  /* ── 纸与墨（Editorial 核心两色）── */
+  --paper: #f9f8f6;        /* 暖米色纸张 */
+  --ink: #1c1c1c;          /* 柔和黑，非纯黑 */
 
-  /* ── 文字 ── */
-  --text-primary: #1a1a2e;
-  --text-secondary: #3a3a4e;
-  --text-muted: #4a4a5e;
+  /* ── 灰度层级：由墨色透明度构建，禁止引入其它色相 ── */
+  --ink-80: rgba(28, 28, 28, 0.8);
+  --ink-60: rgba(28, 28, 28, 0.62);   /* 0.62 而非 0.60：纸底上次要文字的对比度刚好过 WCAG AA */
+  --ink-40: rgba(28, 28, 28, 0.4);
+  --ink-20: rgba(28, 28, 28, 0.2);
+  --ink-10: rgba(28, 28, 28, 0.1);
+  --ink-04: rgba(28, 28, 28, 0.04);
+  --ink-02: rgba(28, 28, 28, 0.02);
 
-  /* ── 主色调（紫） ── */
-  --accent-1: #6c5ce7;
-  --accent-1-light: #8b7cf7;       /* 渐变亮端 */
-  --accent-1-hover: #5a4bd6;       /* 加深 */
-  --accent-1-soft: rgba(108, 92, 231, 0.1);        /* 浅紫底 */
-  --accent-1-soft-strong: rgba(108, 92, 231, 0.15); /* 略深紫底 */
-  --accent-1-border: rgba(108, 92, 231, 0.3);       /* 紫描边 */
+  /* ── 字体 ── */
+  --font-serif: 'Playfair Display', Georgia, 'Times New Roman', 'Noto Serif SC',
+    'Songti SC', 'STSong', 'SimSun', serif;
+  --font-sans: 'Source Sans 3', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, 'Courier New', monospace;
 
-  /* ── 辅色调（青） ── */
-  --accent-2: #00cec9;
-  --accent-2-hover: #00b894;       /* 加深 */
-  --accent-2-soft: rgba(0, 206, 201, 0.15); /* 浅青底 */
+  /* ── 版面 ── */
+  --max-width: 1280px;
+  --gutter: 24px;          /* 移动端容器内边距 */
+  --section-y: 96px;       /* 移动端 section 上下留白 */
+  --nav-h: 72px;
 
-  /* ── 危险色（红） ── */
-  --danger: #e74c3c;
-  --danger-hover: #c0392b;
-  --danger-soft: rgba(231, 76, 60, 0.1);        /* 浅红底 */
-  --danger-soft-strong: rgba(231, 76, 60, 0.15); /* 略深红底 */
-  --danger-border: rgba(231, 76, 60, 0.3);       /* 红描边 */
+  /* ── 语义色（旧变量别名，页面 CSS 继续沿用；值全部落在纸墨体系内）── */
+  --bg-primary: var(--paper);
+  --bg-card: var(--paper);
+  --bg-elevated: #f2f0eb;  /* 微暖的次级底，仍属纸色系 */
+  --nav-bg: rgba(249, 248, 246, 0.9);
 
-  /* ── 中性色 ── */
-  --white: #ffffff;
-  --border-color: #e2e2ef;
-  --neutral-soft: #e8e8e8;        /* 次级按钮底 */
-  --neutral-soft-hover: #d0d0d0;  /* 次级按钮 hover */
-  --overlay: rgba(0, 0, 0, 0.5);  /* 弹窗遮罩 */
+  --text-primary: var(--ink);
+  --text-secondary: var(--ink-60);
+  --text-muted: var(--ink-40);
 
-  /* ── 光晕 ── */
-  --glow-accent: rgba(108, 92, 231, 0.08);
-  --glow-accent-strong: rgba(108, 92, 231, 0.4);
-  --glow-cyan: rgba(0, 206, 201, 0.06);
-  --glow-cyan-strong: rgba(0, 206, 201, 0.4);
+  /* 强调色 = 墨色本身。交互对比靠「墨/纸反转」，不靠色相 */
+  --accent-1: var(--ink);
+  --accent-1-light: var(--ink);
+  --accent-1-hover: #333333;
+  --accent-1-soft: var(--ink-04);
+  --accent-1-soft-strong: var(--ink-10);
+  --accent-1-border: var(--ink-20);
+  --accent-2: var(--ink);
+  --accent-2-hover: #333333;
+  --accent-2-soft: var(--ink-04);
 
-  --progress-gradient: linear-gradient(90deg, #6c5ce7, #00cec9);
+  /* 危险态同样单色：靠字重、文字标签与描边深浅区分，不靠红色 */
+  --danger: var(--ink);
+  --danger-hover: #333333;
+  --danger-soft: var(--ink-04);
+  --danger-soft-strong: var(--ink-10);
+  --danger-border: var(--ink-20);
 
-  --max-width: 1200px;
+  --white: var(--paper);        /* 「墨底上的字色」= 纸色 */
+  --border-color: var(--ink-10);
+  --neutral-soft: #f0eeea;
+  --neutral-soft-hover: #e6e3dd;
+  --overlay: rgba(28, 28, 28, 0.6);
 
-  /* ── GitHub 高亮主题（浅色，github.css 取色） ── */
-  --hljs-keyword: #d73a49;
-  --hljs-title: #6f42c1;
-  --hljs-const: #005cc5;
-  --hljs-string: #032f62;
-  --hljs-builtin: #e36209;
-  --hljs-comment: #6a737d;
-  --hljs-tag: #22863a;
-  --hljs-bullet: #735c0f;
-  --hljs-add: #22863a;
-  --hljs-add-bg: #f0fff4;
-  --hljs-del: #b31d28;
-  --hljs-del-bg: #ffeef0;
-  --hljs-text: #24292e;
+  /* 光晕/gradient 已废弃：保留变量名置透明，避免旧引用产生彩色 */
+  --glow-accent: transparent;
+  --glow-accent-strong: transparent;
+  --glow-cyan: transparent;
+  --glow-cyan-strong: transparent;
+  --progress-gradient: none;
+
+  /* ── 代码高亮：印刷体低饱和配色（限代码块内容，非界面强调）── */
+  --hljs-keyword: #7d4034;
+  --hljs-title: #3f4a5a;
+  --hljs-const: #2f4f4f;
+  --hljs-string: #4a5d3a;
+  --hljs-builtin: #6b4a2f;
+  --hljs-comment: #8a857c;
+  --hljs-tag: #5a5340;
+  --hljs-bullet: #6b5a2f;
+  --hljs-add: #3c5a34;
+  --hljs-add-bg: #eef0e8;
+  --hljs-del: #7d4034;
+  --hljs-del-bg: #f4ece9;
+  --hljs-text: var(--ink);
 }
 
-/* ── 黑夜模式（手动选择 data-theme="dark" 时生效） ──
+/* ── 夜幕（暖调单色，非冷黑；手动选择 data-theme="dark" 时生效）──
    同步维护：下方 @media 中的同组变量须与此一致 */
 :root[data-theme='dark'] {
-  --bg-primary: #0f1014;
-  --bg-card: #1a1b22;
-  --bg-elevated: #23242e;
-  --text-primary: #e8e8f0;
-  --text-secondary: #b0b2c0;
-  --text-muted: #7a7c8c;
-  --accent-1: #7c6cf0;
-  --accent-1-light: #9d8ffa;
-  --accent-1-hover: #8a7bf5;
-  --accent-1-soft: rgba(124, 108, 240, 0.2);
-  --accent-1-soft-strong: rgba(124, 108, 240, 0.28);
-  --accent-1-border: rgba(124, 108, 240, 0.45);
-  --accent-2: #2ee6e0;
-  --accent-2-hover: #3af0c0;
-  --accent-2-soft: rgba(46, 230, 224, 0.22);
-  --danger: #e0503f;
-  --danger-hover: #ef6a55;
-  --danger-soft: rgba(240, 106, 88, 0.18);
-  --danger-soft-strong: rgba(240, 106, 88, 0.26);
-  --danger-border: rgba(240, 106, 88, 0.45);
-  --white: #ffffff;
-  --border-color: #2e2f3a;
-  --neutral-soft: #33343f;
-  --neutral-soft-hover: #3d3e4b;
-  --overlay: rgba(0, 0, 0, 0.6);
-  --glow-accent: rgba(124, 108, 240, 0.15);
-  --glow-accent-strong: rgba(124, 108, 240, 0.5);
-  --glow-cyan: rgba(46, 230, 224, 0.1);
-  --glow-cyan-strong: rgba(46, 230, 224, 0.5);
-  --progress-gradient: linear-gradient(90deg, #7c6cf0, #2ee6e0);
+  --paper: #171614;
+  --ink: #edeae4;
+  --ink-80: rgba(237, 234, 228, 0.8);
+  --ink-60: rgba(237, 234, 228, 0.62);
+  --ink-40: rgba(237, 234, 228, 0.42);
+  --ink-20: rgba(237, 234, 228, 0.2);
+  --ink-10: rgba(237, 234, 228, 0.12);
+  --ink-04: rgba(237, 234, 228, 0.05);
+  --ink-02: rgba(237, 234, 228, 0.03);
+  --bg-elevated: #1e1d1a;
+  --nav-bg: rgba(23, 22, 20, 0.9);
+  --accent-1-hover: #ffffff;
+  --accent-2-hover: #ffffff;
+  --danger-hover: #ffffff;
+  --white: #171614;
+  --neutral-soft: #232220;
+  --neutral-soft-hover: #2c2b28;
+  --overlay: rgba(10, 10, 9, 0.72);
+  --hljs-keyword: #d99a86;
+  --hljs-title: #a9bdd6;
+  --hljs-const: #9fc4c0;
+  --hljs-string: #b3c79a;
+  --hljs-builtin: #d6b48f;
+  --hljs-comment: #8f8a80;
+  --hljs-tag: #c9c2a8;
+  --hljs-bullet: #cdb98a;
+  --hljs-add: #b3c79a;
+  --hljs-add-bg: #1f2a1c;
+  --hljs-del: #d99a86;
+  --hljs-del-bg: #2c1f1c;
   color-scheme: dark;
-
-  /* ── GitHub 高亮主题（深色，github-dark.css 取色） ── */
-  --hljs-keyword: #ff7b72;
-  --hljs-title: #d2a8ff;
-  --hljs-const: #79c0ff;
-  --hljs-string: #a5d6ff;
-  --hljs-builtin: #ffa657;
-  --hljs-comment: #8b949e;
-  --hljs-tag: #7ee787;
-  --hljs-bullet: #f2cc60;
-  --hljs-add: #aff5b4;
-  --hljs-add-bg: #033a16;
-  --hljs-del: #ffdcd7;
-  --hljs-del-bg: #67060c;
-  --hljs-text: #c9d1d9;
 }
 
-/* ── 跟随系统（系统为暗色且用户未强制浅色时生效） ── */
+/* ── 跟随系统（系统为暗色且用户未强制浅色时生效）── */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --bg-primary: #0f1014;
-    --bg-card: #1a1b22;
-    --bg-elevated: #23242e;
-    --text-primary: #e8e8f0;
-    --text-secondary: #b0b2c0;
-    --text-muted: #7a7c8c;
-    --accent-1: #7c6cf0;
-    --accent-1-light: #9d8ffa;
-    --accent-1-hover: #8a7bf5;
-    --accent-1-soft: rgba(124, 108, 240, 0.2);
-    --accent-1-soft-strong: rgba(124, 108, 240, 0.28);
-    --accent-1-border: rgba(124, 108, 240, 0.45);
-    --accent-2: #2ee6e0;
-    --accent-2-hover: #3af0c0;
-    --accent-2-soft: rgba(46, 230, 224, 0.22);
-    --danger: #e0503f;
-    --danger-hover: #ef6a55;
-    --danger-soft: rgba(240, 106, 88, 0.18);
-    --danger-soft-strong: rgba(240, 106, 88, 0.26);
-    --danger-border: rgba(240, 106, 88, 0.45);
-    --white: #ffffff;
-    --border-color: #2e2f3a;
-    --neutral-soft: #33343f;
-    --neutral-soft-hover: #3d3e4b;
-    --overlay: rgba(0, 0, 0, 0.6);
-    --glow-accent: rgba(124, 108, 240, 0.15);
-    --glow-accent-strong: rgba(124, 108, 240, 0.5);
-    --glow-cyan: rgba(46, 230, 224, 0.1);
-    --glow-cyan-strong: rgba(46, 230, 224, 0.5);
-    --progress-gradient: linear-gradient(90deg, #7c6cf0, #2ee6e0);
+    --paper: #171614;
+    --ink: #edeae4;
+    --ink-80: rgba(237, 234, 228, 0.8);
+    --ink-60: rgba(237, 234, 228, 0.62);
+    --ink-40: rgba(237, 234, 228, 0.42);
+    --ink-20: rgba(237, 234, 228, 0.2);
+    --ink-10: rgba(237, 234, 228, 0.12);
+    --ink-04: rgba(237, 234, 228, 0.05);
+    --ink-02: rgba(237, 234, 228, 0.03);
+    --bg-elevated: #1e1d1a;
+    --nav-bg: rgba(23, 22, 20, 0.9);
+    --accent-1-hover: #ffffff;
+    --accent-2-hover: #ffffff;
+    --danger-hover: #ffffff;
+    --white: #171614;
+    --neutral-soft: #232220;
+    --neutral-soft-hover: #2c2b28;
+    --overlay: rgba(10, 10, 9, 0.72);
+    --hljs-keyword: #d99a86;
+    --hljs-title: #a9bdd6;
+    --hljs-const: #9fc4c0;
+    --hljs-string: #b3c79a;
+    --hljs-builtin: #d6b48f;
+    --hljs-comment: #8f8a80;
+    --hljs-tag: #c9c2a8;
+    --hljs-bullet: #cdb98a;
+    --hljs-add: #b3c79a;
+    --hljs-add-bg: #1f2a1c;
+    --hljs-del: #d99a86;
+    --hljs-del-bg: #2c1f1c;
     color-scheme: dark;
-
-    --hljs-keyword: #ff7b72;
-    --hljs-title: #d2a8ff;
-    --hljs-const: #79c0ff;
-    --hljs-string: #a5d6ff;
-    --hljs-builtin: #ffa657;
-    --hljs-comment: #8b949e;
-    --hljs-tag: #7ee787;
-    --hljs-bullet: #f2cc60;
-    --hljs-add: #aff5b4;
-    --hljs-add-bg: #033a16;
-    --hljs-del: #ffdcd7;
-    --hljs-del-bg: #67060c;
-    --hljs-text: #c9d1d9;
   }
 }
+
+/* ============================================================================
+   基础排版
+   ============================================================================ */
 
 * {
   margin: 0;
@@ -178,18 +187,38 @@ html {
 }
 
 body {
-  font-family: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-sans);
+  font-size: 16px;
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  line-height: 1.6;
+  line-height: 1.75;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
 }
 
+/* 标题一律衬线、400 字重、字距收紧（禁止 font-weight 700+ 与无衬线标题） */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--text-primary);
+  text-wrap: balance;
+}
+
+h1 { font-size: clamp(2.25rem, 6vw, 3.75rem); }
+h2 { font-size: clamp(1.75rem, 4vw, 2.5rem); }
+h3 { font-size: clamp(1.25rem, 2.5vw, 1.625rem); }
+h4 { font-size: 1.25rem; }
+
+p { line-height: 1.75; }
+
+strong, b { font-weight: 600; }
+
 ::selection {
-  background: var(--accent-1);
-  color: var(--white);
+  background: var(--ink);
+  color: var(--paper);
 }
 
 a {
@@ -202,9 +231,161 @@ img {
   display: block;
 }
 
-/* KaTeX：跟随主题文字色，深色模式下不出现固定黑色 */
-.katex {
+/* 键盘焦点：细线描边（不使用 outline 阴影/圆角光晕） */
+:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: 3px;
+}
+
+/* 移动端点击优化：按钮不触发双击缩放 */
+button {
+  touch-action: manipulation;
+}
+
+/* 数字与拉丁文统一衬线，中文标题由 --font-serif 的中文衬线兜底 */
+.serif { font-family: var(--font-serif); }
+.sans { font-family: var(--font-sans); }
+
+/* ============================================================================
+   Editorial 基元（全站复用，页面私有 CSS 只做组合，不重新定义）
+   ============================================================================ */
+
+/* 标签：无衬线小字 + 大写 + 0.2em 字距。注意——不得作为每个 section 标题上方的
+   eyebrow 使用（风格明令禁止），只用于行内元数据、表头、字段名、页脚栏目名 */
+.label {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-40);
+}
+
+/* 装饰性斜体副标题 */
+.lede {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(1.125rem, 2vw, 1.5rem);
+  line-height: 1.5;
+  color: var(--ink-60);
+}
+
+/* 分隔细线：hover 时由 /10 加深到 /40，用于强调网格骨架 */
+.rule {
+  border: 0;
+  border-top: 1px solid var(--ink-10);
+  transition: border-color 0.5s ease;
+}
+.rule:hover { border-color: var(--ink-40); }
+
+/* 下划线延展：文字本体不位移，仅线从右向左收、向左展开 */
+.link-underline {
+  position: relative;
+  display: inline-block;
   color: inherit;
+}
+.link-underline::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.link-underline:hover::after,
+.link-underline:focus-visible::after {
+  transform: scaleX(1);
+  transform-origin: left center;
+}
+
+/* 页码/序号：杂志目录里的流水数字 */
+.folio {
+  font-family: var(--font-serif);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+  color: var(--ink-40);
+}
+
+/* 底线输入框 + 浮动标签
+   必须的 DOM 顺序（label 在 input 之后，靠兄弟选择器驱动）：
+     <div class="field"><input id="x" placeholder=" " /><label for="x">标签</label></div>
+   placeholder 固定为一个空格（供 :placeholder-shown 判定空值），不再写提示文案 */
+.field {
+  position: relative;
+  display: block;
+}
+.field > input,
+.field > textarea,
+.field > select {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--ink-20);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-serif);
+  font-size: 20px;
+  line-height: 1.5;
+  padding: 20px 0 10px;
+  transition: border-color 0.4s ease;
+  appearance: none;
+}
+.field > textarea {
+  font-size: 17px;
+  font-family: var(--font-sans);
+  line-height: 1.75;
+  resize: vertical;
+}
+.field > select {
+  font-size: 17px;
+  cursor: pointer;
+}
+.field > input:focus,
+.field > textarea:focus,
+.field > select:focus {
+  outline: none;
+  border-bottom-color: var(--ink);
+}
+.field > input::placeholder,
+.field > textarea::placeholder {
+  color: transparent;
+}
+.field > label {
+  position: absolute;
+  left: 0;
+  top: 20px;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  color: var(--ink-40);
+  pointer-events: none;
+  transform-origin: left top;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), color 0.4s ease;
+}
+.field > input:focus ~ label,
+.field > input:not(:placeholder-shown) ~ label,
+.field > textarea:focus ~ label,
+.field > textarea:not(:placeholder-shown) ~ label,
+.field > select:focus ~ label,
+.field.filled > label {
+  transform: translateY(-1.4rem) scale(0.72);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-40);
+}
+/* 校验失败：单色下用实线墨色底线 + 标签加深表达，不用红色，也不加粗边框 */
+.field.has-error > input,
+.field.has-error > textarea,
+.field.has-error > select {
+  border-bottom-color: var(--ink);
+}
+.field.has-error > label {
+  color: var(--ink);
+  font-weight: 500;
 }
 
 /* ---------- 代码块语言角标 + highlight.js 语法染色（全局，覆盖 4 处 .markdown-body 渲染点） ---------- */
@@ -218,15 +399,16 @@ img {
   position: absolute;
   top: 12px;
   left: 16px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--text-muted);
-  text-transform: none;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-40);
   user-select: none;
 }
 
-/* hljs token 配色：GitHub 主题（github.css / github-dark.css 取色，经 --hljs-* 变量跟随明暗） */
+/* hljs token 配色：低饱和印刷体调性（经 --hljs-* 变量跟随明暗） */
 .markdown-body code.hljs {
   background: none;
   color: var(--hljs-text);
@@ -280,7 +462,7 @@ img {
 }
 .markdown-body .hljs-section {
   color: var(--hljs-const);
-  font-weight: bold;
+  font-weight: 600;
 }
 .markdown-body .hljs-bullet {
   color: var(--hljs-bullet);
@@ -292,7 +474,7 @@ img {
   font-style: italic;
 }
 .markdown-body .hljs-strong {
-  font-weight: bold;
+  font-weight: 600;
 }
 .markdown-body .hljs-addition {
   color: var(--hljs-add);
@@ -303,7 +485,7 @@ img {
   background-color: var(--hljs-del-bg);
 }
 
-/* ---------- 代码块复制按钮（悬停显示） ---------- */
+/* ---------- 代码块复制按钮（悬停显示，印刷体小字标签） ---------- */
 .md-code-block {
   position: relative;
 }
@@ -316,17 +498,19 @@ img {
   align-items: center;
   gap: 5px;
   padding: 4px 8px;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1;
   font-weight: 500;
-  font-family: inherit;
-  color: var(--text-muted);
+  font-family: var(--font-sans);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-40);
   background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
+  border: 1px solid var(--ink-10);
+  border-radius: 0;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.2s ease, color 0.3s ease, border-color 0.3s ease;
 }
 .markdown-body .md-code-block:hover .md-code-copy,
 .md-code-copy:focus-visible {
@@ -334,162 +518,312 @@ img {
 }
 .md-code-copy:hover {
   color: var(--text-primary);
-  border-color: var(--accent-1-border);
+  border-color: var(--ink-40);
 }
 .md-code-copy.copied {
-  color: var(--accent-2);
-  border-color: var(--accent-2);
+  color: var(--text-primary);
+  border-color: var(--ink-40);
 }
 
-/* 移动端点击优化：按钮不触发双击缩放 */
-button {
-  touch-action: manipulation;
+/* KaTeX：跟随主题文字色，深色模式下不出现固定黑色 */
+.katex {
+  color: inherit;
 }
-/* ---------- 黄金模式（data-golden）---------- */
+
+/* ============================================================================
+   黄金模式（彩蛋 · 「万物成金魔法」）— 全站唯一允许的彩色例外
+   ----------------------------------------------------------------------------
+   风格规则禁止彩色强调；但黄金模式是用户明确要求保留的状态语义色（激励分数 > 0
+   时触发，持续 5 分钟），故在此局部放开金/黄色相。除本段与 LeetCode 榜单状态色板
+   （LeetCodePage.css）外，全站仍为纯纸墨单色。
+   值用 !important：JS 主题引擎会把变量内联到 :root，只有 !important 才能压过内联样式。
+   纸（背景）不变，只把「墨」换成金——与改版前的观感一致；深色模式下改用亮金以保证可读。
+   ============================================================================ */
+[data-golden='1'] {
+  --ink: #b8860b !important;
+  --ink-80: rgba(184, 134, 11, 0.88) !important;
+  --ink-60: rgba(184, 134, 11, 0.72) !important;
+  --ink-40: rgba(184, 134, 11, 0.5) !important;
+  --ink-20: rgba(212, 164, 0, 0.45) !important;
+  --ink-10: rgba(212, 164, 0, 0.3) !important;
+  --ink-04: rgba(212, 164, 0, 0.14) !important;
+  --ink-02: rgba(212, 164, 0, 0.08) !important;
+  --neutral-soft: #f5e6b0 !important;
+  --neutral-soft-hover: #ecd89a !important;
+}
+:root[data-theme='dark'][data-golden='1'] {
+  --ink: #f0c23a !important;
+  --ink-80: rgba(240, 194, 58, 0.88) !important;
+  --ink-60: rgba(240, 194, 58, 0.72) !important;
+  --ink-40: rgba(240, 194, 58, 0.5) !important;
+  --ink-20: rgba(240, 194, 58, 0.4) !important;
+  --ink-10: rgba(240, 194, 58, 0.28) !important;
+  --ink-04: rgba(240, 194, 58, 0.12) !important;
+  --ink-02: rgba(240, 194, 58, 0.07) !important;
+  --neutral-soft: #3a3020 !important;
+  --neutral-soft-hover: #4a3d28 !important;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light'])[data-golden='1'] {
+    --ink: #f0c23a !important;
+    --ink-80: rgba(240, 194, 58, 0.88) !important;
+    --ink-60: rgba(240, 194, 58, 0.72) !important;
+    --ink-40: rgba(240, 194, 58, 0.5) !important;
+    --ink-20: rgba(240, 194, 58, 0.4) !important;
+    --ink-10: rgba(240, 194, 58, 0.28) !important;
+    --ink-04: rgba(240, 194, 58, 0.12) !important;
+    --ink-02: rgba(240, 194, 58, 0.07) !important;
+    --neutral-soft: #3a3020 !important;
+    --neutral-soft-hover: #4a3d28 !important;
+  }
+}
+
+/* 黄金模式下的主按钮：亮金渐变 + 光泽扫过（改版前的观感，仅本模式生效） */
 [data-golden='1'] .btn-primary {
   position: relative;
   overflow: hidden;
   background: linear-gradient(135deg, #d4a400, #f0c23a);
   color: #3a2d00;
-  border: none;
-  box-shadow: 0 4px 16px rgba(212, 164, 0, 0.4);
+  border-color: #d4a400;
 }
-[data-golden='1'] .btn-primary::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 0;
+[data-golden='1'] .btn-primary:hover:not(:disabled) {
   background: linear-gradient(135deg, #f0c23a, #d4a400);
-  border-radius: inherit;
-  opacity: 0;
-  transition: opacity 0.35s ease;
-  mix-blend-mode: screen;
+  color: #3a2d00;
 }
-[data-golden='1'] .btn-primary:hover::before {
-  opacity: 1;
-}
-[data-golden='1'] .btn-primary > * {
-  position: relative;
-  z-index: 1;
-}
-[data-golden='1'] .btn-primary:hover::after {
+[data-golden='1'] .btn-primary::after {
   content: '';
   position: absolute;
   top: 0;
   bottom: 0;
   left: -45%;
   width: 35%;
-  z-index: 1;
   background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.9), transparent);
   transform: skewX(-20deg);
-  mix-blend-mode: screen;
   animation: golden-btn-shimmer 1.6s ease-in-out infinite;
+}
+[data-golden='1'] .btn-primary > * {
+  position: relative;
+  z-index: 1;
 }
 @keyframes golden-btn-shimmer {
   0% { left: -45%; }
   100% { left: 110%; }
 }
 
-/* ---------- 黄金模式询问弹窗 / 计时器 ---------- */
+/* 黄金模式左侧面板：金色渐变卡片
+   尺寸：询问态与计时态统一 350×150（内容上下居中），收起后 116×54 只留一行信息
+   动画：参照《我的世界》成就弹窗——自屏幕边缘横向滑入、快进缓出、原路滑出，不淡入淡出 */
 .golden-magic {
   position: fixed;
   left: 0;
-  top: 84px;
+  top: calc(var(--nav-h) + 20px);
   z-index: 950;
-  width: 260px;
-  padding: 16px 18px;
-  border-radius: 0 14px 14px 0;
+  width: 350px;
+  max-width: calc(100vw - 32px);
+  height: 156px;
+  padding: 16px 20px;
+  border: 1px solid #d4a400;
+  border-radius: 0;
   background: linear-gradient(135deg, #f0c23a, #d4a400);
   color: #3a2d00;
-  box-shadow: 0 8px 24px rgba(212, 164, 0, 0.45);
+  box-sizing: border-box;
+  overflow: hidden;
+  animation: golden-magic-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+              height 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* 展开态内容：占满面板并垂直居中，两种状态因此同尺寸 */
+.golden-magic-body {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  animation: golden-magic-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-.golden-magic-active {
-  background: linear-gradient(135deg, #e8b400, #f6d158);
-}
-@keyframes golden-magic-in {
-  from {
-    transform: translateX(-110%);
-    opacity: 0.3;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+  justify-content: center;
+  gap: 8px;
+  height: 100%;
+  opacity: 1;
+  transition: opacity 0.3s ease 0.08s;
 }
 
-.golden-magic-exit {
-  animation: golden-magic-out 0.9s ease forwards;
+/* 收起态：宽度收到只剩一行 */
+.golden-magic-collapsed {
+  width: 116px;
+  height: 54px;
+  padding: 0;
 }
 
-@keyframes golden-magic-out {
-  0% {
-    transform: translateX(0);
-    opacity: 1;
-  }
-  40% {
-    opacity: 0; /* 文字先消失 */
-  }
-  100% {
-    transform: translateX(-110%);
-    opacity: 0; /* 弹窗向左滑出屏幕外 */
-  }
+.golden-magic-collapsed .golden-magic-body {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
 }
+
+.golden-magic-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .golden-magic-title {
+  font-family: var(--font-serif);
   font-size: 15px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .golden-magic-timer {
-  font-size: 22px;
-  font-weight: 800;
+  font-family: var(--font-serif);
+  font-size: 28px;
+  line-height: 1;
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.06em;
+  letter-spacing: -0.02em;
 }
+
+/* 倒计时与说明同一行 */
+.golden-magic-row {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
 .golden-magic-text {
+  flex: 1;
+  margin: 0;
   font-size: 12px;
   line-height: 1.6;
-  opacity: 0.9;
+  color: #4a3300;
 }
+
+/* 收起按钮：方形描边小按钮，hover 反色 */
+.golden-magic-collapse {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  flex-shrink: 0;
+  border: 1px solid #a8841a;
+  background: transparent;
+  color: #4a3300;
+  cursor: pointer;
+  transition: background-color 0.4s ease, color 0.4s ease;
+}
+
+.golden-magic-collapse:hover {
+  background: #3a2d00;
+  border-color: #3a2d00;
+  color: #f0c23a;
+}
+
+/* 收起态整块即按钮（与展开态交叉淡入，尺寸过渡由上层的 width/height transition 完成） */
+.golden-magic-restore {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease 0.08s;
+}
+
+.golden-magic-collapsed .golden-magic-restore {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* 询问态收起时的短标签 */
+.golden-magic-chip {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  letter-spacing: 0.04em;
+}
+
 .golden-magic-actions {
   display: flex;
   gap: 10px;
   align-items: center;
 }
-.golden-magic-confirm {
-  padding: 6px 14px;
+
+/* 询问态的按钮收紧凑些（面板窄，按钮沿用全站 .btn 的尺寸会顶高面板） */
+.golden-magic-actions .btn {
+  padding: 10px 20px;
   font-size: 13px;
+}
+.golden-magic-confirm {
   background: #3a2d00;
   color: #f0c23a;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
+  border: 1px solid #3a2d00;
 }
 .golden-magic-confirm:hover {
-  background: #4a3a08;
+  background: transparent;
+  color: #3a2d00;
+  border-color: #3a2d00;
 }
 .golden-magic-cancel {
-  border: none;
+  border: 0;
   background: transparent;
   color: #4a3300;
-  font-size: 12px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
   cursor: pointer;
-  text-decoration: underline;
+  padding: 0;
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+}
+.golden-magic-cancel:hover { opacity: 1; }
+
+/* 入场：自屏幕边缘横向滑入（快进缓出，不淡入——MC 成就弹窗的节奏） */
+@keyframes golden-magic-in {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+.golden-magic-exit {
+  animation: golden-magic-out 0.42s cubic-bezier(0.7, 0, 0.84, 0) forwards;
+}
+/* 退场：原路横向滑出（MC 弹窗是滑回同一侧，不淡出） */
+@keyframes golden-magic-out {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-100%); }
 }
 
 /* ---------- 移动端 markdown：KaTeX 公式 / 代码块角标压缩 ---------- */
 @media (max-width: 768px) {
   .markdown-body pre[data-lang] { padding-top: 34px; }
-  .markdown-body pre[data-lang]::before { top: 9px; left: 12px; font-size: 11px; }
+  .markdown-body pre[data-lang]::before { top: 9px; left: 12px; font-size: 10px; }
   .md-code-copy { top: 8px; right: 8px; }
   .markdown-body pre { padding: 14px 12px; }
-  .markdown-body pre code { font-size: 13px; line-height: 1.55; }
+  .markdown-body pre code { font-size: 13px; line-height: 1.6; }
   .markdown-body .katex { font-size: 1.05em; }
   .markdown-body .katex-display { margin: 12px 0; }
   .markdown-body pre,
   .markdown-body .katex-display { -webkit-overflow-scrolling: touch; }
+}
+
+/* ---------- 降低动效偏好：入场/过渡一律直接到位 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .scroll-reveal {
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }

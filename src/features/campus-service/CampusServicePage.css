@@ -1,47 +1,203 @@
 /* ============================================
-   校园服务工具页（cs- 前缀，主题变量配色）
+   校园服务 — Editorial（编辑杂志风）
+   纸墨单色 · 全直角 · 细线网格 · 大号衬线数字
+   令牌与规则见 index.css 顶部说明；共享件（.btn / .field / .label /
+   .modal-*）已在 App.css 重构，此处只补布局与单色观感，不重定义它们。
    ============================================ */
 
-/* ── 凭据缺失横幅 ── */
+/* ── 页面外壳（覆盖共享 .tool-* 的 720px 居中 + 渐变标题）── */
+.cs-page {
+  min-height: 100vh;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.cs-page .tool-main {
+  max-width: var(--max-width);
+  padding: calc(var(--nav-h) + 72px) var(--gutter) 96px;
+}
+
+@media (min-width: 768px) {
+  .cs-page .tool-main {
+    padding-left: 48px;
+    padding-right: 48px;
+    padding-bottom: 160px;
+  }
+}
+
+/* 返回入口：行内小字标签，hover 下划线由右向左延展（文字不位移） */
+.cs-page .tool-back {
+  position: relative;
+  display: inline-block;
+  width: fit-content;
+  margin-bottom: 28px;
+  white-space: nowrap;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-40);
+  transition: color 0.4s ease;
+}
+
+.cs-page .tool-back::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cs-page .tool-back:hover {
+  color: var(--text-primary);
+}
+
+.cs-page .tool-back:hover::after {
+  transform: scaleX(1);
+  transform-origin: left center;
+}
+
+/* 页头：顶部 hairline + 12 栏网格（与共享 .section-head 同构，作用域收在本页） */
+.cs-page .tool-header {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: 24px;
+  row-gap: 18px;
+  border-top: 1px solid var(--ink-10);
+  padding-top: 28px;
+  margin-bottom: 72px;
+}
+
+.cs-page .tool-header .tool-back {
+  grid-column: 1 / 4;
+  align-self: start;
+  margin-bottom: 0;
+}
+
+.cs-page .tool-title {
+  grid-column: 4 / 13;
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: clamp(2.25rem, 5vw, 3.5rem);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+  color: var(--text-primary);
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+
+.cs-page .tool-subtitle {
+  grid-column: 4 / 10;
+  margin: 0;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(1rem, 1.6vw, 1.25rem);
+  line-height: 1.6;
+  color: var(--ink-60);
+}
+
+@media (max-width: 768px) {
+  .cs-page .tool-main {
+    padding: calc(var(--nav-h) + 40px) var(--gutter) 96px;
+  }
+
+  .cs-page .tool-header {
+    margin-bottom: 48px;
+  }
+
+  .cs-page .tool-header .tool-back,
+  .cs-page .tool-title,
+  .cs-page .tool-subtitle {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ── 提示条 / 错误信息：1px 描边或 --ink-04 底，纯墨色，无彩色侧条 ── */
+.cs-page .tool-login-hint {
+  padding: 16px 18px;
+  margin-bottom: 32px;
+  border: 1px solid var(--ink-20);
+  border-radius: 0;
+  background: var(--ink-04);
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--ink-60);
+}
+
+.cs-page .tool-login-hint a {
+  color: var(--text-primary);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.cs-page .tool-error {
+  padding: 16px 18px;
+  margin-bottom: 32px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--ink-04);
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--text-primary);
+}
+
 .cs-banner {
   display: flex;
-  align-items: center;
-  gap: 16px;
+  align-items: flex-end;
+  gap: 24px;
   flex-wrap: wrap;
   justify-content: space-between;
-  padding: 14px 18px;
-  margin-bottom: 16px;
-  border-radius: 12px;
-  background: var(--danger-soft-strong);
-  border: 1px solid var(--danger-border);
+  padding: 20px 0;
+  margin-bottom: 40px;
+  border-top: 1px solid var(--ink-10);
+  border-bottom: 1px solid var(--ink-10);
+}
+
+.cs-banner-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .cs-banner-title {
-  margin: 0 0 4px;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--danger);
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 19px;
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--text-primary);
 }
 
 .cs-banner-hint {
   margin: 0;
-  font-size: 12px;
-  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--ink-60);
 }
 
-/* ── 状态卡 ── */
+/* ── VPN 连接状态：单色表达。已连接 = 墨底纸字实心小标签；
+      未连接 / 连接中 / 失败 = 1px 描边 + 标签文字，禁止红绿 ── */
 .cs-status-card {
-  padding: 16px 18px;
-  margin-bottom: 20px;
-  border-radius: 14px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 0;
+  margin-bottom: 72px;
+  border-top: 1px solid var(--ink-10);
+  border-bottom: 1px solid var(--ink-10);
 }
 
 .cs-status-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   flex-wrap: wrap;
 }
 
@@ -50,58 +206,67 @@
 }
 
 .cs-status-err {
-  margin: 10px 0 0;
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--ink-20);
+  border-radius: 0;
+  background: var(--ink-04);
+  font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--danger);
+  line-height: 1.6;
+  color: var(--text-secondary);
 }
 
 .cs-badge {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 600;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px solid var(--ink-20);
+  border-radius: 0;
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  color: var(--ink-60);
 }
 
 .cs-badge-ok {
-  background: var(--success-soft, rgba(46, 160, 67, 0.12));
-  border: 1px solid var(--success, #2ea043);
-  color: var(--success, #2ea043);
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
 }
 
-.cs-badge-danger {
-  background: var(--danger-soft-strong);
-  border: 1px solid var(--danger-border);
-  color: var(--danger);
-}
-
+.cs-badge-danger,
 .cs-badge-muted {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-color);
-  color: var(--text-muted);
+  background: transparent;
+  border-color: var(--ink-20);
+  color: var(--ink-60);
 }
 
 .cs-badge-busy {
-  background: var(--accent-1-soft);
-  border: 1px solid var(--accent-1-border);
-  color: var(--accent-1);
+  background: transparent;
+  border-color: var(--ink);
+  color: var(--text-primary);
 }
 
 .cs-status-sid {
-  font-size: 13px;
-  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-40);
 }
 
+/* 极简转圈：1px 描边方环墨色（全站直角，不用圆环） */
 .cs-spinner {
   display: inline-block;
   width: 12px;
   height: 12px;
-  border: 2px solid currentColor;
+  border: 1px solid var(--ink-40);
   border-top-color: transparent;
-  border-radius: 50%;
-  animation: cs-spin 0.8s linear infinite;
+  animation: cs-spin 0.9s linear infinite;
   vertical-align: -2px;
 }
 
@@ -109,264 +274,306 @@
   to { transform: rotate(360deg); }
 }
 
-/* ── 查询入口卡片 ── */
+/* ── 查询入口：细线目录式行列表（相邻行共用 1px hairline）── */
+.cs-query-block {
+  display: flex;
+  flex-direction: column;
+}
+
 .cs-queries-title {
-  margin: 0 0 12px;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text-secondary);
+  margin: 0 0 20px;
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--text-primary);
 }
 
 .cs-queries {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-/* 未连接校园网时只剩「电费」一张卡，铺满一行 */
-.cs-queries-single {
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--ink-10);
+  border-bottom: 1px solid var(--ink-10);
 }
 
 .cs-qcard {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-  padding: 14px 16px;
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
-  background: var(--bg-card);
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 2fr) auto;
+  column-gap: 24px;
+  row-gap: 4px;
+  align-items: baseline;
+  padding: 22px 0;
+  border-bottom: 1px solid var(--ink-10);
+  background: transparent;
   color: var(--text-primary);
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s, transform 0.2s;
+  transition: background-color 0.4s ease;
+}
+
+.cs-qcard:last-child {
+  border-bottom: 0;
 }
 
 .cs-qcard:hover:not(:disabled) {
-  border-color: var(--accent-1);
-  background: var(--accent-1-soft);
-  box-shadow: 0 0 0 1px var(--accent-1);
-  transform: translateY(-1px);
+  background: var(--ink-02);
 }
 
 .cs-qcard:disabled {
-  opacity: 0.55;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
 .cs-qcard-name {
-  font-size: 15px;
-  font-weight: 700;
+  font-family: var(--font-serif);
+  font-size: 21px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--text-primary);
+  transition: font-style 0.4s ease;
+}
+
+.cs-qcard:hover:not(:disabled) .cs-qcard-name {
+  font-style: italic;
 }
 
 .cs-qcard-desc {
-  font-size: 12px;
-  color: var(--text-muted);
-  line-height: 1.5;
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--ink-60);
 }
 
 .cs-qcard-state {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 2px;
-  font-size: 12px;
-  color: var(--accent-1);
+  font-family: var(--font-serif);
+  font-size: 18px;
+  color: var(--ink-40);
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), color 0.4s ease;
 }
 
-/* ── 结果面板通用 ── */
+.cs-qcard:hover:not(:disabled) .cs-qcard-state {
+  color: var(--text-primary);
+  transform: translateX(6px);
+}
+
+@media (max-width: 640px) {
+  .cs-qcard {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .cs-qcard-desc {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ── 结果面板：不再是独立卡片，只留 hairlines 与留白 ── */
 .cs-panel {
-  padding: 16px 18px;
-  margin-bottom: 20px;
-  border-radius: 14px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  margin-bottom: 56px;
 }
 
 .cs-empty {
-  margin: 4px 0;
-  font-size: 13px;
-  color: var(--text-muted);
+  margin: 0;
+  padding: 28px 0;
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--ink-40);
   text-align: center;
-  padding: 12px 0;
 }
 
 .cs-student-line {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 10px;
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-bottom: 14px;
+  gap: 6px 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--ink-10);
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--ink-60);
 }
 
 .cs-sep {
   font-style: normal;
-  margin-right: 6px;
-  color: var(--text-muted);
-  opacity: 0.5;
+  margin-right: 8px;
+  color: var(--ink-20);
 }
 
+/* 报纸式数据栏：细线网格，字段名 .label，关键数值大号衬线 + 等宽数字 */
 .cs-stats {
-  display: flex;
-  gap: 28px;
-  margin-bottom: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1px;
+  background: var(--ink-10);
+  border-top: 1px solid var(--ink-10);
+  border-bottom: 1px solid var(--ink-10);
 }
 
 .cs-stat {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 10px;
+  padding: 24px 24px 24px 0;
+  background: var(--bg-primary);
+}
+
+.cs-stats .cs-stat:not(:first-child) {
+  padding-left: 24px;
 }
 
 .cs-stat-row {
   display: flex;
   align-items: baseline;
-  gap: 4px;
-}
-
-.cs-stat-label {
-  font-size: 11px;
-  color: var(--text-muted);
+  gap: 8px;
 }
 
 .cs-stat b {
-  font-size: 30px;
-  font-weight: 800;
-  line-height: 1.1;
+  font-family: var(--font-serif);
+  font-size: clamp(2rem, 4.4vw, 3rem);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
   color: var(--text-primary);
 }
 
 .cs-stat-target {
+  font-family: var(--font-serif);
   font-size: 16px;
-  font-weight: 700;
-  margin-left: 4px;
-  opacity: 0.8;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-40);
 }
 
 .cs-stat b.cs-score-ok {
-  color: var(--success, #2ea043);
+  color: var(--text-primary);
 }
 
 .cs-stat b.cs-score-warn {
-  color: var(--danger);
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 6px;
 }
 
-/* ── 第二课堂分组折叠 ── */
+/* ── 第二课堂分组折叠：细线表格，无卡片无圆角 ── */
 .cs-groups {
   display: flex;
   flex-direction: column;
-  gap: 8px;
 }
 
 .cs-group {
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  background: var(--bg-primary);
-  overflow: hidden;
+  border-top: 1px solid var(--ink-10);
+}
+
+.cs-group:last-child {
+  border-bottom: 1px solid var(--ink-10);
 }
 
 .cs-group-summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 16px;
   width: 100%;
-  padding: 9px 14px;
+  padding: 18px 28px 18px 0;
   cursor: pointer;
   user-select: none;
   position: relative;
-  padding-right: 34px;
   background: none;
   border: 0;
   font: inherit;
   text-align: left;
   color: inherit;
+  transition: background-color 0.4s ease;
 }
 
+.cs-group-summary:hover {
+  background: var(--ink-02);
+}
+
+/* 展开指示：直角细线 V 形（1px 描边旋转 45°，不用实心三角色块） */
 .cs-group-summary::after {
   content: '';
   position: absolute;
-  right: 16px;
+  right: 8px;
   top: 50%;
-  margin-top: -3px;
-  width: 0;
-  height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-top: 6px solid var(--text-muted);
-  transition: transform 0.2s;
+  width: 7px;
+  height: 7px;
+  margin-top: -5px;
+  border-right: 1px solid var(--ink-40);
+  border-bottom: 1px solid var(--ink-40);
+  transform: rotate(45deg);
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .cs-group.is-open .cs-group-summary::after {
-  transform: rotate(180deg);
+  margin-top: -2px;
+  transform: rotate(225deg);
 }
 
 .cs-group-name {
-  font-size: 13px;
-  font-weight: 600;
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
   color: var(--text-primary);
 }
 
 .cs-group-sub {
-  font-size: 11px;
-  color: var(--accent-1);
-  background: var(--accent-1-soft);
-  border: 1px solid var(--accent-1-border);
-  padding: 1px 10px;
-  border-radius: 999px;
   margin-left: auto;
-  margin-right: 6px;
+  padding: 3px 12px;
+  border: 1px solid var(--ink-20);
+  border-radius: 0;
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
   font-variant-numeric: tabular-nums;
+  color: var(--ink-60);
 }
 
+/* 达标 / 未达标：同为单色，靠描边深浅与字重区分 */
 .cs-group-ok {
-  color: var(--success, #2ea043) !important;
-  background: var(--success-soft, rgba(46, 160, 67, 0.12)) !important;
-  border-color: var(--success, #2ea043) !important;
+  border-color: var(--ink);
+  color: var(--text-primary);
+  font-weight: 600;
 }
 
 .cs-group-warn {
-  color: var(--danger) !important;
-  background: var(--danger-soft-strong) !important;
-  border-color: var(--danger-border) !important;
+  border-color: var(--ink-20);
+  color: var(--ink-40);
 }
 
 .cs-group-flat {
-  padding: 9px 14px;
+  padding: 18px 0;
+}
+
+.cs-group-flat .cs-group-sub {
+  margin-right: 0;
 }
 
 .cs-group-flat-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 16px;
 }
 
-.cs-sub-ok {
-  color: var(--success, #2ea043) !important;
-}
-
-.cs-sub-warn {
-  color: var(--danger) !important;
-}
-
+/* 二级明细：展开用 grid 0fr→1fr，收得掉内边距 */
 .cs-group-body {
   display: grid;
   grid-template-rows: 0fr;
-  /* 内边距/虚线边框放在容器上并一起过渡：grid 0fr 收得掉内容，收不掉子元素的 padding+border */
-  padding: 0 14px;
-  border-top: 0 dashed transparent;
-  transition: grid-template-rows 0.28s ease, padding 0.28s ease;
+  border-top: 1px solid transparent;
+  transition: grid-template-rows 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 0.4s ease;
 }
 
 .cs-group-body.is-open {
   grid-template-rows: 1fr;
-  padding: 4px 14px 10px;
-  border-top-width: 1px;
-  border-top-color: var(--border-color);
+  border-top-color: var(--ink-10);
 }
 
 .cs-group-body-inner {
@@ -380,34 +587,47 @@
 }
 
 .cs-mini-table td {
-  padding: 7px 4px;
-  border-bottom: 1px solid var(--border-color);
-  color: var(--text-secondary);
+  padding: 11px 8px;
+  border-bottom: 1px solid var(--ink-10);
+  line-height: 1.6;
+  color: var(--ink-60);
 }
 
 .cs-mini-table tr:last-child td {
-  border-bottom: none;
+  border-bottom: 0;
 }
 
 .cs-mini-table td.cs-mini-val {
   text-align: right;
-  font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: 12px;
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-/* ── 成绩 ── */
+.cs-mini-val.cs-sub-ok {
+  color: var(--text-primary);
+}
+
+.cs-mini-val.cs-sub-warn {
+  color: var(--ink-40);
+}
+
+/* ── 成绩：报头式数值 + hairline 表格 ── */
 .cs-grades-hero {
   display: flex;
-  align-items: center;
-  gap: 24px;
+  align-items: flex-end;
+  gap: 32px;
   flex-wrap: wrap;
-  margin-bottom: 16px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--ink-10);
 }
 
 .cs-grade-count {
   font-size: 13px;
-  color: var(--text-secondary);
+  line-height: 1.75;
+  color: var(--ink-40);
 }
 
 .cs-term-select {
@@ -426,42 +646,46 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
-  min-width: 640px;
+  min-width: 680px;
 }
 
 .cs-table th,
 .cs-table td {
-  padding: 9px 10px;
+  padding: 12px 12px 12px 0;
   text-align: left;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--ink-10);
   white-space: nowrap;
+  line-height: 1.6;
 }
 
 .cs-table th {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-muted);
+  padding-top: 0;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-40);
 }
 
 .cs-table td {
-  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-60);
 }
 
 .cs-table td.cs-cell-course {
+  font-family: var(--font-serif);
+  font-size: 16px;
   color: var(--text-primary);
-  font-weight: 600;
 }
 
 .cs-table tbody tr:hover {
-  background: var(--bg-elevated);
+  background: var(--ink-02);
 }
 
-/* ── 校园卡动态码 ── */
+/* ── 校园卡动态码：1px 描边直角容器 + 大号等宽衬线数字 ── */
 .cs-ecard-panel {
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 12px;
 }
 
 .cs-ecard-head {
@@ -469,76 +693,106 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 16px;
   flex-wrap: wrap;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--ink-10);
 }
 
 .cs-ecard-title {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 16px;
   flex-wrap: wrap;
 }
 
 .cs-ecard-countdown {
-  font-size: 12px;
-  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-40);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* 剩余秒数细线进度条：直角实心墨条 */
+.cs-ecard-track {
+  width: 100%;
+  height: 2px;
+  background: var(--ink-10);
+  overflow: hidden;
+}
+
+.cs-ecard-fill {
+  height: 100%;
+  background: var(--ink);
+  transition: width 1s linear;
 }
 
 .cs-ecard-img {
   width: 220px;
   height: 220px;
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--ink-20);
+  border-radius: 0;
   background: var(--bg-primary);
   object-fit: contain;
 }
 
 .cs-ecard-code {
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: 4px;
+  margin: 0;
+  padding: 20px 28px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  font-family: var(--font-mono);
+  font-size: clamp(28px, 5vw, 40px);
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
   color: var(--text-primary);
-  margin: 8px 0;
+  text-align: center;
 }
 
 .cs-ecard-tip {
   margin: 0;
-  font-size: 11px;
-  color: var(--text-muted);
+  max-width: 52ch;
+  font-size: 12px;
+  line-height: 1.75;
+  color: var(--ink-40);
   text-align: center;
 }
 
-/* ── 验证码弹窗 ── */
+/* ── 验证码弹窗内容 ── */
 .cs-captcha {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 20px;
 }
 
 .cs-captcha-prompt {
   margin: 0;
-  font-size: 13px;
-  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--ink-60);
 }
 
 .cs-captcha-row {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  align-items: flex-end;
+  gap: 20px;
 }
 
 .cs-captcha-img {
   height: 44px;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--ink-20);
+  border-radius: 0;
   background: var(--bg-primary);
 }
 
 .cs-captcha-noimg {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--ink-40);
 }
 
 .cs-captcha-input {
@@ -548,172 +802,230 @@
 
 .cs-captcha-err {
   margin: 0;
-  padding: 8px 12px;
-  border-radius: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--ink-04);
   font-size: 13px;
-  color: var(--danger);
-  background: var(--danger-soft-strong);
-  border: 1px solid var(--danger-border);
+  line-height: 1.75;
+  color: var(--text-primary);
 }
 
 .cs-captcha .btn-secondary {
   align-self: flex-start;
-  padding: 6px 16px;
-  font-size: 13px;
 }
 
-/* ── 子页面标题 ── */
+/* ── 子页面标题区：左栏返回入口，右栏标题与操作（顶部 hairline） ── */
+.cs-sub-page {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: 24px;
+  row-gap: 32px;
+  width: 100%;
+  min-width: 0;
+  border-top: 1px solid var(--ink-10);
+  padding-top: 28px;
+}
+
+.cs-sub-page > .tool-back {
+  grid-column: 1 / 4;
+  align-self: start;
+  margin-bottom: 0;
+}
+
+.cs-sub-page > .cs-sub-header,
+.cs-sub-page > .cs-vpn-hint,
+.cs-sub-page > .cs-panel,
+.cs-sub-page > .cs-auto-banner {
+  grid-column: 4 / 13;
+  min-width: 0;
+}
+
+.cs-sub-page > .cs-panel {
+  margin-bottom: 0;
+}
+
 .cs-sub-header {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
+  align-items: baseline;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--ink-10);
 }
 
 .cs-sub-title {
   margin: 0;
-  font-size: 20px;
-  font-weight: 700;
+  font-family: var(--font-serif);
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
   color: var(--text-primary);
 }
 
 .cs-refresh-btn {
   margin-left: auto;
-  font-size: 13px;
-  padding: 5px 14px;
 }
 
-/* ── 子页面未连接校园网提示（紧凑一行，链接回主页连接） ── */
+@media (max-width: 768px) {
+  .cs-sub-page > .tool-back,
+  .cs-sub-page > .cs-sub-header,
+  .cs-sub-page > .cs-vpn-hint,
+  .cs-sub-page > .cs-panel,
+  .cs-sub-page > .cs-auto-banner {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ── 未连接校园网提示（子页面）：1px 描边整体块，无彩色侧条 ── */
 .cs-vpn-hint {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   flex-wrap: wrap;
-  margin: 0 0 16px;
-  padding: 8px 12px;
-  border-radius: 10px;
-  font-size: 12px;
-  color: var(--text-secondary);
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-color);
+  margin: 0 0 40px;
+  padding: 16px 18px;
+  border: 1px solid var(--ink-20);
+  border-radius: 0;
+  background: var(--ink-04);
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--ink-60);
 }
 
 .cs-vpn-hint-link {
-  font-weight: 600;
-  color: var(--accent-1);
+  color: var(--text-primary);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
-/* ── 代理地址信息 ── */
+/* ── 代理地址：hairline 行 + 等宽地址 ── */
 .cs-proxy-info {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px dashed var(--border-color);
+  border-top: 1px solid var(--ink-10);
 }
 
 .cs-proxy-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 16px;
   flex-wrap: wrap;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--ink-10);
   font-size: 13px;
 }
 
 .cs-proxy-label {
-  font-weight: 600;
-  color: var(--text-secondary);
+  min-width: 96px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-40);
   white-space: nowrap;
 }
 
 .cs-proxy-addr {
-  font-family: monospace;
+  font-family: var(--font-mono);
   font-size: 13px;
   color: var(--text-primary);
-  background: var(--bg-elevated);
-  padding: 2px 8px;
-  border-radius: 6px;
+  background: transparent;
+  padding: 0;
 }
 
 .cs-proxy-copy {
-  background: none;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  padding: 2px 10px;
-  font-size: 12px;
-  color: var(--accent-1);
+  margin-left: auto;
+  padding: 4px 12px;
+  border: 1px solid var(--ink-20);
+  border-radius: 0;
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-60);
   cursor: pointer;
-  transition: background 0.2s;
+  transition: color 0.4s ease, border-color 0.4s ease, background-color 0.4s ease;
 }
 
 .cs-proxy-copy:hover {
-  background: var(--accent-1-soft);
+  border-color: var(--ink);
+  background: var(--ink-02);
+  color: var(--text-primary);
 }
 
-/* ── AI 自动识别验证码提示 ── */
+/* ── AI 自动识别验证码提示：墨底纸字实心条，无绿 ── */
 .cs-auto-banner {
-  padding: 10px 14px;
-  margin-bottom: 16px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--success, #2ea043);
-  background: var(--success-soft, rgba(46, 160, 67, 0.12));
-  border: 1px solid var(--success, #2ea043);
+  padding: 12px 16px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--ink);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--paper);
 }
 
 /* ── 电费 ── */
 .cs-elec-panel {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 40px;
 }
 
 .cs-elec-head {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: 16px;
+  gap: 32px;
   flex-wrap: wrap;
 }
 
 .cs-elec-stats {
-  display: flex;
-  gap: 28px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+  background: var(--ink-10);
+  border-top: 1px solid var(--ink-10);
+  border-bottom: 1px solid var(--ink-10);
 }
 
 .cs-elec-dorm {
   margin: 0;
   font-size: 12px;
-  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  color: var(--ink-40);
 }
 
-/* 本周 / 本月平均每天耗电：与 .cs-stat 同色系的小指标，窄屏自动换行不溢出 */
+/* 本周 / 本月平均每天耗电：发稿式细线指标，无胶囊无底色 */
 .cs-elec-avgs {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 20px;
+  gap: 0 40px;
 }
 
 .cs-elec-avg {
   display: flex;
   align-items: baseline;
-  gap: 6px;
-  padding: 3px 10px;
-  border: 1px solid var(--border-color);
-  border-radius: 999px;
-  background: var(--bg-elevated);
-}
-
-.cs-elec-avg-label {
-  font-size: 11px;
-  color: var(--text-muted);
+  gap: 10px;
+  padding: 12px 0;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--ink-10);
 }
 
 .cs-elec-avg b {
-  font-size: 14px;
-  font-weight: 700;
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
   color: var(--text-primary);
 }
 
@@ -721,66 +1033,102 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 12px 0;
+  gap: 20px;
+  padding: 32px 0;
 }
 
 .cs-elec-chart {
-  border-top: 1px dashed var(--border-color);
-  padding-top: 14px;
+  border-top: 1px solid var(--ink-10);
+  padding-top: 28px;
 }
 
 .cs-elec-chart-head {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
-  margin-bottom: 10px;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
 }
 
 .cs-elec-chart-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cs-elec-chart-title > span:first-child {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
 }
 
 .cs-elec-chart-sub {
   font-size: 12px;
-  color: var(--text-muted);
+  line-height: 1.75;
+  color: var(--ink-40);
 }
 
+/* 视图切换：1px 描边直角分段按钮，选中 = 墨底纸字 */
 .cs-elec-view-btns {
   display: flex;
-  gap: 4px;
+  gap: 0;
 }
 
 .cs-elec-view-btn {
-  padding: 3px 10px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  background: var(--bg-primary);
-  color: var(--text-muted);
-  font-size: 12px;
+  padding: 7px 16px;
+  margin-left: -1px;
+  border: 1px solid var(--ink-20);
+  border-radius: 0;
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-40);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease;
 }
 
-.cs-elec-view-btn.active {
-  background: var(--accent-1-soft);
-  border-color: var(--accent-1-border);
-  color: var(--accent-1);
+.cs-elec-view-btn:first-child {
+  margin-left: 0;
 }
 
 .cs-elec-view-btn:hover:not(.active) {
-  background: var(--bg-elevated);
+  background: var(--ink-02);
+  color: var(--text-primary);
+}
+
+.cs-elec-view-btn.active {
+  position: relative;
+  z-index: 1;
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+/* 图表容器：1px 描边直角，无圆角无阴影 */
+.cs-elec-chart-frame {
+  position: relative;
+  border: 1px solid var(--ink-10);
+  border-radius: 0;
+  padding: 20px 12px 4px;
+  background: var(--bg-primary);
 }
 
 .cs-elec-svg {
+  display: block;
   width: 100%;
   height: auto;
-  max-height: 200px;
+  max-height: 240px;
 }
 
-/* ── 折线图入场动画（切换视图 / 刷新后由组件重挂载重放） ── */
+/* ── 折线图进入动画（切换视图 / 刷新后组件重挂载重放）──
+   口径与计算逻辑一概不动，此处只画：线 --ink / 网格 --ink-10 / 轴字 ink-40
+   / 区域填充 --ink-04 / 数据点实心墨色 ── */
 .cs-elec-line {
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
@@ -799,64 +1147,95 @@
 }
 
 @keyframes cs-elec-dot-in {
-  from {
-    opacity: 0;
-    transform: scale(0.6);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* 数据点悬停读数：纸底 + 1px 描边直角，无阴影 */
+.cs-elec-tip {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 10px;
+  border: 1px solid var(--ink-20);
+  border-radius: 0;
+  background: var(--bg-card);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.cs-elec-tip-label {
+  color: var(--ink-40);
+}
+
+.cs-elec-tip-val {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
 }
 
 .cs-elec-auto {
   margin: 0;
   font-size: 11px;
-  color: var(--text-muted);
-  text-align: center;
+  letter-spacing: 0.12em;
+  color: var(--ink-40);
+  text-align: right;
 }
 
 .cs-elec-btns {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   flex-shrink: 0;
 }
 
+/* ── 充值弹窗 ── */
 .cs-recharge {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 28px;
 }
 
 .cs-recharge-current {
-  font-size: 14px;
-  color: var(--text-secondary);
-  padding: 8px 12px;
-  background: var(--bg-elevated);
-  border-radius: 8px;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 0 0 16px;
+  border-bottom: 1px solid var(--ink-10);
+  font-size: 13px;
+  color: var(--ink-40);
 }
 
 .cs-recharge-current b {
-  font-size: 18px;
-  font-weight: 800;
+  font-family: var(--font-serif);
+  font-size: 26px;
+  font-weight: 400;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
   color: var(--text-primary);
 }
 
 .cs-recharge-msg {
   margin: 0;
-  padding: 8px 12px;
-  border-radius: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--ink-04);
   font-size: 13px;
-  font-weight: 600;
+  line-height: 1.75;
+  color: var(--text-primary);
 }
 
 .cs-recharge-msg.err {
-  color: var(--danger);
-  background: var(--danger-soft-strong);
-  border: 1px solid var(--danger-border);
+  border-color: var(--ink);
+  background: var(--ink-04);
+  color: var(--text-primary);
 }
 
-/* ── 页面级 toast（充值成功）：固定视口底部居中，不受页面布局影响 ── */
+/* ── 页面级 toast：纸底细描边方条，固定视口底部居中，无阴影无圆角 ── */
 .cs-toast {
   position: fixed;
   left: 50%;
@@ -865,35 +1244,34 @@
   z-index: 1500;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   max-width: calc(100vw - 32px);
-  padding: 11px 20px;
-  border-radius: 999px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
+  padding: 14px 22px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
   background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text-primary);
   pointer-events: none;
 }
 
 .cs-toast-check {
-  font-size: 15px;
-  font-weight: 800;
+  font-size: 12px;
   line-height: 1;
-  color: var(--accent-1);
+  color: var(--ink-40);
 }
 
-/* 淡入 + 上滑（减弱动效偏好下不加此类，直接显示最终状态） */
 .cs-toast-in {
-  animation: cs-toast-in 0.28s ease-out;
+  animation: cs-toast-in 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes cs-toast-in {
   from {
     opacity: 0;
-    transform: translate(-50%, 14px);
+    transform: translate(-50%, 12px);
   }
   to {
     opacity: 1;
@@ -903,15 +1281,11 @@
 
 /* ── 响应式 ── */
 @media (max-width: 640px) {
-  .cs-queries {
-    grid-template-columns: 1fr;
-  }
-
   .cs-elec-head,
   .cs-elec-chart-head {
     flex-direction: column;
     align-items: flex-start;
-    gap: 10px;
+    gap: 20px;
   }
 
   .cs-term-select {
@@ -926,5 +1300,30 @@
   .cs-ecard-img {
     width: 180px;
     height: 180px;
+  }
+
+  .cs-group-summary {
+    padding-right: 24px;
+  }
+
+  .cs-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .cs-stat,
+  .cs-stats .cs-stat:not(:first-child) {
+    padding-left: 0;
+  }
+
+  .cs-elec-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .cs-proxy-label {
+    min-width: 0;
+  }
+
+  .cs-proxy-copy {
+    margin-left: 0;
   }
 }

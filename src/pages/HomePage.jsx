@@ -55,75 +55,85 @@ export default function HomePage() {
     }
   }, [mounted])
 
+  const visibleLinks = friendLinks.filter(f => sanitizeUrl(f.url))
+  // 页码：友情链接区不渲染时，后续区块编号顺延
+  const folioFriends = visibleLinks.length > 0 ? '02' : null
+  const folioContact = visibleLinks.length > 0 ? '03' : '02'
+
+  // 联系方式：区分邮箱（mailto）与普通链接，不可链接的仅作文本展示
+  const contactItems = (contactSettings.contact_items || []).map((item, i) => {
+    const isMail = /^mailto:/i.test(item.value) || (item.value.includes('@') && !/^https?:/i.test(item.value))
+    const linkable = item.type === 'link' && (isMail || sanitizeUrl(item.value) !== null)
+    return {
+      key: i,
+      label: item.label,
+      description: item.description,
+      icon: item.icon,
+      type: item.type,
+      href: linkable ? (isMail ? `mailto:${item.value.replace(/^mailto:/i, '')}` : item.value) : null,
+    }
+  })
+
   return (
     <div className={`app ${mounted ? 'mounted' : ''}`}>
-      <div className="bg-grid" />
-      <div className="bg-glow glow-1" />
-      <div className="bg-glow glow-2" />
-      <div className="bg-glow glow-3" />
-
-      {/* 导航 */}
       <Navbar activePage="home" />
 
       <section className="hero">
-        <div className="hero-content">
-          <div className="hero-badge">
-            <span className="badge-dot" />
-            EST. 2026
-          </div>
+        <div className="hero-inner">
           <h1 className="hero-title">
             <span className="title-en">anticraft</span>
-            <span className="title-divider">·</span>
             <span className="title-cn">逆匠</span>
           </h1>
+          <p className="hero-lede">{t('home.footer.motto')}</p>
           <div className="hero-actions">
             <a href="#projects" className="btn btn-primary">
               {t('home.hero.explore')}
-              <span className="btn-arrow">→</span>
+              <span className="btn-arrow" aria-hidden="true">→</span>
             </a>
           </div>
-        </div>
-        <div className="hero-scroll">
-          <div className="scroll-line" />
-          <span className="scroll-text">{t('home.hero.scroll')}</span>
+          <div className="hero-meta">
+            <span className="label">EST. 2026</span>
+            <a href="#contact" className="label link-underline">Contact</a>
+            <span className="hero-scroll">{t('home.hero.scroll')}</span>
+          </div>
         </div>
       </section>
 
-      <section id="projects" className="section projects-section">
+      <section id="projects" className="section">
         <div className="section-inner">
-          <Reveal className="section-header">
-            <span className="section-tag">PROJECTS</span>
+          <Reveal className="section-head">
+            <div className="section-head-meta">
+              <span className="folio">01</span>
+              <span className="label">Projects</span>
+            </div>
             <h2 className="section-title">{t('home.projects.title')}</h2>
             <p className="section-desc">{t('home.projects.desc')}</p>
           </Reveal>
           <div className="project-grid">
-            {projectsLoading ? (
+            {projectsLoading || recentProjects.length === 0 ? (
               <Reveal className="project-card">
-                <div className="project-card-bg" />
-                <div className="project-card-content">
-                  <p>{t('home.projects.loading')}</p>
+                <div className="project-card-media">
+                  <div className="project-card-bg" />
                 </div>
-              </Reveal>
-            ) : recentProjects.length === 0 ? (
-              <Reveal className="project-card">
-                <div className="project-card-bg" />
                 <div className="project-card-content">
-                  <h3>{t('home.projects.emptyTitle')}</h3>
-                  <p>{t('home.projects.emptyDesc')}</p>
+                  <h3>{projectsLoading ? t('home.projects.loading') : t('home.projects.emptyTitle')}</h3>
+                  {!projectsLoading && <p>{t('home.projects.emptyDesc')}</p>}
                 </div>
               </Reveal>
             ) : (
               recentProjects.map(p => (
                 <Reveal as={Link} to={`/projects/${p.id}`} key={p.id} className="project-card">
-                  {p.cover_url ? (
-                    <ProjectCover src={p.cover_url} alt={p.name} className="project-cover" bgColor={p.bg_color} />
-                  ) : (
-                    <div className="project-card-bg" />
-                  )}
+                  <div className="project-card-media">
+                    {p.cover_url ? (
+                      <ProjectCover src={p.cover_url} alt={p.name} className="project-cover" bgColor={p.bg_color} />
+                    ) : (
+                      <div className="project-card-bg" />
+                    )}
+                  </div>
                   <div className="project-card-content">
                     {p.tags && p.tags.length > 0 && (
                       <div className="project-tags">
-                        {p.tags.map(t => <span key={t} className="tag">{t}</span>)}
+                        {p.tags.map(tag => <span key={tag} className="tag">{tag}</span>)}
                       </div>
                     )}
                     <h3>{p.name}</h3>
@@ -139,16 +149,19 @@ export default function HomePage() {
         </div>
       </section>
 
-      {friendLinks.length > 0 && (
-        <section id="friends" className="section friends-section">
+      {visibleLinks.length > 0 && (
+        <section id="friends" className="section">
           <div className="section-inner">
-            <Reveal className="section-header">
-              <span className="section-tag">LINKS</span>
+            <Reveal className="section-head">
+              <div className="section-head-meta">
+                <span className="folio">{folioFriends}</span>
+                <span className="label">Links</span>
+              </div>
               <h2 className="section-title">{t('home.friends.title')}</h2>
               <p className="section-desc">{t('home.friends.desc')}</p>
             </Reveal>
             <Reveal className="friend-links-grid">
-              {friendLinks.filter(f => sanitizeUrl(f.url)).map(f => (
+              {visibleLinks.map(f => (
                 <a key={f.id} href={f.url} target="_blank" rel="noopener noreferrer" className="friend-link-card">
                   <span className="friend-link-name">{f.name}</span>
                   {f.description && <span className="friend-link-desc">{f.description}</span>}
@@ -159,39 +172,33 @@ export default function HomePage() {
         </section>
       )}
 
-      <section id="contact" className="section contact-section">
+      <section id="contact" className="section">
         <div className="section-inner">
-          <Reveal className="section-header">
-            <span className="section-tag">CONTACT</span>
+          <Reveal className="section-head">
+            <div className="section-head-meta">
+              <span className="folio">{folioContact}</span>
+              <span className="label">Contact</span>
+            </div>
             <h2 className="section-title">{t('home.contact.title')}</h2>
             <p className="section-desc">{t('home.contact.desc')}</p>
           </Reveal>
           <Reveal className="contact-links">
-            {(contactSettings.contact_items || []).map((item, i) => {
-              const isMail = /^mailto:/i.test(item.value) || /@/.test(item.value) && !/^https?:/i.test(item.value)
-              const iconEl = <span className="contact-icon"><ContactIcon icon={item.icon} type={item.type} /></span>
+            {contactItems.map(item => {
               const inner = (
                 <>
-                  {iconEl}
+                  <span className="contact-icon"><ContactIcon icon={item.icon} type={item.type} /></span>
                   <div>
                     <span className="contact-label">{item.label}</span>
                     {item.description && <span className="contact-desc">{item.description}</span>}
                   </div>
                 </>
               )
-              const asLink = item.type === 'link' && (isMail || sanitizeUrl(item.value) !== null)
-              return asLink ? (
-                <a
-                  key={i}
-                  href={isMail ? `mailto:${item.value.replace(/^mailto:/i, '')}` : item.value}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="contact-item"
-                >
+              return item.href ? (
+                <a key={item.key} href={item.href} target="_blank" rel="noopener noreferrer" className="contact-item">
                   {inner}
                 </a>
               ) : (
-                <div key={i} className="contact-item contact-item-text">{inner}</div>
+                <div key={item.key} className="contact-item contact-item-text">{inner}</div>
               )
             })}
           </Reveal>
@@ -199,11 +206,38 @@ export default function HomePage() {
       </section>
 
       <footer className="footer">
-        <div className="footer-inner">
-          <p className="footer-copyright">
-            © {new Date().getFullYear()} <strong>anticraft</strong> · 逆匠
-          </p>
-          <p className="footer-motto">{t('home.footer.motto')}</p>
+        <div className="container">
+          <div className="footer-grid">
+            <div className="footer-brand">
+              <span className="footer-logo">anticraft · 逆匠</span>
+              <span className="footer-tagline">{t('home.footer.motto')}</span>
+            </div>
+            <div className="footer-col">
+              <span className="footer-col-title">Index</span>
+              <Link to="/" className="link-underline">首页</Link>
+              <Link to="/blogs" className="link-underline">{t('nav.blog')}</Link>
+              <Link to="/projects" className="link-underline">{t('nav.project')}</Link>
+              <Link to="/tools" className="link-underline">{t('nav.tools')}</Link>
+            </div>
+            <div className="footer-col">
+              <span className="footer-col-title">Contact</span>
+              {contactItems.map(item => (
+                item.href ? (
+                  <a key={item.key} href={item.href} target="_blank" rel="noopener noreferrer" className="link-underline">
+                    {item.label}
+                  </a>
+                ) : (
+                  <span key={item.key}>{item.label}</span>
+                )
+              ))}
+            </div>
+          </div>
+          <div className="footer-inner">
+            <p className="footer-copyright">
+              © {new Date().getFullYear()} <strong>anticraft</strong> · 逆匠
+            </p>
+            <span className="footer-motto">{t('home.footer.motto')}</span>
+          </div>
         </div>
       </footer>
     </div>

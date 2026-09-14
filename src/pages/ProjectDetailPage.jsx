@@ -443,7 +443,7 @@ function ProjectDetailPage() {
   if (loading) {
     return (
       <div className="project-page">
-        <div className="project-main"><div className="blog-loading">{t('projectDetail.loading')}</div></div>
+        <div className="project-main"><div className="project-loading">{t('projectDetail.loading')}</div></div>
       </div>
     )
   }
@@ -452,7 +452,7 @@ function ProjectDetailPage() {
     return (
       <div className="project-page">
         <div className="project-main">
-          <div className="blog-error">
+          <div className="project-error">
             <h2>{error}</h2>
             <Link to="/projects" className="btn btn-primary">{t('projectDetail.backToList')}</Link>
           </div>
@@ -466,11 +466,32 @@ function ProjectDetailPage() {
       <Navbar activePage="project" />
       <div className="project-main">
         <div className="project-detail">
-          <div className="blog-detail-nav">
-            <Link to="/projects" className="blog-back-link">{t('projectDetail.backToList')}</Link>
+          <div className="project-detail-nav">
+            <Link to="/projects" className="project-back-link">{t('projectDetail.backToList')}</Link>
           </div>
 
-          <Reveal>
+          <Reveal className="project-detail-head">
+            <div className="project-detail-eyebrow">
+              <span className="folio">01</span>
+              <span className="label">{t('projectList.title')}</span>
+            </div>
+            <h1 className="project-detail-title">{project.name}</h1>
+            <div className="project-detail-meta">
+              <span className="label">{t('projectDetail.authorLabel', { name: project.author?.nickname || project.author?.username || t('projectDetail.anonymous') })}</span>
+              <span className="label">
+                {new Date(project.created_at).toLocaleDateString('zh-CN', {
+                  year: 'numeric', month: 'long', day: 'numeric'
+                })}
+              </span>
+            </div>
+            {project.tags && project.tags.length > 0 && (
+              <div className="project-detail-tags">
+                {project.tags.map(t => <span key={t} className="tag">{t}</span>)}
+              </div>
+            )}
+          </Reveal>
+
+          <Reveal className="project-detail-cover-wrap">
             {project.cover_url ? (
               <ProjectCover src={project.cover_url} alt={project.name} className="project-detail-cover" bgColor={project.bg_color} />
             ) : (
@@ -480,27 +501,10 @@ function ProjectDetailPage() {
             )}
           </Reveal>
 
-          <Reveal as="h1" className="project-detail-title">{project.name}</Reveal>
-          {project.tags && project.tags.length > 0 && (
-            <Reveal className="project-detail-tags">
-              {project.tags.map(t => <span key={t} className="tag">{t}</span>)}
-            </Reveal>
-          )}
-          <Reveal className="blog-detail-meta">
-            <span className="blog-detail-author">
-              {t('projectDetail.authorLabel', { name: project.author?.nickname || project.author?.username || t('projectDetail.anonymous') })}
-            </span>
-            <span className="blog-detail-date">
-              {new Date(project.created_at).toLocaleDateString('zh-CN', {
-                year: 'numeric', month: 'long', day: 'numeric'
-              })}
-            </span>
-          </Reveal>
-
           {(isAuthor || isAdmin) && (
             <div className="project-actions">
-              <Link to={`/projects/${project.id}/edit`} className="btn-edit">{t('projectDetail.edit')}</Link>
-              <button className="btn-delete" onClick={() => setShowDeleteModal(true)} disabled={deleting}>
+              <Link to={`/projects/${project.id}/edit`} className="action-btn action-btn-secondary">{t('projectDetail.edit')}</Link>
+              <button className="action-btn action-btn-danger" onClick={() => setShowDeleteModal(true)} disabled={deleting}>
                 {deleting ? t('projectDetail.deleting') : t('projectDetail.delete')}
               </button>
             </div>
@@ -514,7 +518,7 @@ function ProjectDetailPage() {
                   href={l.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="project-link-btn"
+                  className="btn btn-secondary"
                 >
                   {/github\.com/i.test(l.url) ? t('projectDetail.linkGithub') : `${l.name} ↗`}
                 </a>
@@ -522,12 +526,12 @@ function ProjectDetailPage() {
             </div>
           )}
           {(!(project.links && project.links.length > 0) && project.link_url) && (
-            <div className="project-actions">
+            <div className="project-actions project-link-actions">
               <a
                 href={project.link_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="project-link-btn"
+                className="btn btn-secondary"
               >
                 {/github\.com/i.test(project.link_url) ? t('projectDetail.linkGithub') : t('projectDetail.linkDefault')}
               </a>
@@ -550,7 +554,7 @@ function ProjectDetailPage() {
                 {project.blogs.map(blog => (
                   <Link key={blog.id} to={`/blogs/${blog.id}`} className="project-blog-item">
                     <span className="project-blog-title">{blog.title}</span>
-                    {blog.category && <span className="project-blog-category">{blog.category}</span>}
+                    {blog.category && <span className="tag">{blog.category}</span>}
                     <span className="project-blog-date">
                       {new Date(blog.created_at).toLocaleDateString('zh-CN')}
                     </span>

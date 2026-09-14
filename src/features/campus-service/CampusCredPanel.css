@@ -1,195 +1,178 @@
 /* ============================================
    校园服务凭据面板（ccp- 前缀，「我的 → 校园服务」tab）
-   观感对齐 MyPage 的 .ai-section 卡片体系
+   Editorial：纸墨单色 · 全直角 · 细线分隔 · 底线浮动标签
+   基元（.field / .label / .action-btn）见 index.css 与 App.css，此处只补布局。
    ============================================ */
 
 .ccp-panel {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 18px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
+  gap: 28px;
+  padding: 28px 0 0;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--ink-10);
 }
 
 .ccp-head {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .ccp-title {
-  font-size: 16px;
-  font-weight: 700;
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 21px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
   color: var(--text-primary);
 }
 
 .ccp-sub {
   margin: 0;
-  font-size: 12px;
-  line-height: 1.7;
-  color: var(--text-muted);
+  max-width: 62ch;
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--ink-60);
 }
 
 .ccp-loading {
-  font-size: 13px;
-  color: var(--text-muted);
   padding: 8px 0;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-40);
 }
 
-/* ── 当前配置摘要 ── */
+/* ── 当前配置：hairline 定义列表（字段名 .label，值用等宽数字）── */
 .ccp-current {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: var(--bg-elevated);
-}
-
-.ccp-current-label {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-secondary);
-  margin-right: 4px;
-}
-
-.ccp-chip {
-  display: inline-flex;
-  align-items: center;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 999px;
-  padding: 3px 12px;
-}
-
-.ccp-chip-ok {
-  color: var(--success, #2ea043);
-  background: var(--success-soft, rgba(46, 160, 67, 0.12));
-  border-color: var(--success, #2ea043);
-}
-
-.ccp-chip-off {
-  color: var(--text-muted);
-}
-
-.ccp-none {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1px;
   margin: 0;
-  font-size: 13px;
-  color: var(--text-secondary);
+  background: var(--ink-10);
+  border-top: 1px solid var(--ink-10);
+  border-bottom: 1px solid var(--ink-10);
 }
 
-/* ── 复选框行 ── */
-.ccp-row {
+.ccp-current-item {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px 14px 0;
+  background: var(--bg-primary);
+}
+
+.ccp-current-item dd {
+  margin: 0;
+  font-family: var(--font-mono);
   font-size: 13px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
   color: var(--text-primary);
 }
 
-.ccp-checkbox-row input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  accent-color: var(--accent-1);
-  cursor: pointer;
+.ccp-current-item dd.is-muted {
+  color: var(--ink-40);
 }
 
-.ccp-checkbox-row .ccp-hint {
-  margin: 0;
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-/* ── 表单 ── */
-.ccp-form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.ccp-field {
+.ccp-none {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.ccp-label {
+.ccp-none-hint {
+  margin: 0;
   font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
+  line-height: 1.75;
+  color: var(--ink-60);
 }
 
-.ccp-input {
-  padding: 9px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  background: var(--bg-primary);
-  color: var(--text-primary);
+/* ── 复选框行：单色小方框 + 说明文字 ── */
+.ccp-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
   font-size: 14px;
-  outline: none;
-  transition: border-color 0.2s;
+  line-height: 1.75;
+  color: var(--text-primary);
+  cursor: pointer;
 }
 
-.ccp-input:focus {
-  border-color: var(--accent-1);
+.ccp-checkbox-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  accent-color: var(--ink);
+  cursor: pointer;
 }
 
-.ccp-input::placeholder {
-  color: var(--text-muted);
-  opacity: 0.75;
+.ccp-checkbox-row .ccp-hint {
+  margin: 0;
+}
+
+/* ── 表单：.field 已提供 1px 底线 + 浮动标签，这里只排间距 ── */
+.ccp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
 }
 
 .ccp-hint {
   margin: 0;
   font-size: 12px;
-  color: var(--text-muted);
+  line-height: 1.75;
+  color: var(--ink-40);
 }
 
 /* ── 默认寝室：校区 / 楼号 / 宿舍号 三项并排 ── */
 .ccp-dorm-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 24px;
   align-items: start;
 }
 
-.ccp-dorm-grid .ccp-field {
+.ccp-dorm-grid .field {
   min-width: 0;
 }
 
-.ccp-dorm-grid select.ccp-input {
+.ccp-dorm-grid select {
   cursor: pointer;
 }
 
+/* ── 错误信息：1px 墨色描边 + --ink-04 底，无红色 ── */
 .ccp-err {
-  padding: 10px 12px;
-  border-radius: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--ink-04);
   font-size: 13px;
-  color: var(--danger);
-  background: var(--danger-soft-strong);
-  border: 1px solid var(--danger-border);
+  line-height: 1.75;
+  color: var(--text-primary);
 }
 
 .ccp-err-ops {
-  margin-top: 8px;
+  margin-top: 12px;
 }
 
 .ccp-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   flex-wrap: wrap;
   margin-top: 4px;
 }
 
 .ccp-saved {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--success, #2ea043);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-60);
 }

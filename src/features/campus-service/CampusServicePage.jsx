@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
 import Modal from '../../components/Modal'
 import CategoryDropdown from '../../components/CategoryDropdown'
+import { UiIcon } from '../../components/Icons'
 import { t } from '../../i18n'
 import '../../pages/ToolParsePage.css'
 import './CampusServicePage.css'
@@ -197,9 +198,11 @@ function avgDailyUsage(records, view) {
   return used / days
 }
 
-// ── 简易 SVG 折线图 ──
+// ── 简易 SVG 折线图（Editorial 单色：线/点 = --ink，网格 = --ink-10，
+//    轴字 = --ink-40，区域填充 = --ink-04；数据口径与聚合逻辑在 buildSeries 内，不动）──
 function MiniLineChart({ data, view }) {
   const { series } = buildSeries(data, view)
+  const [hover, setHover] = useState(null) // 悬停读数：点的下标
   // 减弱动效偏好：不做入场动画，直接显示最终状态
   const reduceMotion = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -216,9 +219,12 @@ function MiniLineChart({ data, view }) {
     x: PAD.l + (i / Math.max(series.length - 1, 1)) * cw,
     y: PAD.t + ch - ((s.v - minV) / range) * ch,
     label: s.label,
+    v: s.v,
   }))
 
   const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ')
+  // 面积填充：折线 + 底边闭合（只影响观感，不参与任何计算）
+  const areaD = `${pathD} L${points[points.length - 1].x},${PAD.t + ch} L${points[0].x},${PAD.t + ch} Z`
 
   // Y 轴刻度（4 条）
   const yTicks = [0, 0.33, 0.67, 1].map(f => ({
@@ -230,38 +236,67 @@ function MiniLineChart({ data, view }) {
   const step = Math.max(1, Math.floor(points.length / 5))
   const xLabels = points.filter((_, i) => i % step === 0 || i === points.length - 1)
 
+  const hp = hover != null ? points[hover] : null
+
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="cs-elec-svg" preserveAspectRatio="xMidYMid meet">
       {yTicks.map((tk, i) => (
         <g key={i}>
-          <line x1={PAD.l} y1={tk.y} x2={W - PAD.r} y2={tk.y} stroke="var(--border-color)" strokeDasharray="3,3" />
-          <text x={PAD.l - 6} y={tk.y + 4} textAnchor="end" fontSize="10" fill="var(--text-muted)">{tk.v}</text>
+          <line x1={PAD.l} y1={tk.y} x2={W - PAD.r} y2={tk.y} stroke="var(--ink-10)" strokeWidth="1" />
+          <text x={PAD.l - 8} y={tk.y + 4} textAnchor="end" fontSize="10" fill="var(--ink-40)">{tk.v}</text>
         </g>
       ))}
       {xLabels.map((p, i) => (
-        <text key={i} x={p.x} y={H - 4} textAnchor="middle" fontSize="10" fill="var(--text-muted)">{p.label}</text>
+        <text key={i} x={p.x} y={H - 4} textAnchor="middle" fontSize="10" fill="var(--ink-40)">{p.label}</text>
       ))}
+      <path d={areaD} fill="var(--ink-04)" stroke="none" />
       {/* pathLength=1：用 CSS 的 dasharray/dashoffset 做自绘动画，无需测量真实路径长度 */}
       <path
         d={pathD}
         fill="none"
-        stroke="var(--accent-1)"
-        strokeWidth="2"
+        stroke="var(--ink)"
+        strokeWidth="1"
         strokeLinejoin="round"
+        strokeLinecap="round"
         pathLength={reduceMotion ? undefined : 1}
         className={reduceMotion ? undefined : 'cs-elec-line'}
       />
+      {/* 悬停读数（不可见命中带，宽 = 点距，只做交互不改数据） */}
+      {points.map((p, i) => (
+        <rect
+          key={`hit-${i}`}
+          x={p.x - cw / Math.max(points.length, 2) / 2}
+          y={PAD.t}
+          width={cw / Math.max(points.length, 2)}
+          height={ch}
+          fill="transparent"
+          onMouseEnter={() => setHover(i)}
+          onMouseLeave={() => setHover(h => (h === i ? null : h))}
+        />
+      ))}
       {points.map((p, i) => (
         <circle
           key={i}
           cx={p.x}
           cy={p.y}
-          r="3"
-          fill="var(--accent-1)"
+          r="2.5"
+          fill="var(--ink)"
           className={reduceMotion ? undefined : 'cs-elec-dot'}
           style={reduceMotion ? undefined : { animationDelay: `${Math.round((i / Math.max(points.length - 1, 1)) * 350)}ms` }}
         />
       ))}
+      {hp && (
+        <>
+          <line x1={hp.x} y1={PAD.t} x2={hp.x} y2={PAD.t + ch} stroke="var(--ink-20)" strokeWidth="1" />
+          <circle cx={hp.x} cy={hp.y} r="2.5" fill="var(--ink)" />
+          <foreignObject x={hp.x > W / 2 ? hp.x - 148 : hp.x + 10} y={PAD.t} width="140" height="34">
+            <div className="cs-elec-tip">
+              <span className="cs-elec-tip-label">{hp.label}</span>
+              <span className="cs-elec-tip-val">¥{hp.v.toFixed(2)}</span>
+            </div>
+          </foreignObject>
+        </>
+      )}
     </svg>
   )
 }
@@ -855,11 +890,11 @@ export default function CampusServicePage() {
         )}
         <div className="cs-stats">
           <div className="cs-stat">
-            <span className="cs-stat-label">{t('campusService.score.total')}</span>
+            <span className="label">{t('campusService.score.total')}</span>
             <b>{total != null ? total : '—'}</b>
           </div>
           <div className="cs-stat">
-            <span className="cs-stat-label">{t('campusService.score.credit')}</span>
+            <span className="label">{t('campusService.score.credit')}</span>
             <div className="cs-stat-row">
               <b className={scoreData.credit != null ? (Number(scoreData.credit) >= TOTAL_TARGET ? 'cs-score-ok' : 'cs-score-warn') : ''}>
                 <CountUp value={scoreData.credit} />
@@ -912,7 +947,7 @@ export default function CampusServicePage() {
       <div className="cs-panel">
         <div className="cs-grades-hero">
           <div className="cs-stat cs-gpa">
-            <span className="cs-stat-label">{t('campusService.grades.gpa')}</span>
+            <span className="label">{t('campusService.grades.gpa')}</span>
             <b>{gradeData.gpa != null ? Number(gradeData.gpa).toFixed(1) : '0'}</b>
           </div>
           <span className="cs-grade-count">{t('campusService.grades.count', { n: gradeData.count != null ? gradeData.count : rows.length })}</span>
@@ -977,11 +1012,14 @@ export default function CampusServicePage() {
   // ── 渲染：校园卡动态码 ──
   const renderEcard = () => {
     if (!ecardData) return null
+    const refresh = Number(ecardData.refresh) || 0
+    // 剩余秒数细线进度条（纯展示，读数仍是 ecardCount；刷新定时器逻辑不动）
+    const ratio = refresh > 0 ? Math.max(0, Math.min(1, ecardCount / refresh)) : 0
     return (
       <div className="cs-panel cs-ecard-panel">
         <div className="cs-ecard-head">
           <div className="cs-ecard-title">
-            <span className="cs-badge cs-badge-ok">{t('campusService.query.ecard')}</span>
+            <span className="label">{t('campusService.query.ecard')}</span>
             {ecardData.refresh > 0 && (
               <span className="cs-ecard-countdown">{t('campusService.ecard.countdown', { n: ecardCount })}</span>
             )}
@@ -990,6 +1028,17 @@ export default function CampusServicePage() {
             {qBusy === 'ecard' ? t('campusService.ecard.refreshing') : t('campusService.ecard.refresh')}
           </button>
         </div>
+        {ecardData.refresh > 0 && (
+          <div
+            className="cs-ecard-track"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={refresh}
+            aria-valuenow={ecardCount}
+          >
+            <div className="cs-ecard-fill" style={{ width: `${ratio * 100}%` }} />
+          </div>
+        )}
         {ecardData.image ? (
           <img className="cs-ecard-img" src={`data:${ecardData.type || 'image/png'};base64,${ecardData.image}`} alt="dynamic-code" />
         ) : ecardData.code ? (
@@ -1059,13 +1108,13 @@ export default function CampusServicePage() {
           <div className="cs-elec-head">
             <div className="cs-elec-stats">
               <div className="cs-stat">
-                <span className="cs-stat-label">{t('campusService.electricity.balance')}</span>
+                <span className="label">{t('campusService.electricity.balance')}</span>
                 <b className={elecData.balance != null && Number(elecData.balance) < 10 ? 'cs-score-warn' : ''}>
                   {elecData.balance != null ? `¥${Number(elecData.balance).toFixed(2)}` : '—'}
                 </b>
               </div>
               <div className="cs-stat">
-                <span className="cs-stat-label">{t('campusService.electricity.cardBalance')}</span>
+                <span className="label">{t('campusService.electricity.cardBalance')}</span>
                 <b>{elecData.card_balance != null ? `¥${Number(elecData.card_balance).toFixed(2)}` : '—'}</b>
               </div>
             </div>
@@ -1097,7 +1146,7 @@ export default function CampusServicePage() {
         <div className="cs-elec-avgs">
           {avgs.map(([labelKey, v]) => (
             <span key={labelKey} className="cs-elec-avg" title={v == null ? t('campusService.electricity.avgInsufficient') : undefined}>
-              <span className="cs-elec-avg-label">{t(labelKey)}</span>
+              <span className="label">{t(labelKey)}</span>
               <b>{v != null ? `${v.toFixed(2)} ${t('campusService.electricity.avgUnit')}` : '—'}</b>
             </span>
           ))}
@@ -1138,7 +1187,9 @@ export default function CampusServicePage() {
             </div>
           </div>
           {/* key 随视图/新数据变化 → 组件重挂载，重放入场动画（切换视图、刷新拿到新数据都会重播） */}
-          <MiniLineChart key={`${elecView}-${elecHistSeq}`} data={elecHistory} view={elecView} />
+          <div className="cs-elec-chart-frame">
+            <MiniLineChart key={`${elecView}-${elecHistSeq}`} data={elecHistory} view={elecView} />
+          </div>
         </div>
       )}
       <p className="cs-elec-auto">{t('campusService.electricity.autoQueried')}</p>
@@ -1161,23 +1212,23 @@ export default function CampusServicePage() {
       >
         <div className="cs-recharge">
           <div className="cs-recharge-current">
-            {t('campusService.electricity.balance')}：
+            <span className="label">{t('campusService.electricity.balance')}</span>
             <b>{elecData && elecData.balance != null ? `¥${Number(elecData.balance).toFixed(2)}` : '—'}</b>
           </div>
-          <div className="ccp-field">
-            <label className="ccp-label">{t('campusService.electricity.rechargeAmount')}</label>
+          <div className="field">
             <input
-              className="ccp-input"
+              id="cs-recharge-amount"
+              placeholder=" "
               type="number"
               min="0.01"
               max="500"
               step="0.01"
               value={rechargeAmt}
-              placeholder={t('campusService.electricity.rechargePlaceholder')}
               autoFocus
               onChange={e => setRechargeAmt(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') handleRecharge() }}
             />
+            <label htmlFor="cs-recharge-amount">{t('campusService.electricity.rechargeAmount')}</label>
           </div>
           {rechargeMsg && (
             <p className="cs-recharge-msg err">{rechargeMsg}</p>
@@ -1208,15 +1259,18 @@ export default function CampusServicePage() {
             ) : (
               <span className="cs-captcha-noimg">{t('campusService.captcha.noImage')}</span>
             )}
-            <input
-              className="tool-input cs-captcha-input"
-              placeholder={t('campusService.captcha.placeholder')}
-              value={capInput}
-              maxLength={10}
-              autoFocus
-              onChange={e => setCapInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') submitCaptcha() }}
-            />
+            <div className="field cs-captcha-input">
+              <input
+                id="cs-captcha-input"
+                placeholder=" "
+                value={capInput}
+                maxLength={10}
+                autoFocus
+                onChange={e => setCapInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') submitCaptcha() }}
+              />
+              <label htmlFor="cs-captcha-input">{t('campusService.captcha.placeholder')}</label>
+            </div>
           </div>
           {captcha.err && <p className="cs-captcha-err">{captcha.err}</p>}
           <button type="button" className="btn btn-secondary" onClick={() => doQuery(captcha.kind, { xnm: captcha.xnm, xqm: captcha.xqm })} disabled={captcha.submitting}>
@@ -1228,12 +1282,12 @@ export default function CampusServicePage() {
   }
 
   // ── 主页渲染（电费不依赖 VPN，登录后即可进入） ──
-  const renderMainPage = () => (
-    <>
-      {token && renderStatusCard()}
-
-      {token && (
-        <>
+  const renderMainPage = () => {
+    if (!token) return null
+    return (
+      <>
+        {renderStatusCard()}
+        <div className="cs-query-block">
           <h2 className="cs-queries-title">{t('campusService.queriesTitle')}</h2>
           <div className={`cs-queries ${connected ? '' : 'cs-queries-single'}`}>
             {connected && (
@@ -1241,35 +1295,35 @@ export default function CampusServicePage() {
                 <Link to="/tools/campus-service/score" className="cs-qcard">
                   <span className="cs-qcard-name">{t('campusService.query.score')}</span>
                   <span className="cs-qcard-desc">{t('campusService.query.scoreDesc')}</span>
-                  <span className="cs-qcard-state">{'›'}</span>
+                  <span className="cs-qcard-state" aria-hidden="true">{'›'}</span>
                 </Link>
                 <Link to="/tools/campus-service/grades" className="cs-qcard">
                   <span className="cs-qcard-name">{t('campusService.query.grades')}</span>
                   <span className="cs-qcard-desc">{t('campusService.query.gradesDesc')}</span>
-                  <span className="cs-qcard-state">{'›'}</span>
+                  <span className="cs-qcard-state" aria-hidden="true">{'›'}</span>
                 </Link>
                 <Link to="/tools/campus-service/ecard" className="cs-qcard">
                   <span className="cs-qcard-name">{t('campusService.query.ecard')}</span>
                   <span className="cs-qcard-desc">{t('campusService.query.ecardDesc')}</span>
-                  <span className="cs-qcard-state">{'›'}</span>
+                  <span className="cs-qcard-state" aria-hidden="true">{'›'}</span>
                 </Link>
               </>
             )}
             <Link to="/tools/campus-service/electricity" className="cs-qcard">
               <span className="cs-qcard-name">{t('campusService.electricity.name')}</span>
               <span className="cs-qcard-desc">{t('campusService.electricity.desc')}</span>
-              <span className="cs-qcard-state">{'›'}</span>
+              <span className="cs-qcard-state" aria-hidden="true">{'›'}</span>
             </Link>
           </div>
-        </>
-      )}
-    </>
-  )
+        </div>
+      </>
+    )
+  }
 
   // ── 子页面渲染（不展示状态卡 / 代理地址，未连接时只给一行提示） ──
   const needsVpn = feature !== 'electricity'
   const renderSubPage = () => (
-    <>
+    <div className="cs-sub-page">
       <Link to="/tools/campus-service" className="tool-back">{t('campusService.backToCampus')}</Link>
       <div className="cs-sub-header">
         <h2 className="cs-sub-title">{t(KIND_LABELS[feature])}</h2>
@@ -1296,11 +1350,11 @@ export default function CampusServicePage() {
           {feature === 'electricity' && renderElectricity()}
         </>
       )}
-    </>
+    </div>
   )
 
   return (
-    <div className="tool-page">
+    <div className="tool-page cs-page">
       <Navbar activePage="tools" />
       <div className="tool-main">
         <header className="tool-header">
@@ -1336,7 +1390,7 @@ export default function CampusServicePage() {
       {/* 页面级 toast：固定视口居中，不受页面布局影响 */}
       {rechargeToast && (
         <div className={`cs-toast${prefersReducedMotion() ? '' : ' cs-toast-in'}`} role="status" aria-live="polite">
-          <span className="cs-toast-check" aria-hidden="true">&#10003;</span>
+          <span className="cs-toast-check" aria-hidden="true"><UiIcon name="check" size={14} /></span>
           <span>{rechargeToast}</span>
         </div>
       )}

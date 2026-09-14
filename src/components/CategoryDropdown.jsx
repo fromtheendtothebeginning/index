@@ -46,7 +46,7 @@ function CategoryDropdown({ value, onChange, options = [], placeholder = t('cate
       onClick={e => e.stopPropagation()}
       onMouseLeave={() => setJustPicked(false)}
     >
-      <button type="button" className={`category-btn${size === 'sm' ? ' category-btn-sm' : ''}`} onClick={toggle}>
+      <button type="button" className={`category-btn nav-dropdown-trigger label${size === 'sm' ? ' category-btn-sm' : ''}`} onClick={toggle}>
         {options.find(o => o.value === value)?.label || value || placeholder}
         <span className="arrow-down">▾</span>
       </button>

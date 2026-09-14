@@ -251,20 +251,20 @@ def leetcode_debug_toggle(
         binding.debug_mode = True
     elif not req.debug_mode and binding.debug_mode:
         # 关闭：保留调试期间手动设置的增量（同步真实值后固化到 base），不再覆盖丢弃
-        if binding.debug_backup_base_easy is not None:
-            try:
-                real = fetch_leetcode_progress(binding.leetcode_username)
-            except Exception:
-                real = None
-            if real is not None:
-                inc_e = max(0, binding.cur_easy - binding.debug_backup_base_easy)
-                inc_m = max(0, binding.cur_medium - binding.debug_backup_base_medium)
-                inc_h = max(0, binding.cur_hard - binding.debug_backup_base_hard)
-                binding.cur_easy, binding.cur_medium, binding.cur_hard = real
-                binding.base_easy = max(0, real[0] - inc_e)
-                binding.base_medium = max(0, real[1] - inc_m)
-                binding.base_hard = max(0, real[2] - inc_h)
-            # 同步失败：保留当前 cur/base 数据
+        try:
+            real = fetch_leetcode_progress(binding.leetcode_username)
+        except Exception:
+            real = None
+        if real is not None:
+            # 增量以「当前 base」为参照，保证关闭前后榜单增量一致
+            inc_e = max(0, binding.cur_easy - binding.base_easy)
+            inc_m = max(0, binding.cur_medium - binding.base_medium)
+            inc_h = max(0, binding.cur_hard - binding.base_hard)
+            binding.cur_easy, binding.cur_medium, binding.cur_hard = real
+            binding.base_easy = max(0, real[0] - inc_e)
+            binding.base_medium = max(0, real[1] - inc_m)
+            binding.base_hard = max(0, real[2] - inc_h)
+        # 同步失败：保留当前 cur/base 数据
         binding.debug_backup_base_easy = None
         binding.debug_backup_base_medium = None
         binding.debug_backup_base_hard = None
@@ -283,15 +283,17 @@ def leetcode_debug_set(
     _admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """调试模式下手动设置刷题量（增量 = 输入值，基于调试开启时保存的基线）"""
+    """调试模式下手动设置刷题量（增量 = 输入值，基于当前基线）"""
     binding = db.query(LeetcodeBinding).filter(LeetcodeBinding.user_id == _admin.id).first()
     if not binding:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="尚未绑定 LeetCode 账号")
     if not binding.debug_mode:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="调试模式未开启")
-    base_e = binding.debug_backup_base_easy if binding.debug_backup_base_easy is not None else binding.base_easy
-    base_m = binding.debug_backup_base_medium if binding.debug_backup_base_medium is not None else binding.base_medium
-    base_h = binding.debug_backup_base_hard if binding.debug_backup_base_hard is not None else binding.base_hard
+    # 基线取「当前 base」而非调试开启时的备份：调试期间若进入过激励模式（会把 base 拉到 cur）
+    # 或改绑过账号，备份基线已过期，用它会把手动增量吞掉（输入 N 却看不到 N）
+    base_e = binding.base_easy
+    base_m = binding.base_medium
+    base_h = binding.base_hard
     binding.cur_easy = base_e + max(0, req.easy)
     binding.cur_medium = base_m + max(0, req.medium)
     binding.cur_hard = base_h + max(0, req.hard)

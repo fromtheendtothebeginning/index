@@ -451,10 +451,14 @@ function AdminPage() {
     <div className="admin-page">
       <Navbar activePage="" />
       <div className="admin-container">
-        <div className="admin-header">
-          <Link to="/profile" className="admin-back">&larr; {t('admin.backProfile')}</Link>
-          <h1 className="admin-title">{t('admin.title')}</h1>
-        </div>
+        <header className="section-head admin-head">
+          <div className="section-head-meta">
+            <span className="folio">06</span>
+            <span className="label">Admin</span>
+            <Link to="/profile" className="admin-back link-underline">&larr; {t('admin.backProfile')}</Link>
+          </div>
+          <h1 className="section-title">{t('admin.title')}</h1>
+        </header>
 
         <div className="admin-tabs">
           <button className={`admin-tab ${tab === 'users' ? 'active' : ''}`} onClick={() => setTab('users')}>{t('admin.tabs.users')}</button>
@@ -490,23 +494,23 @@ function AdminPage() {
                   <span className="admin-cell-user">{u.username}</span>
                   <span>{u.nickname || '-'}</span>
                   <span>
-                    <span className={`role-badge ${u.role}`}>{u.role === 'admin' ? t('admin.users.admin') : t('admin.users.user')}</span>
+                    <span className={`tag role-badge ${u.role}`}>{u.role === 'admin' ? t('admin.users.admin') : t('admin.users.user')}</span>
                   </span>
                   <span className="admin-cell-time">{fmtTime(u.created_at)}</span>
                   <span className="admin-user-actions">
                     {u.id !== user.id && (
                       <button
-                        className="btn-role-toggle"
+                        className="action-btn action-btn-secondary action-btn-sm"
                         onClick={() => handleSetRole(u.id, u.role === 'admin' ? 'user' : 'admin')}
                       >
                         {u.role === 'admin' ? t('admin.users.demote') : t('admin.users.promote')}
                       </button>
                     )}
                     {u.id === user.id && <span className="admin-self">（{t('admin.users.currentAccount')}）</span>}
-                    <button className="btn-role-toggle" onClick={() => handleStartEditUser(u)}>{t('admin.edit')}</button>
+                    <button className="action-btn action-btn-secondary action-btn-sm" onClick={() => handleStartEditUser(u)}>{t('admin.edit')}</button>
                     {u.id !== user.id && (
                       <button
-                        className="btn btn-danger btn-sm"
+                        className="action-btn action-btn-danger action-btn-sm"
                         onClick={() => setModal({
                           id: u.id,
                           title: t('admin.users.deleteTitle'),
@@ -542,8 +546,8 @@ function AdminPage() {
                       value={editForm.password}
                       onChange={e => setEditForm({ ...editForm, password: e.target.value })}
                     />
-                    <button className="btn btn-primary btn-sm" onClick={() => handleSaveUser(u.id)}>{t('admin.save')}</button>
-                    <button className="btn btn-secondary btn-sm" onClick={handleCancelEditUser}>{t('admin.cancel')}</button>
+                    <button className="action-btn action-btn-sm" onClick={() => handleSaveUser(u.id)}>{t('admin.save')}</button>
+                    <button className="action-btn action-btn-secondary action-btn-sm" onClick={handleCancelEditUser}>{t('admin.cancel')}</button>
                   </div>
                 )}
               </div>
@@ -582,7 +586,7 @@ function AdminPage() {
                       <div className="admin-comment-content">{c.content}</div>
                     </div>
                     <button
-                      className="admin-comment-delete-btn"
+                      className="action-btn action-btn-danger action-btn-sm admin-comment-delete-btn"
                       title={t('admin.comments.deleteTitle')}
                       onClick={() => setModal({
                         id: c.id,
@@ -592,7 +596,7 @@ function AdminPage() {
                         onConfirm: () => handleDeleteComment(c.id),
                       })}
                     >
-                      ×
+                      {t('admin.delete')}
                     </button>
                   </div>
                 ))}
@@ -638,7 +642,7 @@ function AdminPage() {
                     <span className="admin-cell-time">{fmtTime(b.created_at)}</span>
                     <span>
                       <button
-                        className="btn btn-danger btn-sm"
+                        className="action-btn action-btn-danger action-btn-sm"
                         onClick={() => setModal({
                           id: b.id,
                           title: t('admin.blogs.recallTitle'),
@@ -664,38 +668,52 @@ function AdminPage() {
               <h2>{t('admin.links.all', { count: links.length })}</h2>
             </div>
             <div className="admin-link-form">
-              <input
-                className="admin-link-input"
-                placeholder={t('admin.links.name')}
-                value={linkForm.name}
-                onChange={e => setLinkForm({ ...linkForm, name: e.target.value })}
-              />
-              <input
-                className="admin-link-input"
-                placeholder={t('admin.links.url')}
-                value={linkForm.url}
-                onChange={e => setLinkForm({ ...linkForm, url: e.target.value })}
-              />
-              <input
-                className="admin-link-input"
-                placeholder={t('admin.links.description')}
-                value={linkForm.description}
-                onChange={e => setLinkForm({ ...linkForm, description: e.target.value })}
-              />
-              <button className="btn btn-primary btn-sm" onClick={handleSaveLink}>
-                {linkEditingId ? t('admin.save') : t('admin.links.add')}
-              </button>
-              {linkEditingId && (
-                <button
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => {
-                    setLinkForm({ name: '', url: '', description: '' })
-                    setLinkEditingId(null)
-                  }}
-                >
-                  {t('admin.cancel')}
+              <div className="field">
+                <input
+                  id="admin-link-name"
+                  type="text"
+                  placeholder=" "
+                  value={linkForm.name}
+                  onChange={e => setLinkForm({ ...linkForm, name: e.target.value })}
+                />
+                <label htmlFor="admin-link-name">{t('admin.links.name')}</label>
+              </div>
+              <div className="field">
+                <input
+                  id="admin-link-url"
+                  type="text"
+                  placeholder=" "
+                  value={linkForm.url}
+                  onChange={e => setLinkForm({ ...linkForm, url: e.target.value })}
+                />
+                <label htmlFor="admin-link-url">{t('admin.links.url')}</label>
+              </div>
+              <div className="field">
+                <input
+                  id="admin-link-description"
+                  type="text"
+                  placeholder=" "
+                  value={linkForm.description}
+                  onChange={e => setLinkForm({ ...linkForm, description: e.target.value })}
+                />
+                <label htmlFor="admin-link-description">{t('admin.links.description')}</label>
+              </div>
+              <div className="admin-link-form-ops">
+                <button className="action-btn action-btn-sm" onClick={handleSaveLink}>
+                  {linkEditingId ? t('admin.save') : t('admin.links.add')}
                 </button>
-              )}
+                {linkEditingId && (
+                  <button
+                    className="action-btn action-btn-secondary action-btn-sm"
+                    onClick={() => {
+                      setLinkForm({ name: '', url: '', description: '' })
+                      setLinkEditingId(null)
+                    }}
+                  >
+                    {t('admin.cancel')}
+                  </button>
+                )}
+              </div>
             </div>
             {links.length === 0 ? (
               <div className="admin-empty">{t('admin.links.empty')}</div>
@@ -715,9 +733,9 @@ function AdminPage() {
                     </span>
                     <span>{l.description || '-'}</span>
                     <span className="admin-link-actions">
-                      <button className="btn-role-toggle" onClick={() => handleStartEditLink(l)}>{t('admin.edit')}</button>
+                      <button className="action-btn action-btn-secondary action-btn-sm" onClick={() => handleStartEditLink(l)}>{t('admin.edit')}</button>
                       <button
-                        className="btn btn-danger btn-sm"
+                        className="action-btn action-btn-danger action-btn-sm"
                         onClick={() => setModal({
                           id: l.id,
                           title: t('admin.links.deleteTitle'),
@@ -741,13 +759,13 @@ function AdminPage() {
           <div className="admin-section">
             <div className="admin-section-head">
               <h2>{t('admin.codes.manage', { count: codes.length })}</h2>
-              <button className="btn btn-primary btn-sm" onClick={handleCreateCode}>{t('admin.codes.generate')}</button>
+              <button className="action-btn action-btn-sm" onClick={handleCreateCode}>{t('admin.codes.generate')}</button>
             </div>
             {newCode && (
               <div className="admin-new-code">
                 <span>{t('admin.codes.new')}</span>
                 <code className="admin-code-highlight">{newCode}</code>
-                <button className="btn-copy" onClick={() => copyCode(newCode, 'new')}>{copiedKey === 'new' ? t('admin.codes.copied') : t('admin.codes.copy')}</button>
+                <button className="action-btn action-btn-secondary action-btn-sm" onClick={() => copyCode(newCode, 'new')}>{copiedKey === 'new' ? t('admin.codes.copied') : t('admin.codes.copy')}</button>
               </div>
             )}
             {codes.length === 0 ? (
@@ -770,9 +788,9 @@ function AdminPage() {
                     <span>{c.owner_username ? c.owner_username : '-'}</span>
                     <span>
                       {c.is_used ? (
-                        <span className="check-used" title={t('admin.codes.used')}>&#10003;</span>
+                        <span className="tag" title={t('admin.codes.used')}>{t('admin.codes.used')}</span>
                       ) : (
-                        <span className="check-unused" title={t('admin.codes.unused')}>&#9711;</span>
+                        <span className="tag" title={t('admin.codes.unused')}>{t('admin.codes.unused')}</span>
                       )}
                     </span>
                     <span>
@@ -787,9 +805,9 @@ function AdminPage() {
                     </span>
                     <span className="admin-cell-time">{fmtTime(c.created_at)}</span>
                     <span className="admin-code-actions">
-                      <button className="btn-copy" onClick={() => copyCode(c.code, c.id)}>{copiedKey === c.id ? t('admin.codes.copied') : t('admin.codes.copy')}</button>
+                      <button className="action-btn action-btn-secondary action-btn-sm" onClick={() => copyCode(c.code, c.id)}>{copiedKey === c.id ? t('admin.codes.copied') : t('admin.codes.copy')}</button>
                       <button
-                        className="btn btn-danger btn-sm"
+                        className="action-btn action-btn-danger action-btn-sm"
                         onClick={() => setModal({
                           id: c.id,
                           title: t('admin.codes.deleteTitle'),
@@ -818,7 +836,7 @@ function AdminPage() {
               <div className="admin-sections-head">
                 <h3 className="admin-sub-title">{t('admin.site.cardHint')}</h3>
                 <button
-                  className="btn btn-primary btn-sm"
+                  className="action-btn action-btn-sm"
                   onClick={() => setSettings(prev => ({
                     ...prev,
                     contact_items: [...(prev.contact_items || []), { label: '', value: '', type: 'link', icon: '', description: '' }],
@@ -847,36 +865,52 @@ function AdminPage() {
                           </select>
                           <span className="admin-icon-preview"><ContactIcon icon={item.icon} type={item.type} /></span>
                           {!CONTACT_ICON_OPTIONS.some(o => o.key === item.icon) && (
-                            <input
-                              className="admin-link-input"
-                              placeholder={t('admin.site.customIcon')}
-                              value={item.icon || ''}
-                              onChange={e => updateContactItem(i, { icon: e.target.value })}
-                            />
+                            <div className="field">
+                              <input
+                                id={`admin-contact-icon-${i}`}
+                                type="text"
+                                placeholder=" "
+                                value={item.icon || ''}
+                                onChange={e => updateContactItem(i, { icon: e.target.value })}
+                              />
+                              <label htmlFor={`admin-contact-icon-${i}`}>{t('admin.site.customIcon')}</label>
+                            </div>
                           )}
                         </div>
-                        <input
-                          className="admin-link-input"
-                          placeholder={t('admin.site.label')}
-                          value={item.label}
-                          onChange={e => updateContactItem(i, { label: e.target.value })}
-                        />
-                        <input
-                          className="admin-link-input"
-                          placeholder={t('admin.site.description')}
-                          value={item.description || ''}
-                          onChange={e => updateContactItem(i, { description: e.target.value })}
-                        />
-                        <input
-                          className="admin-link-input"
-                          placeholder={t('admin.site.value')}
-                          value={item.value}
-                          onChange={e => updateContactItem(i, { value: e.target.value })}
-                        />
+                        <div className="field">
+                          <input
+                            id={`admin-contact-label-${i}`}
+                            type="text"
+                            placeholder=" "
+                            value={item.label}
+                            onChange={e => updateContactItem(i, { label: e.target.value })}
+                          />
+                          <label htmlFor={`admin-contact-label-${i}`}>{t('admin.site.label')}</label>
+                        </div>
+                        <div className="field">
+                          <input
+                            id={`admin-contact-desc-${i}`}
+                            type="text"
+                            placeholder=" "
+                            value={item.description || ''}
+                            onChange={e => updateContactItem(i, { description: e.target.value })}
+                          />
+                          <label htmlFor={`admin-contact-desc-${i}`}>{t('admin.site.description')}</label>
+                        </div>
+                        <div className="field">
+                          <input
+                            id={`admin-contact-value-${i}`}
+                            type="text"
+                            placeholder=" "
+                            value={item.value}
+                            onChange={e => updateContactItem(i, { value: e.target.value })}
+                          />
+                          <label htmlFor={`admin-contact-value-${i}`}>{t('admin.site.value')}</label>
+                        </div>
                       </div>
                       <div className="admin-section-row-actions">
                         <button
-                          className="btn btn-danger btn-sm"
+                          className="action-btn action-btn-danger action-btn-sm"
                           onClick={() => removeContactItem(i)}
                         >
                           {t('admin.delete')}
@@ -886,11 +920,11 @@ function AdminPage() {
                   ))}
                 </div>
               )}
-              <div>
-                <button className="btn btn-primary btn-sm" onClick={handleSaveSettings} disabled={settingsSaving}>
+              <div className="admin-settings-actions">
+                <button className="action-btn action-btn-sm" onClick={handleSaveSettings} disabled={settingsSaving}>
                   {settingsSaving ? t('admin.site.saving') : t('admin.save')}
                 </button>
-                {settingsSaved && <div className="profile-success">&#10003; {t('admin.site.saved')}</div>}
+                {settingsSaved && <div className="profile-success">{t('admin.site.saved')}</div>}
               </div>
               <p className="admin-settings-hint">{t('admin.site.hint')}</p>
             </div>
@@ -914,7 +948,7 @@ function AdminPage() {
                   <div className="admin-settings-row">
                     <span className="admin-settings-label">{t('admin.leetcode.mode', { name: lcDebug.leetcode_username })}</span>
                     <button
-                      className={`btn btn-sm ${lcDebug.debug_mode ? 'btn-danger' : 'btn-primary'}`}
+                      className={`action-btn action-btn-sm ${lcDebug.debug_mode ? 'action-btn-danger' : ''}`}
                       onClick={() => handleLcDebugToggle(!lcDebug.debug_mode)}
                       disabled={lcDebugBusy}
                     >
@@ -938,7 +972,7 @@ function AdminPage() {
                           </label>
                         ))}
                       </div>
-                      <button className="btn btn-primary btn-sm" onClick={handleLcDebugSet} disabled={lcDebugBusy}>
+                      <button className="action-btn action-btn-sm" onClick={handleLcDebugSet} disabled={lcDebugBusy}>
                         {t('admin.leetcode.apply')}
                       </button>
                     </div>

@@ -33,20 +33,25 @@ function ProjectListPage() {
       <Navbar activePage="project" />
 
       <div className="project-main">
-        <Reveal className="project-header">
-          <div className="project-header-content">
-            <h1 className="project-title">{t('projectList.title')}</h1>
-            <p className="project-subtitle">{t('projectList.subtitle')}</p>
+        <Reveal className="section-head">
+          <div className="section-head-meta">
+            <span className="folio">01</span>
+            <span className="label">Projects</span>
           </div>
-          {user && user.role === 'admin' && (
-            <Link to="/projects/new" className="btn btn-primary">{t('projectList.new')}</Link>
-          )}
+          <h1 className="section-title">{t('projectList.title')}</h1>
+          <p className="section-desc">{t('projectList.subtitle')}</p>
         </Reveal>
 
+        {user && user.role === 'admin' && (
+          <div className="project-toolbar">
+            <Link to="/projects/new" className="btn btn-primary">{t('projectList.new')}</Link>
+          </div>
+        )}
+
         {loading ? (
-          <div className="blog-loading">{t('projectList.loading')}</div>
+          <div className="project-loading">{t('projectList.loading')}</div>
         ) : projects.length === 0 ? (
-          <div className="blog-empty">
+          <div className="project-empty">
             <p>{t('projectList.empty')}</p>
             {user && user.role === 'admin' && <Link to="/projects/new" className="btn btn-primary">{t('projectList.createFirst')}</Link>}
           </div>
@@ -54,26 +59,28 @@ function ProjectListPage() {
           <div className="project-grid">
             {projects.map(project => (
               <Reveal as={Link} key={project.id} to={`/projects/${project.id}`} className="project-card">
-                {project.cover_url ? (
-                  <ProjectCover src={project.cover_url} alt={project.name} className="project-cover" bgColor={project.bg_color} />
-                ) : (
-                  <div className="project-cover project-cover-placeholder">
-                    {project.name.charAt(0)}
-                  </div>
-                )}
-                <div className="project-card-body">
-                  <h2 className="project-card-name">{project.name}</h2>
+                <div className="project-card-media">
+                  {project.cover_url ? (
+                    <ProjectCover src={project.cover_url} alt={project.name} className="project-cover" bgColor={project.bg_color} />
+                  ) : (
+                    <div className="project-cover project-cover-placeholder">
+                      {project.name.charAt(0)}
+                    </div>
+                  )}
+                </div>
+                <div className="project-card-content">
+                  <h3>{project.name}</h3>
                   {project.description && (
                     <p className="project-card-desc">{project.description}</p>
                   )}
-                  <div className="project-card-meta">
-                    <span className="project-card-author">
+                  <div className="project-meta">
+                    <span className="label">
                       {project.author?.nickname || project.author?.username || t('projectList.anonymous')}
                     </span>
-                    <span className="project-card-date">
+                    <span className="label">
                       {new Date(project.created_at).toLocaleDateString('zh-CN')}
                     </span>
-                    <span className="project-card-blogs">{t('projectList.blogCount', { count: project.blog_count || 0 })}</span>
+                    <span className="label project-meta-end">{t('projectList.blogCount', { count: project.blog_count || 0 })}</span>
                   </div>
                 </div>
               </Reveal>

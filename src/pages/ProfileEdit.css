@@ -1,121 +1,114 @@
 /* ============================================
-   ProfileEdit / 编辑个人资料 — 样式
+   ProfileEdit / 编辑个人资料 — Editorial（编辑杂志风）
+   纸墨单色 · 1px 细线分区 · 大留白 · 直角方形头像
+   令牌与基元见 index.css；共享按钮/页头见 App.css
    ============================================ */
 
+/* ---------- 页面 ---------- */
 .profile-page {
-  position: relative;
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
+  padding: var(--section-y) 0;
 }
 
-.profile-grid {
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(var(--accent-1-soft) 1px, transparent 1px),
-    linear-gradient(90deg, var(--accent-1-soft) 1px, transparent 1px);
-  background-size: 60px 60px;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.profile-glow {
-  position: fixed;
-  border-radius: 50%;
-  filter: blur(120px);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.pg-1 {
-  width: 400px;
-  height: 400px;
-  top: -100px;
-  right: -80px;
-  background: radial-gradient(circle, var(--accent-1-soft), transparent 70%);
-}
-
-.pg-2 {
-  width: 350px;
-  height: 350px;
-  bottom: -80px;
-  left: -60px;
-  background: radial-gradient(circle, var(--glow-cyan), transparent 70%);
-}
-
-/* ── 容器 ── */
-.profile-container {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  max-width: 520px;
-  margin: 24px;
-  padding: 40px;
-  border-radius: 24px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-card);
-  backdrop-filter: blur(40px);
-  -webkit-backdrop-filter: blur(40px);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  animation: profile-enter 0.5s ease-out;
-}
-
-@keyframes profile-enter {
-  from { opacity: 0; transform: translateY(20px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-/* ── 头部（标题在上，返回链接在下方） ── */
-.profile-header {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-  margin-bottom: 32px;
-}
-
+/* ---------- 页头左栏的返回链接 ---------- */
 .profile-back {
-  font-size: 14px;
+  margin-top: 12px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  letter-spacing: 0.06em;
   color: var(--text-muted);
-  transition: color 0.2s;
-  white-space: nowrap;
+  transition: color 0.4s ease;
 }
 
 .profile-back:hover {
-  color: var(--accent-1);
+  color: var(--text-primary);
 }
 
-.profile-title {
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+/* ---------- 主体：12 栏网格，内容收在标题栏位 ---------- */
+.profile-body {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: 24px;
 }
 
-/* ── 头像 ── */
+.profile-body > * {
+  grid-column: 4 / 11;
+}
+
+/* 分区：1px 细线 + 大留白 */
+.profile-theme,
+.profile-avatar-section,
+.profile-form {
+  border-top: 1px solid var(--ink-10);
+  padding: 36px 0;
+}
+
+/* ---------- 主题模式（小字标签 + 1px 墨色下划线，无胶囊/圆角） ---------- */
+.profile-theme {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.profile-theme-toggle {
+  display: inline-flex;
+  gap: 24px;
+}
+
+.profile-theme-option {
+  position: relative;
+  padding: 0 0 10px;
+  border: 0;
+  background: none;
+  color: var(--ink-40);
+  cursor: pointer;
+  transition: color 0.4s ease;
+}
+
+.profile-theme-option:hover {
+  color: var(--text-primary);
+}
+
+.profile-theme-option.active {
+  color: var(--text-primary);
+}
+
+.profile-theme-option.active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--ink);
+}
+
+/* ---------- 头像预览（直角方形，1px 描边；hover 仅描边/底色变化） ---------- */
 .profile-avatar-section {
   display: flex;
   align-items: center;
-  gap: 20px;
-  margin-bottom: 32px;
-  padding: 20px;
-  border-radius: 16px;
-  background: rgba(0, 0, 0, 0.02);
-  border: 1px solid var(--border-color);
+  gap: 28px;
 }
 
 .profile-avatar-preview {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  overflow: hidden;
+  width: 88px;
+  height: 88px;
   flex-shrink: 0;
-  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease;
+}
+
+.profile-avatar-preview:hover {
+  background: var(--paper);
+  color: var(--ink);
 }
 
 .avatar-img {
@@ -125,9 +118,9 @@
 }
 
 .avatar-letter {
-  font-size: 30px;
-  font-weight: 700;
-  color: var(--white);
+  font-family: var(--font-serif);
+  font-size: 36px;
+  line-height: 1;
 }
 
 .profile-avatar-info {
@@ -137,236 +130,137 @@
 }
 
 .avatar-name {
-  font-size: 18px;
-  font-weight: 600;
+  font-family: var(--font-serif);
+  font-size: 20px;
 }
 
 .avatar-username {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-muted);
 }
 
-/* ── 表单 ── */
+/* ---------- 表单 ---------- */
 .profile-form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-}
-
-.profile-error {
-  padding: 10px 14px;
-  border-radius: 10px;
-  background: var(--danger-soft);
-  border: 1px solid var(--danger-border);
-  color: var(--danger);
-  font-size: 13px;
-}
-
-.profile-success {
-  padding: 10px 14px;
-  border-radius: 10px;
-  background: var(--glow-cyan);
-  border: 1px solid var(--glow-cyan-strong);
-  color: var(--accent-2);
-  font-size: 14px;
-  text-align: center;
-  font-weight: 500;
-}
-
-.profile-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.profile-label {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  letter-spacing: 0.02em;
-}
-
-.profile-input {
-  width: 100%;
-  padding: 12px 14px;
-  background: rgba(0, 0, 0, 0.02);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  color: var(--text-primary);
-  font-size: 14px;
-  font-family: inherit;
-  outline: none;
-  transition: all 0.3s ease;
-}
-
-.profile-input::placeholder {
-  color: var(--text-muted);
-}
-
-.profile-input:focus {
-  border-color: var(--accent-1);
-  box-shadow: 0 0 0 3px var(--accent-1-soft);
-  background: var(--accent-1-soft);
+  gap: 40px;
 }
 
 .profile-field-hint {
+  margin-top: 10px;
   font-size: 12px;
+  line-height: 1.7;
   color: var(--text-muted);
-  line-height: 1.4;
 }
 
+/* ---------- 提示（单色：墨色文字 + 1px 描边 / ink-04 底） ---------- */
+.profile-error {
+  padding: 14px 18px;
+  border: 1px solid var(--ink-20);
+  background: var(--ink-04);
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.profile-success {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border: 1px solid var(--ink-20);
+  background: var(--ink-04);
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+/* ---------- 按钮（外观复用 App.css，仅补布局） ---------- */
 .profile-save-btn {
   width: 100%;
   justify-content: center;
-  padding: 14px 28px;
-  font-size: 15px;
-  margin-top: 4px;
+  padding: 16px 32px;
 }
 
 .profile-admin-btn {
   width: 100%;
   justify-content: center;
-  margin-top: 12px;
 }
 
-/* ── 主题模式切换（浅色 / 深色 / 跟随系统） ── */
-.profile-theme {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 24px;
-  padding: 12px 16px;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  background: var(--bg-card);
-  flex-wrap: wrap;
-}
-
-.profile-theme-label {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.profile-theme-toggle {
-  display: inline-flex;
-  gap: 4px;
-  padding: 3px;
-  border-radius: 10px;
-  background: var(--bg-elevated);
-}
-
-.profile-theme-option {
-  padding: 5px 12px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--text-secondary);
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.profile-theme-option:hover {
-  color: var(--text-primary);
-}
-
-.profile-theme-option.active {
-  background: var(--accent-1);
-  color: var(--white);
-}
-
-/* ── 响应式 ── */
-@media (max-width: 768px) {
-  /* 触控热区：扩大可点区域，负 margin 抵消 padding，视觉位置不变 */
-  .profile-back {
-    padding: 6px 4px;
-    margin: -6px -4px;
-  }
-}
-
-@media (max-width: 480px) {
-  .profile-container {
-    margin: 12px;
-    padding: 24px 16px;
-  }
-
-  .profile-avatar-section {
-    flex-direction: column;
-    text-align: center;
-  }
-}
-
-/* ---- 退出按钮 ---- */
 .profile-divider {
-  border: none;
-  border-top: 1px solid var(--border-color);
-  margin: 28px 0 20px;
-}
-.profile-logout-btn {
   width: 100%;
-  justify-content: center;
-  padding: 10px;
-  font-size: 14px;
-  border-radius: 8px;
-  cursor: pointer;
-  border: 1px solid var(--danger);
-  background: transparent;
-  color: var(--danger);
-  transition: all 0.2s;
-}
-.profile-logout-btn:hover {
-  background: var(--danger);
-  color: var(--white);
+  border: 0;
+  border-top: 1px solid var(--ink-10);
+  margin: 8px 0 0;
 }
 
-/* ---- 注销账号 ---- */
+.profile-logout-btn,
 .profile-delete-btn {
   width: 100%;
   justify-content: center;
-  padding: 10px;
-  font-size: 14px;
-  border-radius: 8px;
-  cursor: pointer;
-  border: 2px solid var(--danger);
-  background: transparent;
-  color: var(--danger);
-  transition: all 0.2s;
-}
-.profile-delete-btn:hover {
-  background: var(--danger);
-  color: var(--white);
 }
 
+/* ---------- 注销确认区 ---------- */
 .profile-delete-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px;
-  border: 1px solid var(--danger-border);
-  border-radius: 12px;
-  background: var(--danger-soft);
-}
-
-.profile-delete-form input {
-  width: 100%;
-  box-sizing: border-box;
+  gap: 36px;
+  padding: 32px;
+  border: 1px solid var(--ink-20);
+  background: var(--ink-04);
 }
 
 .profile-delete-tip {
-  margin: 0;
   font-size: 13px;
-  color: var(--danger);
-  line-height: 1.5;
+  line-height: 1.75;
+  color: var(--text-secondary);
 }
 
 .profile-delete-actions {
   display: flex;
-  gap: 10px;
+  gap: 12px;
 }
 
-.profile-delete-actions .btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.profile-delete-actions .btn {
+  flex: 1 1 auto;
+}
+
+/* ---------- 响应式 ---------- */
+@media (min-width: 768px) {
+  .profile-page {
+    padding: 160px 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .profile-body > * {
+    grid-column: 1 / -1;
+  }
+
+  /* 触控热区：扩大可点区域，负 margin 抵消 padding，视觉位置不变 */
+  .profile-back {
+    padding: 6px 4px;
+    margin: 6px -4px 0;
+  }
+
+  .profile-theme {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .profile-delete-form {
+    padding: 24px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-avatar-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .profile-delete-actions {
+    flex-direction: column;
+  }
 }

@@ -44,7 +44,10 @@
     "prompt": "你是激励分数超过 0 的玩家，是否将一切变成黄金？（5 分钟）",
     "enter": "进入黄金模式",
     "cancel": "算了",
-    "effect": "万物成金魔法生效中"
+    "effect": "万物成金魔法生效中",
+    "collapse": "收起计时",
+    "expand": "展开黄金模式计时",
+    "short": "黄金模式"
   },
   "home": {
     "hero": {
@@ -694,7 +697,7 @@
       "campus": "校园服务"
     },
     "notify": {
-      "unreadBadge": "未读红点",
+      "unreadBadge": "未读标记",
       "unreadCount": "{n} 条未读",
       "readAll": "全部已读",
       "empty": "暂无通知",

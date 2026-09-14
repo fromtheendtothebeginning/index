@@ -6,9 +6,7 @@ import { UiIcon } from '../components/Icons'
 import { t } from '../i18n'
 import './LeetCodePage.css'
 
-const MEDAL_COLORS = { 0: 'lc-medal-gold', 1: 'lc-medal-silver', 2: 'lc-medal-bronze' }
-
-const Avatar = ({ user, size = 28 }) => {
+const Avatar = ({ user, size = 36 }) => {
   if (user.avatar_url) {
     return <img src={user.avatar_url} alt="" className="lc-avatar" style={{ width: size, height: size }} />
   }
@@ -19,6 +17,9 @@ const Avatar = ({ user, size = 28 }) => {
     </span>
   )
 }
+
+/* 前三名奖牌的配色类（按名次：金 / 银 / 铜） */
+const RANK_MEDAL = ['lc-medal-gold', 'lc-medal-silver', 'lc-medal-bronze']
 
 /* 模式标签：placeholder=true 时未开启渲染灰色占位（我的排名卡片用，切模式不跳版）；
    否则未开启不渲染（排行榜行用，不留空） */
@@ -187,21 +188,24 @@ const load = () => {
       {!me || !me.bound ? (
         <div className="lc-bind-box">
           <div className="lc-bind-head">
-            <span className="lc-mine-label">{t('leetcode.bind.title')}</span>
+            <span className="label">{t('leetcode.bind.title')}</span>
             {lcError && <span className="lc-bind-error">{lcError}</span>}
           </div>
           <p className="lc-bind-hint">
             {t('leetcode.bind.hint')}
           </p>
           <div className="lc-bind-row">
-            <input
-              type="text"
-              className="lc-bind-input"
-              placeholder={t('leetcode.bind.usernamePlaceholder')}
-              value={lcUsername}
-              onChange={e => setLcUsername(e.target.value)}
-              maxLength={100}
-            />
+            <div className="field lc-bind-field">
+              <input
+                id="lc-bind-username"
+                type="text"
+                placeholder=" "
+                value={lcUsername}
+                onChange={e => setLcUsername(e.target.value)}
+                maxLength={100}
+              />
+              <label htmlFor="lc-bind-username">{t('leetcode.bind.usernamePlaceholder')}</label>
+            </div>
             <button className="btn btn-primary lc-bind-btn" onClick={handleBind} disabled={lcSaving}>
               {lcSaving ? t('leetcode.bind.binding') : t('leetcode.bind.bind')}
             </button>
@@ -209,54 +213,66 @@ const load = () => {
         </div>
       ) : (
         <>
-          <span className="lc-mine-label">{t('leetcode.mine.myRank')}</span>
-          <span className="lc-mine-rank">#{myRank >= 0 ? myRank + 1 : '-'}</span>
-          <span className="lc-mine-user">
-            <Avatar user={{ avatar_url: myRow ? myRow.avatar_url : null, nickname: myRow ? myRow.nickname : null, username: myRow ? myRow.username : null }} />
-            <span className="lc-nickname">{myRow ? (myRow.nickname || myRow.username) : me.leetcode_username}</span>
-            <a
-              className="lc-username lc-username-link"
-              href={`https://leetcode.cn/u/${encodeURIComponent(me.leetcode_username)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              title={t('leetcode.link.viewProfile')}
-              onClick={e => e.stopPropagation()}
-            >@{me.leetcode_username}</a>
-            <ModeTagSlot
-              active={!!me.difficulty_mode}
-              label={t('leetcode.mode.difficulty')}
-              hint={t('leetcode.mode.difficultyHint')}
-              className="lc-tag-hard"
-              activeClassName="lc-hard-tag"
-              placeholder
-            />
-            <ModeTagSlot
-              active={!!me.serious_mode}
-              label={t('leetcode.mode.serious')}
-              hint={t('leetcode.mode.seriousHint')}
-              className="lc-tag-serious"
-              activeClassName="lc-serious-tag"
-              placeholder
-            />
-            <ModeTagSlot
-              active={!!me.boost_mode}
-              label={t('leetcode.mode.boost')}
-              hint={t('leetcode.mode.boostHint')}
-              className="lc-tag-boost"
-              activeClassName={`lc-boost-tag ${me.score > 0 ? 'lc-boost-tag-gold' : ''}`}
-              placeholder
-            />
-            {me.debug_mode && (
-              <span className="lc-debug-tag" title={t('leetcode.mode.debugHint')}>{t('leetcode.mode.debug')}</span>
-            )}
-          </span>
-          <span className="lc-mine-stats">
-            {t('leetcode.mine.statsIncrement', { easy: me.inc.easy, medium: me.inc.medium, hard: me.inc.hard, total: me.total_inc })}
-            <br />
-            {t('leetcode.mine.statsCumulative', { easy: me.cur.easy, medium: me.cur.medium, hard: me.cur.hard })}
-            <b>{t('leetcode.mine.statsTotal', { total: me.cur.easy + me.cur.medium + me.cur.hard })}</b>
-          </span>
-          <span className="lc-mine-score">{t('leetcode.mine.score', { score: me.score })}</span>
+          <div className="lc-mine-strip">
+            <div className="lc-mine-cell">
+              <span className="label">{t('leetcode.mine.myRank')}</span>
+              <span className="lc-mine-rank">#{myRank >= 0 ? myRank + 1 : '-'}</span>
+            </div>
+            <div className="lc-mine-cell">
+              <span className="label">{t('leetcode.col.user')}</span>
+              <span className="lc-mine-user">
+                <Avatar user={{ avatar_url: myRow ? myRow.avatar_url : null, nickname: myRow ? myRow.nickname : null, username: myRow ? myRow.username : null }} />
+                <span className="lc-nickname">{myRow ? (myRow.nickname || myRow.username) : me.leetcode_username}</span>
+                <a
+                  className="lc-username lc-username-link link-underline"
+                  href={`https://leetcode.cn/u/${encodeURIComponent(me.leetcode_username)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={t('leetcode.link.viewProfile')}
+                  onClick={e => e.stopPropagation()}
+                >@{me.leetcode_username}</a>
+                <ModeTagSlot
+                  active={!!me.difficulty_mode}
+                  label={t('leetcode.mode.difficulty')}
+                  hint={t('leetcode.mode.difficultyHint')}
+                  className="lc-tag-hard"
+                  activeClassName="lc-hard-tag"
+                  placeholder
+                />
+                <ModeTagSlot
+                  active={!!me.serious_mode}
+                  label={t('leetcode.mode.serious')}
+                  hint={t('leetcode.mode.seriousHint')}
+                  className="lc-tag-serious"
+                  activeClassName="lc-serious-tag"
+                  placeholder
+                />
+                <ModeTagSlot
+                  active={!!me.boost_mode}
+                  label={t('leetcode.mode.boost')}
+                  hint={t('leetcode.mode.boostHint')}
+                  className="lc-tag-boost"
+                  activeClassName={`lc-boost-tag ${me.score > 0 ? 'lc-boost-tag-gold' : ''}`}
+                  placeholder
+                />
+                {me.debug_mode && (
+                  <span className="lc-debug-tag" title={t('leetcode.mode.debugHint')}>{t('leetcode.mode.debug')}</span>
+                )}
+              </span>
+            </div>
+            <div className="lc-mine-cell">
+              <span className="lc-mine-stats">
+                {t('leetcode.mine.statsIncrement', { easy: me.inc.easy, medium: me.inc.medium, hard: me.inc.hard, total: me.total_inc })}
+                <br />
+                {t('leetcode.mine.statsCumulative', { easy: me.cur.easy, medium: me.cur.medium, hard: me.cur.hard })}
+                <b>{t('leetcode.mine.statsTotal', { total: me.cur.easy + me.cur.medium + me.cur.hard })}</b>
+              </span>
+            </div>
+            <div className="lc-mine-cell">
+              <span className="label">{t('leetcode.col.score')}</span>
+              <span className="lc-mine-score">{t('leetcode.mine.score', { score: me.score })}</span>
+            </div>
+          </div>
           <div className="lc-mine-actions">
             <label className="lc-mode-toggle" title={t('leetcode.mode.difficultyHint')}>
               <input
@@ -271,7 +287,7 @@ const load = () => {
                   handleMode({ difficulty_mode: e.target.checked })
                 }}
               />
-              {t('leetcode.mode.difficulty')}
+              <span className="lc-mode-toggle-face">{t('leetcode.mode.difficulty')}</span>
             </label>
             <label className="lc-mode-toggle" title={t('leetcode.mode.seriousHint')}>
               <input
@@ -286,7 +302,7 @@ const load = () => {
                   handleMode({ serious_mode: e.target.checked })
                 }}
               />
-              {t('leetcode.mode.serious')}
+              <span className="lc-mode-toggle-face">{t('leetcode.mode.serious')}</span>
             </label>
             <label className="lc-mode-toggle" title={t('leetcode.mode.boostToggleHint')}>
               <input
@@ -297,21 +313,24 @@ const load = () => {
                   else setBoostExitConfirm(true)
                 }}
               />
-              {t('leetcode.mode.boost')}
+              <span className="lc-mode-toggle-face">{t('leetcode.mode.boost')}</span>
             </label>
-            <button className="lc-unbind-btn" onClick={() => setUnbindOpen(true)}>{t('leetcode.unbind.title')}</button>
+            <button className="action-btn action-btn-sm action-btn-danger" onClick={() => setUnbindOpen(true)}>{t('leetcode.unbind.title')}</button>
           </div>
           {unbindOpen && (
             <div className="lc-unbind-confirm">
               <p className="lc-unbind-tip">{t('leetcode.unbind.tip')}</p>
               <div className="lc-unbind-row">
-                <input
-                  type="text"
-                  className="lc-bind-input"
-                  placeholder={t('leetcode.unbind.confirmText')}
-                  value={unbindText}
-                  onChange={e => setUnbindText(e.target.value)}
-                />
+                <div className="field lc-bind-field">
+                  <input
+                    id="lc-unbind-confirm"
+                    type="text"
+                    placeholder=" "
+                    value={unbindText}
+                    onChange={e => setUnbindText(e.target.value)}
+                  />
+                  <label htmlFor="lc-unbind-confirm">{t('leetcode.unbind.confirmText')}</label>
+                </div>
                 <button
                   className="btn btn-danger lc-unbind-confirm-btn"
                   disabled={unbindText.trim() !== t('leetcode.unbind.confirmText') || unbinding}
@@ -320,7 +339,7 @@ const load = () => {
                   {unbinding ? t('leetcode.unbind.unbinding') : t('leetcode.unbind.confirmText')}
                 </button>
                 <button
-                  className="lc-unbind-cancel"
+                  className="action-btn action-btn-sm action-btn-secondary"
                   onClick={() => { setUnbindOpen(false); setUnbindText('') }}
                 >
                   {t('leetcode.unbind.cancel')}
@@ -336,26 +355,29 @@ const load = () => {
   return (
     <div className="lc-page">
       <Navbar activePage="leetcode" />
-      <div className="lc-main">
+      <main className="lc-main">
+        <div className="section-inner">
         {!loggedIn ? (
           <div className="lc-login-hint">
-            <p>{t('leetcode.loginHint')}</p>
+            <p className="lede">{t('leetcode.loginHint')}</p>
             <Link to="/login" className="btn btn-primary">{t('leetcode.goLogin')}</Link>
           </div>
         ) : (
         <>
-        <div className="lc-header">
-          <h1 className="lc-title">{t('leetcode.title')}</h1>
-          <p className="lc-subtitle">
-            {t('leetcode.subtitle')}
-          </p>
-        </div>
+        <header className="section-head">
+          <div className="section-head-meta">
+            <span className="folio">01</span>
+            <span className="label">Ranking</span>
+          </div>
+          <h1 className="section-title">{t('leetcode.title')}</h1>
+          <p className="section-desc">{t('leetcode.subtitle')}</p>
+        </header>
 
         <div className="lc-toolbar">
-          <button className="btn btn-primary lc-refresh-btn" onClick={handleRefresh} disabled={refreshing}>
+          <button className="btn btn-primary" onClick={handleRefresh} disabled={refreshing}>
             {refreshing ? t('leetcode.refresh.syncing') : t('leetcode.refresh.label')}
           </button>
-          <span className="lc-updated">
+          <span className="label">
             {board ? t('leetcode.updatedAt', { time: new Date(board.generated_at).toLocaleString('zh-CN') }) : ''}
           </span>
           {updatedTip && <span className="lc-updated-tip">{t('leetcode.updated')}</span>}
@@ -365,9 +387,9 @@ const load = () => {
         {meCard}
 
         {loading ? (
-          <div className="lc-loading">{t('leetcode.loading')}</div>
+          <div className="lc-loading lede">{t('leetcode.loading')}</div>
         ) : users.length === 0 ? (
-          <div className="lc-empty">
+          <div className="lc-empty lede">
             <p>{t('leetcode.empty')}</p>
           </div>
         ) : (
@@ -389,11 +411,11 @@ const load = () => {
               >
                 <span className="lc-col-rank">
                   {i < 3 ? (
-                    <span className={`lc-medal ${MEDAL_COLORS[i]}`} title={t('leetcode.rank', { n: i + 1 })}>
+                    <span className={`lc-medal ${RANK_MEDAL[i]}`} title={t('leetcode.rank', { n: i + 1 })}>
                       <UiIcon name="medal" size={20} />
                     </span>
                   ) : (
-                    i + 1
+                    <span className="folio">{i + 1}</span>
                   )}
                 </span>
                 <span className="lc-col-user">
@@ -402,7 +424,7 @@ const load = () => {
                     <span className="lc-user-line">
                       <span className="lc-nickname">{u.nickname || u.username}</span>
                       <a
-                        className="lc-username lc-username-link"
+                        className="lc-username lc-username-link link-underline"
                         href={`https://leetcode.cn/u/${encodeURIComponent(u.leetcode_username)}`}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -449,7 +471,8 @@ const load = () => {
         )}
         </>
         )}
-      </div>
+        </div>
+      </main>
 
       <Modal
         open={boostConfirm}

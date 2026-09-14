@@ -8,32 +8,38 @@ function ToolHomePage() {
   return (
     <div className="tool-page">
       <Navbar activePage="tools" />
-      <div className="tool-main">
-        <header className="tool-header">
-          <h1 className="tool-title">{t('toolHome.title')}</h1>
-          <p className="tool-subtitle">{t('toolHome.subtitle')}</p>
-        </header>
-
-        <div className="tool-cards">
-          <Link to="/tools/img2latex" className="tool-card-link">
-            <div className="tool-card-icon"><UiIcon name="img2latex" size={28} className="tool-brand-icon" /></div>
-            <div className="tool-card-info">
-              <h2 className="tool-card-name">{t('toolHome.img2latex.name')}</h2>
-              <p className="tool-card-desc">{t('toolHome.img2latex.desc')}</p>
+      <main className="section tool-home">
+        <div className="section-inner">
+          <header className="section-head">
+            <div className="section-head-meta">
+              <span className="folio">01</span>
+              <span className="label">Tools</span>
             </div>
-            <span className="tool-card-arrow">→</span>
-          </Link>
+            <h1 className="section-title">{t('toolHome.title')}</h1>
+            <p className="section-desc">{t('toolHome.subtitle')}</p>
+          </header>
 
-          <Link to="/tools/campus-service" className="tool-card-link">
-            <div className="tool-card-icon"><UiIcon name="campus" size={28} className="tool-brand-icon" /></div>
-            <div className="tool-card-info">
-              <h2 className="tool-card-name">{t('toolHome.campusService.name')}</h2>
-              <p className="tool-card-desc">{t('toolHome.campusService.desc')}</p>
-            </div>
-            <span className="tool-card-arrow">→</span>
-          </Link>
+          <div className="tool-index">
+            <Link to="/tools/img2latex" className="tool-entry">
+              <span className="tool-entry-icon"><UiIcon name="img2latex" size={22} /></span>
+              <div className="tool-entry-info">
+                <h2 className="tool-entry-name">{t('toolHome.img2latex.name')}</h2>
+                <p className="tool-entry-desc">{t('toolHome.img2latex.desc')}</p>
+              </div>
+              <span className="tool-entry-arrow" aria-hidden="true">→</span>
+            </Link>
+
+            <Link to="/tools/campus-service" className="tool-entry">
+              <span className="tool-entry-icon"><UiIcon name="campus" size={22} /></span>
+              <div className="tool-entry-info">
+                <h2 className="tool-entry-name">{t('toolHome.campusService.name')}</h2>
+                <p className="tool-entry-desc">{t('toolHome.campusService.desc')}</p>
+              </div>
+              <span className="tool-entry-arrow" aria-hidden="true">→</span>
+            </Link>
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   )
 }

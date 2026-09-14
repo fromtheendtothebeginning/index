@@ -1,107 +1,114 @@
+/* ToolHomePage.css — 工具主页（目录式条目，Editorial 风格）
+   令牌见 index.css；外壳（.section / .section-head / .section-inner）复用 App.css */
+
 .tool-page {
   min-height: 100vh;
   background: var(--bg-primary);
   color: var(--text-primary);
 }
 
-.tool-page .navbar {
-  opacity: 1;
-  transform: translateY(0);
+
+/* 预留固定导航高度（.section 提供上下留白，此处只补顶部偏移） */
+.section.tool-home {
+  padding-top: calc(var(--nav-h) + 80px);
 }
 
-.tool-main {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 100px 20px 60px;
-}
-
-.tool-header {
-  margin-bottom: 24px;
-}
-
-.tool-title {
-  font-size: 26px;
-  font-weight: 700;
-  margin: 0 0 8px;
-  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.tool-subtitle {
-  margin: 0;
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-.tool-cards {
+/* 目录：顶线 + 每条目 1px 分隔线，无卡片无阴影 */
+.tool-index {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  border-top: 1px solid var(--ink-10);
 }
 
-.tool-card-link {
-  display: flex;
+.tool-entry {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 16px;
-  padding: 20px;
-  border-radius: 14px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  text-decoration: none;
+  gap: 32px;
+  padding: 36px 0;
+  border-bottom: 1px solid var(--ink-10);
   color: inherit;
-  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  transition: border-color 0.5s ease, background-color 0.5s ease;
 }
 
-.tool-card-link:hover {
-  border-color: var(--accent-1);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px var(--accent-1-soft);
+.tool-entry:hover {
+  border-color: var(--ink-40);
+  background: var(--ink-02);
 }
 
-.tool-card-icon {
-  flex-shrink: 0;
-  width: 52px;
-  height: 52px;
+/* 图标：直角 1px 描边方框，hover 描边由 /10 加深到墨色 */
+.tool-entry-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
-  background: var(--accent-1-soft);
-  color: var(--accent-1);
+  width: 64px;
+  height: 64px;
+  border: 1px solid var(--ink-10);
+  color: var(--ink-40);
+  transition: color 0.5s ease, border-color 0.5s ease;
 }
 
-.tool-brand-icon {
-  width: 28px;
-  height: 28px;
+.tool-entry:hover .tool-entry-icon {
+  color: var(--ink);
+  border-color: var(--ink);
 }
 
-.tool-card-info {
-  flex: 1;
+.tool-entry-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   min-width: 0;
 }
 
-.tool-card-name {
-  font-size: 17px;
-  font-weight: 700;
-  margin: 0 0 4px;
+.tool-entry-name {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: clamp(1.375rem, 2.4vw, 1.75rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  transition: font-style 0.5s ease;
 }
 
-.tool-card-desc {
+.tool-entry:hover .tool-entry-name {
+  font-style: italic;
+}
+
+.tool-entry-desc {
   margin: 0;
-  font-size: 13px;
-  color: var(--text-secondary);
-  line-height: 1.5;
+  max-width: 52ch;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink-60);
 }
 
-.tool-card-arrow {
-  color: var(--text-muted);
-  font-size: 18px;
+.tool-entry-arrow {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  line-height: 1;
+  color: var(--ink-40);
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), color 0.5s ease;
+}
+
+.tool-entry:hover .tool-entry-arrow {
+  transform: translateX(10px);
+  color: var(--ink);
 }
 
 @media (max-width: 640px) {
-  .tool-main {
-    padding-top: 84px;
+  .tool-entry {
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    gap: 16px;
+    padding: 24px 0;
+  }
+
+  .tool-entry-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .tool-entry-arrow {
+    font-size: 18px;
   }
 }

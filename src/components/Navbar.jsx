@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useNavigate } from 'react-router-dom'
 import NavItem from './NavItem'
+import { UiIcon } from './Icons'
 import { navItems as featureNavItems } from '../appRoutes'
 import { BLOG_CATEGORIES } from '../constants'
 import { t } from '../i18n'
@@ -198,7 +199,7 @@ function Navbar({ activePage }) {
           aria-label={t('nav.openMenu')}
           onClick={() => setMenuOpen(!menuOpen)}
         >
-          {menuOpen ? '✕' : '☰'}
+          {menuOpen ? <UiIcon name="close" size={18} /> : <UiIcon name="menu" size={18} />}
         </button>
         <div className="nav-right">
           <div className="nav-links">{navItems}</div>

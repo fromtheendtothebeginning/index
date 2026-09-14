@@ -136,7 +136,7 @@ function ProjectEditorPage() {
   if (loading) {
     return (
       <div className="project-page">
-        <div className="project-main"><div className="blog-loading">{t('projectEditor.loading')}</div></div>
+        <div className="project-main"><div className="project-loading">{t('projectEditor.loading')}</div></div>
       </div>
     )
   }
@@ -148,32 +148,36 @@ function ProjectEditorPage() {
       <div className="project-main">
         <div className="project-editor">
           <Reveal className="editor-header">
-            <Link to={isEdit ? `/projects/${id}` : '/projects'} className="blog-back-link">&larr; {t('projectEditor.backProjects')}</Link>
+            <Link to={isEdit ? `/projects/${id}` : '/projects'} className="project-back-link">&larr; {t('projectEditor.backProjects')}</Link>
           </Reveal>
           <Reveal as="h1" className="editor-title">{isEdit ? t('projectEditor.editTitle') : t('projectEditor.newTitle')}</Reveal>
 
           {error && <div className="form-server-error">{error}</div>}
 
           <div className="editor-field">
-            <label className="editor-label">{t('projectEditor.name')}</label>
-            <input
-              type="text"
-              className="editor-title-input"
-              placeholder={t('projectEditor.namePlaceholder')}
-              value={name}
-              onChange={e => setName(e.target.value)}
-            />
+            <div className="field">
+              <input
+                id="project-name"
+                type="text"
+                placeholder=" "
+                value={name}
+                onChange={e => setName(e.target.value)}
+              />
+              <label htmlFor="project-name">{t('projectEditor.name')}</label>
+            </div>
           </div>
 
           <div className="editor-field">
-            <label className="editor-label">{t('projectEditor.coverUrl')}</label>
-            <input
-              type="text"
-              className="editor-title-input"
-              placeholder={t('projectEditor.coverUrlPlaceholder')}
-              value={coverUrl}
-              onChange={e => setCoverUrl(e.target.value)}
-            />
+            <div className="field">
+              <input
+                id="project-cover-url"
+                type="text"
+                placeholder=" "
+                value={coverUrl}
+                onChange={e => setCoverUrl(e.target.value)}
+              />
+              <label htmlFor="project-cover-url">{t('projectEditor.coverUrl')}</label>
+            </div>
             <div className="cover-preview">
               {coverUrl ? (
                 <ProjectCover src={coverUrl} alt={t('projectEditor.coverPreviewAlt')} className="cover-preview-img" bgColor={bgColor} />
@@ -184,57 +188,68 @@ function ProjectEditorPage() {
           </div>
 
           <div className="editor-field">
-            <label className="editor-label">{t('projectEditor.description')}</label>
-            <textarea
-              className="project-desc-input"
-              placeholder={t('projectEditor.descriptionPlaceholder')}
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              rows={8}
-            />
+            <div className="field">
+              <textarea
+                id="project-description"
+                placeholder=" "
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                rows={8}
+              />
+              <label htmlFor="project-description">{t('projectEditor.description')}</label>
+            </div>
           </div>
 
           <div className="editor-field">
-            <label className="editor-label">{t('projectEditor.tags')}</label>
-            <input
-              type="text"
-              className="editor-title-input"
-              placeholder={t('projectEditor.tagsPlaceholder')}
-              value={tags}
-              onChange={e => setTags(e.target.value)}
-            />
+            <div className="field">
+              <input
+                id="project-tags"
+                type="text"
+                placeholder=" "
+                value={tags}
+                onChange={e => setTags(e.target.value)}
+              />
+              <label htmlFor="project-tags">{t('projectEditor.tags')}</label>
+            </div>
           </div>
 
           <div className="editor-field">
-            <label className="editor-label">{t('projectEditor.bgColor')}</label>
+            <span className="label">{t('projectEditor.bgColor')}</span>
             <div className="editor-bg-color-row">
               <input
                 type="color"
-                value={bgColor || '#6c5ce7'}
+                className="editor-bg-color-input"
+                value={bgColor || ''}
                 onChange={e => setBgColor(e.target.value)}
               />
             </div>
           </div>
 
           <div className="editor-field">
-            <label className="editor-label">{t('projectEditor.links')}</label>
+            <span className="label">{t('projectEditor.links')}</span>
             <div className="project-links-editor">
               {links.map((l, i) => (
                 <div className="project-link-row" key={i}>
-                  <input
-                    type="text"
-                    className="editor-title-input project-link-name"
-                    placeholder={t('projectEditor.linkNamePlaceholder')}
-                    value={l.name}
-                    onChange={e => updateLink(i, 'name', e.target.value)}
-                  />
-                  <input
-                    type="text"
-                    className="editor-title-input project-link-url"
-                    placeholder="https://..."
-                    value={l.url}
-                    onChange={e => updateLink(i, 'url', e.target.value)}
-                  />
+                  <div className="field project-link-name">
+                    <input
+                      id={`project-link-name-${i}`}
+                      type="text"
+                      placeholder=" "
+                      value={l.name}
+                      onChange={e => updateLink(i, 'name', e.target.value)}
+                    />
+                    <label htmlFor={`project-link-name-${i}`}>{t('projectEditor.linkNamePlaceholder')}</label>
+                  </div>
+                  <div className="field project-link-url">
+                    <input
+                      id={`project-link-url-${i}`}
+                      type="text"
+                      placeholder=" "
+                      value={l.url}
+                      onChange={e => updateLink(i, 'url', e.target.value)}
+                    />
+                    <label htmlFor={`project-link-url-${i}`}>{t('projectEditor.link')}</label>
+                  </div>
                   <button
                     type="button"
                     className="project-link-del"
@@ -249,7 +264,7 @@ function ProjectEditorPage() {
 
           {isEdit ? (
             <div className="editor-field">
-              <div className="editor-label">{t('projectEditor.linkBlogs')}</div>
+              <span className="label">{t('projectEditor.linkBlogs')}</span>
               <p className="editor-hint">{t('projectEditor.linkBlogsHint')}</p>
               {blogsLoading ? (
                 <p className="editor-hint">{t('projectEditor.loading')}</p>
@@ -266,7 +281,7 @@ function ProjectEditorPage() {
                           onChange={() => toggleBlog(b.id)}
                         />
                         {b.title}
-                        {b.category && <span className="blog-card-category">{b.category}</span>}
+                        {b.category && <span className="tag">{b.category}</span>}
                       </label>
                     </div>
                   ))}
