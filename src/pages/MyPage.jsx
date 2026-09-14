@@ -8,6 +8,7 @@ import ActionButton from '../components/ActionButton'
 import { PROVIDERS, getProvider, getThinkingLevels, isValidThinkingLevel, AI_DEFAULTS } from '../utils/aiProviders'
 import { t } from '../i18n'
 import CampusCredPanel from '../features/campus-service/CampusCredPanel'
+import BindingsPanel from '../features/account-binding/BindingsPanel'
 import './MyPage.css'
 
 const TYPE_META = {
@@ -585,6 +586,9 @@ function MyPage() {
           <button type="button" className={`my-tab ${tab === 'campus' ? 'active' : ''}`} onClick={() => switchTab('campus')}>
             {t('myPage.tab.campus')}
           </button>
+          <button type="button" className={`my-tab ${tab === 'bindings' ? 'active' : ''}`} onClick={() => switchTab('bindings')}>
+            {t('myPage.tab.bindings')}
+          </button>
         </div>
 
         {tab === 'notify' && (
@@ -879,6 +883,8 @@ function MyPage() {
         )}
 
         {tab === 'campus' && <CampusCredPanel />}
+
+        {tab === 'bindings' && <BindingsPanel />}
       </div>
 
       {/* ═══ 二级弹窗（新增/编辑 Key）═══ */}

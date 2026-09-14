@@ -45,6 +45,13 @@
   - **邀请码**：生成、查看、删除、切换可重复使用
 - 管理员在博客列表页和详情页可直接编辑/撤回/改分类（无需进入后台）
 
+### 开放接口（第三方账号绑定）
+- **白名单制**：管理员在「管理后台 → 绑定应用」登记第三方项目（应用名 / 回调地址），登记后拿到 `client_id` / `client_secret`，只有登记且启用的项目能发起绑定
+- **OAuth 2.0 授权码模式**：第三方把用户送到 `/bind?client_id=..&redirect_uri=..&state=..`，用户确认后回跳 `redirect_uri?code=..`，第三方服务端用 code 换 30 天访问令牌，再读用户名/昵称/头像
+- **用户自助**：「我的 → 账号绑定」查看绑定时间、最近调用，随时解除绑定（令牌立即失效）
+- 令牌为不透明的随机串（非 JWT），只对 `/api/open/userinfo` 有效，拿不到站内写权限
+- 完整对接文档（流程、接口、错误码、Python/Node 示例）：[docs/account-binding-api.md](docs/account-binding-api.md)
+
 ### 界面与交互
 - 淡色主题 + 紫青渐变点缀
 - 玻璃态导航栏、入场动画、Tab 切换动画
@@ -237,6 +244,23 @@ anticraft/
 | `GET` | `/api/admin/invite-codes` | 邀请码列表 |
 | `DELETE` | `/api/admin/invite-codes/{id}` | 删除邀请码 |
 | `PUT` | `/api/admin/invite-codes/{id}/reusable` | 切换可重复使用 |
+| `GET` | `/api/admin/bind-apps` | 绑定白名单列表 |
+| `POST` | `/api/admin/bind-apps` | 登记第三方应用（返回一次性密钥） |
+| `PUT` | `/api/admin/bind-apps/{id}` | 编辑 / 启用停用 |
+| `POST` | `/api/admin/bind-apps/{id}/secret` | 重置应用密钥 |
+| `DELETE` | `/api/admin/bind-apps/{id}` | 删除应用（作废其全部绑定） |
+
+### 开放接口（第三方项目调用）
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| `GET` | `/api/open/apps/{client_id}` | 应用公开信息 |
+| `POST` | `/api/open/token` | 授权码换访问令牌（需 client_secret） |
+| `GET` | `/api/open/userinfo` | 读取已绑定用户资料（Bearer 令牌） |
+| `POST` | `/api/open/revoke` | 第三方主动解除绑定 |
+| `GET` | `/api/bind/mine` | 我绑定的第三方应用（需登录） |
+| `DELETE` | `/api/bind/mine/{app_id}` | 解除绑定（需登录） |
+
+对接说明见 [docs/account-binding-api.md](docs/account-binding-api.md)。
 
 完整接口文档：http://127.0.0.1:8000/docs
 

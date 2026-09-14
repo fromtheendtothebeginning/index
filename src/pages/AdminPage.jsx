@@ -5,6 +5,7 @@ import Modal from '../components/Modal'
 import CategoryDropdown from '../components/CategoryDropdown'
 import { CONTACT_ICON_OPTIONS, ContactIcon } from '../components/Icons'
 import { BLOG_CATEGORIES as CATEGORIES } from '../constants'
+import BindAppsPanel from '../features/account-binding/BindAppsPanel'
 import { t } from '../i18n'
 import './AdminPage.css'
 
@@ -468,6 +469,7 @@ function AdminPage() {
           <button className={`admin-tab ${tab === 'links' ? 'active' : ''}`} onClick={() => setTab('links')}>{t('admin.tabs.links')}</button>
           <button className={`admin-tab ${tab === 'settings' ? 'active' : ''}`} onClick={() => setTab('settings')}>{t('admin.tabs.settings')}</button>
           <button className={`admin-tab ${tab === 'leetcode' ? 'active' : ''}`} onClick={() => setTab('leetcode')}>{t('admin.tabs.leetcode')}</button>
+          <button className={`admin-tab ${tab === 'bindApps' ? 'active' : ''}`} onClick={() => setTab('bindApps')}>{t('admin.tabs.bindApps')}</button>
         </div>
 
         {error && <div className="admin-error">{error}</div>}
@@ -982,6 +984,9 @@ function AdminPage() {
             </div>
           </div>
         )}
+
+        {/* 绑定应用（第三方项目绑定白名单） */}
+        {tab === 'bindApps' && <BindAppsPanel />}
       </div>
 
       <Modal

@@ -520,6 +520,7 @@ admin:
     links: 友情链接
     settings: 站点设置
     leetcode: LeetCode 调试
+    bindApps: 绑定应用
   users:
     all: 所有用户（{count}）
     colId: ID
@@ -627,6 +628,7 @@ myPage:
     notifications: 通知
     aiSettings: AI 设置
     campus: 校园服务
+    bindings: 账号绑定
   notify:
     unreadBadge: 未读标记
     unreadCount: '{n} 条未读'
@@ -750,6 +752,7 @@ myPage:
     unknownError: 未知错误
     failed: 测试失败
     networkError: 网络错误，请稍后重试
+
 md:
   copyCode: 复制代码
   copied: 已复制
@@ -898,3 +901,100 @@ campusService:
     saveFailed: 保存失败：{error}
     loadFailed: 配置加载失败，请刷新重试
     networkError: 网络错误，请稍后重试
+binding:
+  consent:
+    back: 返回首页
+    title: 授权绑定
+    subtitle: 第三方项目申请读取你的 anticraft 账号资料
+    loading: 正在校验应用信息…
+    applying: 申请方
+    scopeTitle: 授权范围
+    scopeProfile: 读取账号基础资料
+    scopeProfileDetail: 用户名、昵称、头像、注册时间
+    accountTitle: 当前账号
+    redirectTitle: 授权后跳转
+    approve: 同意绑定
+    deny: 取消
+    approving: 处理中…
+    unavailable: 无法继续授权
+    notWhitelisted: 该应用不在绑定白名单内，或已被停用
+    whitelistHint: 绑定采用白名单机制，只有管理员登记且启用的项目才能发起授权；如果你是项目作者，请联系站点管理员登记回调地址。
+    invalidParams: 缺少 client_id 或 redirect_uri 参数
+    needLogin: 请先登录 anticraft 账号，再确认本次绑定
+    reloginHint: 登录后回到本页面（或重新点击第三方项目的绑定入口）即可继续
+    goLogin: 去登录
+    loginDone: 我已登录
+    redirecting: 授权成功，正在跳转回应用…
+    denied: 已取消授权，正在返回应用…
+    securityNote: 授权后该应用可凭令牌读取你的用户名、昵称、头像与注册时间，不会获得密码或站内权限；你随时可以在「我的 → 账号绑定」解除绑定。
+    approveFailed: 授权失败
+    denyFailed: 取消授权失败
+    loadFailed: 加载失败
+    networkError: 网络错误，请稍后重试
+  mine:
+    title: 账号绑定
+    subtitle: 已授权登录的第三方项目，解除绑定后对方将无法再读取你的资料
+    loading: 加载中…
+    loadFailed: 绑定列表加载失败
+    retry: 重试
+    empty: 还没有绑定任何第三方项目
+    emptyHint: 当你在第三方项目里选择「使用 anticraft 账号登录」并完成授权后，绑定关系会显示在这里。
+    scope: 授权范围
+    scopeProfile: 基础资料
+    boundAt: 绑定时间
+    lastUsed: 最近调用
+    never: 尚未调用
+    expiresAt: 有效期至
+    active: 生效中
+    expired: 已过期
+    unbind: 解除绑定
+    unbindTitle: 解除绑定
+    unbindConfirm: 确定解除与「{name}」的绑定？解除后该应用将立即无法读取你的资料。
+    unbindConfirmText: 确认解除
+    unbound: 已解除绑定
+    unbindFailed: 解除失败：{error}
+    networkError: 网络错误
+    hint: 第三方项目只能读到你的用户名、昵称、头像与注册时间；令牌 30 天到期，重新授权会轮换令牌。
+  admin:
+    title: 绑定应用（白名单）
+    subtitle: 只有在下方登记且处于启用状态的项目才能发起账号绑定；回调地址必须与第三方实际接收授权的地址完全一致。
+    loading: 加载中…
+    loadFailed: 应用列表加载失败
+    retry: 重试
+    empty: 还没有登记任何应用
+    name: 应用名
+    description: 简介
+    homepage: 主页（可选）
+    redirectUris: 回调地址（每行一个）
+    redirectHint: 回调地址不支持通配符，必须与第三方项目接收授权的地址逐字符一致；支持 http/https，本地调试地址（localhost）也可登记。
+    create: 登记应用
+    saving: 保存中…
+    createFailed: 登记失败：{error}
+    saveFailed: 保存失败：{error}
+    nameRequired: 请填写应用名
+    urisRequired: 至少填写一个回调地址
+    networkError: 网络错误
+    colApp: 应用
+    colUris: 回调地址
+    colBound: 绑定人数
+    colStatus: 状态
+    colActions: 操作
+    enabled: 启用
+    disabled: 已停用
+    enable: 启用
+    disable: 停用
+    edit: 编辑
+    editTitle: 编辑应用
+    save: 保存
+    rotate: 重置密钥
+    rotateTitle: 重置应用密钥
+    rotateConfirm: 重置「{name}」的密钥后，旧密钥立即失效，需要第三方项目同步更新。确定重置？
+    delete: 删除
+    deleteTitle: 删除应用
+    deleteConfirm: 删除「{name}」并作废它的全部绑定？
+    credentialTitle: 应用凭证（仅显示这一次）
+    credentialHint: client_secret 只在这里显示一次（服务器只保存哈希），请立即复制并填入第三方项目的配置；遗失可在列表中重置密钥。
+    credentialClose: 我已保存
+    copy: 复制
+    copied: 已复制
+    docHint: 对接流程与接口说明见仓库文档 docs/account-binding-api.md。

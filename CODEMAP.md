@@ -39,6 +39,7 @@ FastAPI + SQLAlchemy + MySQL 8。入口 `python backend/main.py`，模块间同�
 | `features/site.py` | 友情链接 CRUD（公开读 + 管理员写）、站点设置（首页"保持联系"区块 contact_items JSON 单行配置）。 |
 | `features/leetcode.py` | LeetCode 刷题榜：绑定 leetcode.cn 用户名后经 GraphQL 抓增量（8.13 起算）；计分规则（简单2/中等4/困难8；困难模式减半、严肃模式简单不计、激励模式 -100 起步 3/6/9 互斥）；调试模式手动改数；公开榜单；60 秒后台心跳线程全量同步；管理员调试接口。 |
 | `features/ai_settings_api.py` | AI 设置 REST：多 Key CRUD（加密存储、掩码返回）、当前选择保存（主模型/识图模型）、按 Key 拉取可用模型（`?capability=vision` 按 constants 特征过滤）、收藏模型置顶、自定义模型增删、连接测试。 |
+| `features/account_binding.py` | 开放平台·第三方绑定 anticraft 账号（OAuth2 授权码模式 + **白名单**）：本模块自带三张表 `bind_apps`（白名单应用，密钥只存 sha256）/ `bind_codes`（一次性授权码，5 分钟）/ `bind_tokens`（绑定关系，30 天不透明令牌）；开放接口 `/api/open/apps/{client_id}`、`/api/open/token`、`/api/open/userinfo`、`/api/open/revoke`；用户端 `/api/bind/authorize`（授权确认页数据 + 确认/拒绝）、`/api/bind/mine`（我的绑定/解绑）；管理端 `/api/admin/bind-apps*`（登记/编辑/启停/重置密钥/删除）。令牌**不用 JWT**，只对 userinfo 有效，避免把站内登录态交出去。对接文档 `docs/account-binding-api.md`。 |
 
 ## 二、AI 智能体管控框架（harness/）
 
@@ -124,6 +125,7 @@ React 18 + Vite 5 + react-router-dom v7，无 UI 组件库；每页独立 CSS，
 | 文件 | 职责 |
 |---|---|
 | `features/img2latex/routes.jsx` | 功能注册样板：default 导出路由数组 `[{path:'/tools/img2latex', element}]`，命名导出 `nav=[{label, path, parent:'/tools'}]`（parent 使条目进"工具"下拉而非顶层）。作为新功能的参考模板。 |
+| `features/account-binding/` | 第三方账号绑定：`routes.jsx` 注册 `/bind`（授权确认页 `BindConsentPage`，第三方把用户送到 `/bind?client_id&redirect_uri&state`）；`BindingsPanel`（我的绑定列表+解绑，被 `pages/MyPage.jsx` 的「账号绑定」Tab 引用）与 `BindAppsPanel`（白名单管理，被 `pages/AdminPage.jsx` 的「绑定应用」Tab 引用）——面板放功能目录、宿主页面只加一行引用，同 `campus-service/CampusCredPanel` 的做法。 |
 
 ### 样式文件（CSS）
 

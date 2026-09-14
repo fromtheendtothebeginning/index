@@ -1,0 +1,164 @@
+/* ============================================
+   授权确认页（BindConsentPage，ab- 前缀）
+   Editorial：纸墨单色 · 全直角 · 细线分隔 · 衬线标题
+   基元（.btn / .label / .tool-*）见 index.css 与 ToolParsePage.css，此处只补布局。
+   ============================================ */
+
+.ab-main {
+  max-width: 720px;
+}
+
+.ab-loading {
+  padding: 8px 0;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-40);
+}
+
+/* ── 卡片：一张纸，靠细线圈定，无阴影无圆角 ── */
+.ab-card {
+  border: 1px solid var(--ink-10);
+  border-top: 1px solid var(--ink-20);
+  padding: 36px 32px;
+}
+
+.ab-app-name {
+  margin: 14px 0 0;
+  font-family: var(--font-serif);
+  font-size: 30px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--text-primary);
+}
+
+.ab-app-desc {
+  margin: 12px 0 0;
+  max-width: 56ch;
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--ink-60);
+}
+
+.ab-app-home {
+  margin: 8px 0 0;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.ab-app-home a {
+  color: var(--ink-40);
+  text-decoration: none;
+  border-bottom: 1px solid var(--ink-20);
+}
+
+.ab-app-home a:hover {
+  color: var(--text-primary);
+  border-bottom-color: var(--text-primary);
+}
+
+.ab-rule {
+  border: 0;
+  border-top: 1px solid var(--ink-10);
+  margin: 28px 0;
+}
+
+.ab-block {
+  margin: 0 0 22px;
+}
+
+.ab-block > .label {
+  display: block;
+  margin-bottom: 10px;
+}
+
+/* 授权范围：勾选清单（勾号用墨色细描边，不用彩色） */
+.ab-scope {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ab-scope li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--text-primary);
+}
+
+.ab-scope li svg {
+  flex: 0 0 auto;
+  margin-top: 5px;
+  color: var(--ink-40);
+}
+
+.ab-scope li span {
+  display: flex;
+  flex-direction: column;
+}
+
+.ab-scope li strong {
+  font-weight: 600;
+}
+
+.ab-scope li em {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--ink-60);
+}
+
+.ab-account {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.ab-mono {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  word-break: break-all;
+}
+
+.ab-hint {
+  margin: 14px 0 0;
+  max-width: 56ch;
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--ink-60);
+}
+
+.ab-note {
+  margin: 26px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--ink-10);
+  font-size: 12px;
+  line-height: 1.75;
+  color: var(--ink-40);
+}
+
+.ab-error {
+  margin: 18px 0 0;
+  padding: 14px 16px;
+  border: 1px solid var(--ink);
+  background: var(--ink-04);
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--text-primary);
+}
+
+.ab-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 30px;
+}
+
+.ab-actions .btn {
+  text-decoration: none;
+}

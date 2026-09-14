@@ -1,0 +1,184 @@
+/* ============================================
+   我的绑定面板（BindingsPanel，abp- 前缀，「我的 → 账号绑定」tab）
+   Editorial：纸墨单色 · 全直角 · 细线分隔 · 衬线标题
+   基元（.field / .label / .action-btn）见 index.css 与 App.css，此处只补布局。
+   ============================================ */
+
+.abp-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 28px 0 0;
+  border-top: 1px solid var(--ink-10);
+}
+
+.abp-head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.abp-title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 21px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.abp-sub {
+  margin: 0;
+  max-width: 62ch;
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--ink-60);
+}
+
+.abp-loading {
+  padding: 8px 0;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-40);
+}
+
+.abp-err {
+  padding: 14px 16px;
+  border: 1px solid var(--ink);
+  background: var(--ink-04);
+  font-size: 13px;
+  line-height: 1.75;
+}
+
+.abp-err-ops {
+  margin-top: 12px;
+}
+
+.abp-empty {
+  padding: 8px 0 4px;
+}
+
+.abp-empty-hint {
+  margin: 10px 0 0;
+  max-width: 62ch;
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--ink-60);
+}
+
+/* ── 绑定列表：hairline 分行，无卡片无阴影 ── */
+.abp-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--ink-10);
+}
+
+.abp-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 22px 0;
+  border-bottom: 1px solid var(--ink-10);
+}
+
+.abp-item-main {
+  min-width: 0;
+}
+
+.abp-item-name {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.abp-item-name a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid var(--ink-20);
+}
+
+.abp-item-name a:hover {
+  border-bottom-color: var(--text-primary);
+}
+
+/* 状态：靠字重与描边区分，不用彩色 */
+.abp-status {
+  flex: 0 0 auto;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-40);
+  border: 1px solid var(--ink-20);
+  padding: 3px 7px;
+}
+
+.abp-status.is-expired {
+  border-color: var(--ink);
+  color: var(--text-primary);
+}
+
+.abp-item-desc {
+  margin: 8px 0 0;
+  max-width: 60ch;
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--ink-60);
+}
+
+.abp-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px 24px;
+  margin: 16px 0 0;
+}
+
+.abp-meta dt {
+  margin: 0 0 4px;
+}
+
+.abp-meta dd {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.abp-item-ops {
+  flex: 0 0 auto;
+  padding-top: 2px;
+}
+
+.abp-notice {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--ink-60);
+}
+
+.abp-hint {
+  margin: 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--ink-10);
+  font-size: 12px;
+  line-height: 1.75;
+  color: var(--ink-40);
+}
+
+@media (max-width: 640px) {
+  .abp-item {
+    flex-direction: column;
+    gap: 14px;
+  }
+}
