@@ -74,7 +74,7 @@ export default function BindingsPanel() {
         </div>
       ) : bindings.length === 0 ? (
         <div className="abp-empty">
-          <span className="label">{t('binding.mine.empty')}</span>
+          <p className="abp-empty-title">{t('binding.mine.empty')}</p>
           <p className="abp-empty-hint">{t('binding.mine.emptyHint')}</p>
         </div>
       ) : (
@@ -93,19 +93,19 @@ export default function BindingsPanel() {
                 {b.description && <p className="abp-item-desc">{b.description}</p>}
                 <dl className="abp-meta">
                   <div>
-                    <dt className="label">{t('binding.mine.scope')}</dt>
+                    <dt>{t('binding.mine.scope')}</dt>
                     <dd>{t('binding.mine.scopeProfile')}</dd>
                   </div>
                   <div>
-                    <dt className="label">{t('binding.mine.boundAt')}</dt>
+                    <dt>{t('binding.mine.boundAt')}</dt>
                     <dd>{fmt(b.created_at)}</dd>
                   </div>
                   <div>
-                    <dt className="label">{t('binding.mine.lastUsed')}</dt>
+                    <dt>{t('binding.mine.lastUsed')}</dt>
                     <dd>{b.last_used_at ? fmt(b.last_used_at) : t('binding.mine.never')}</dd>
                   </div>
                   <div>
-                    <dt className="label">{t('binding.mine.expiresAt')}</dt>
+                    <dt>{t('binding.mine.expiresAt')}</dt>
                     <dd>{fmt(b.expires_at)}</dd>
                   </div>
                 </dl>

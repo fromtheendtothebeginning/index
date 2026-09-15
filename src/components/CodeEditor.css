@@ -1,19 +1,19 @@
-/* CodeEditor.css — overlay 语法高亮编辑器
-   直角单色：1px 细线 + --font-mono 代码区，无阴影无圆角。
-   注意：高亮层与输入层的 padding / font-size / line-height / 换行参数必须完全一致（逐行像素级对齐）。 */
+/* CodeEditor.css — overlay 语法高亮编辑器 */
 .code-editor {
   position: relative;
   width: 100%;
   height: 500px;
-  border: 1px solid var(--ink-20);
-  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-card);
   overflow: hidden;
+  transition: border-color 0.2s;
   box-sizing: border-box;
-  transition: border-color 0.4s ease;
 }
 
 .code-editor:focus-within {
-  border-color: var(--ink);
+  border-color: var(--accent-1);
+  box-shadow: 0 0 0 3px var(--accent-1-soft);
 }
 
 /* 底层高亮层：与 textarea 逐行像素级对齐（同 padding/字体/行高/换行，仅改颜色） */
@@ -24,7 +24,7 @@
   padding: 16px;
   overflow: auto;
   font-size: 14px;
-  font-family: var(--font-mono);
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
   line-height: 1.7;
   color: var(--text-primary);
   white-space: pre-wrap;
@@ -50,7 +50,7 @@
   color: transparent;
   caret-color: var(--text-primary);
   font-size: 14px;
-  font-family: var(--font-mono);
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
   line-height: 1.7;
   white-space: pre-wrap;
   word-wrap: break-word;
@@ -60,7 +60,7 @@
 }
 
 .code-editor-ta::placeholder {
-  color: var(--ink-40);
+  color: var(--text-muted);
 }
 
 /* 代码块行：行内着色，绝不改变行高/行数（保持对齐的关键）。
@@ -69,7 +69,7 @@
   display: inline;
 }
 
-/* hljs token 配色复用 index.css 的印刷体低饱和变量（限代码块内容） */
+/* hljs token 配色复用 index.css 的 GitHub 主题变量 */
 .code-editor-hl .hljs-comment,
 .code-editor-hl .hljs-quote { color: var(--hljs-comment); font-style: italic; }
 .code-editor-hl .hljs-keyword,
@@ -91,12 +91,12 @@
 .code-editor-hl .hljs-symbol { color: var(--hljs-builtin); }
 .code-editor-hl .hljs-name,
 .code-editor-hl .hljs-selector-tag { color: var(--hljs-tag); }
-.code-editor-hl .hljs-section { color: var(--hljs-const); font-weight: 600; }
+.code-editor-hl .hljs-section { color: var(--hljs-const); font-weight: bold; }
 .code-editor-hl .hljs-bullet { color: var(--hljs-bullet); }
 .code-editor-hl .hljs-addition { color: var(--hljs-add); background-color: var(--hljs-add-bg); }
 .code-editor-hl .hljs-deletion { color: var(--hljs-del); background-color: var(--hljs-del-bg); }
 .code-editor-hl .hljs-emphasis { font-style: italic; }
-.code-editor-hl .hljs-strong { font-weight: 600; }
+.code-editor-hl .hljs-strong { font-weight: bold; }
 
 /* 自动补全下拉（Portal 到 body，position:fixed 悬浮在所有内容之上） */
 .code-editor-menu {
@@ -106,8 +106,10 @@
   max-height: 240px;
   overflow-y: auto;
   background: var(--bg-card);
-  border: 1px solid var(--ink-20);
-  padding: 4px 0;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
+  padding: 4px;
 }
 
 .code-editor-menu-item {
@@ -115,22 +117,17 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 5px 14px;
+  padding: 5px 10px;
+  border-radius: 6px;
   font-size: 13px;
-  font-family: var(--font-mono);
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
   color: var(--text-primary);
   cursor: pointer;
-  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-.code-editor-menu-item:hover {
-  background: var(--ink-02);
-}
-
-/* 键盘/鼠标选中项：比 hover 更深一档的墨色底 */
 .code-editor-menu-item.active {
-  background: var(--ink-04);
-  color: var(--text-primary);
+  background: var(--accent-1-soft);
+  color: var(--accent-1);
 }
 
 .code-editor-menu-label {
@@ -140,12 +137,10 @@
 }
 
 .code-editor-menu-type {
-  font-family: var(--font-sans);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.2em;
+  font-size: 10px;
   text-transform: uppercase;
-  color: var(--ink-40);
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 

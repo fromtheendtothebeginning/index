@@ -136,7 +136,7 @@ export default function BindConsentPage() {
       <Navbar activePage="bind" />
       <div className="tool-main ab-main">
         <header className="tool-header">
-          <Link to="/" className="tool-back label link-underline">{t('binding.consent.back')}</Link>
+          <Link to="/" className="tool-back">{t('binding.consent.back')}</Link>
           <h1 className="tool-title">{t('binding.consent.title')}</h1>
           <p className="tool-subtitle">{t('binding.consent.subtitle')}</p>
         </header>
@@ -155,7 +155,7 @@ export default function BindConsentPage() {
           <section className="ab-card">
             {app && (
               <>
-                <span className="label">{t('binding.consent.applying')}</span>
+                <span className="ab-label">{t('binding.consent.applying')}</span>
                 <h2 className="ab-app-name">{app.name}</h2>
                 {app.description && <p className="ab-app-desc">{app.description}</p>}
               </>
@@ -177,7 +177,7 @@ export default function BindConsentPage() {
 
         {(phase === 'ready' || phase === 'redirecting' || phase === 'denied') && app && (
           <section className="ab-card">
-            <span className="label">{t('binding.consent.applying')}</span>
+            <span className="ab-label">{t('binding.consent.applying')}</span>
             <h2 className="ab-app-name">{app.name}</h2>
             {app.description && <p className="ab-app-desc">{app.description}</p>}
             {app.homepage && (
@@ -189,7 +189,7 @@ export default function BindConsentPage() {
             <hr className="ab-rule" />
 
             <div className="ab-block">
-              <span className="label">{t('binding.consent.scopeTitle')}</span>
+              <span className="ab-label">{t('binding.consent.scopeTitle')}</span>
               <ul className="ab-scope">
                 <li>
                   <UiIcon name="check" size={13} />
@@ -202,12 +202,12 @@ export default function BindConsentPage() {
             </div>
 
             <div className="ab-block">
-              <span className="label">{t('binding.consent.accountTitle')}</span>
+              <span className="ab-label">{t('binding.consent.accountTitle')}</span>
               <p className="ab-account">{user?.nickname || user?.username}{user?.nickname ? ` (${user.username})` : ''}</p>
             </div>
 
             <div className="ab-block">
-              <span className="label">{t('binding.consent.redirectTitle')}</span>
+              <span className="ab-label">{t('binding.consent.redirectTitle')}</span>
               <p className="ab-account ab-mono">{redirectHost}</p>
             </div>
 

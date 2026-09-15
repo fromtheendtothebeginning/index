@@ -181,7 +181,7 @@ export default function BindAppsPanel() {
       </div>
 
       <div className="aba-form">
-        <div className="field">
+        <div className="aba-field">
           <input
             id="aba-app-name"
             type="text"
@@ -192,7 +192,7 @@ export default function BindAppsPanel() {
           />
           <label htmlFor="aba-app-name">{t('binding.admin.name')}</label>
         </div>
-        <div className="field">
+        <div className="aba-field">
           <input
             id="aba-app-desc"
             type="text"
@@ -203,7 +203,7 @@ export default function BindAppsPanel() {
           />
           <label htmlFor="aba-app-desc">{t('binding.admin.description')}</label>
         </div>
-        <div className="field">
+        <div className="aba-field">
           <input
             id="aba-app-homepage"
             type="text"
@@ -214,7 +214,7 @@ export default function BindAppsPanel() {
           />
           <label htmlFor="aba-app-homepage">{t('binding.admin.homepage')}</label>
         </div>
-        <div className="field aba-form-uris">
+        <div className="aba-field aba-form-uris">
           <textarea
             id="aba-app-uris"
             rows={3}
@@ -329,7 +329,7 @@ export default function BindAppsPanel() {
       >
         {editing && (
           <>
-            <div className="field">
+            <div className="aba-field">
               <input
                 id="aba-edit-name"
                 type="text"
@@ -340,7 +340,7 @@ export default function BindAppsPanel() {
               />
               <label htmlFor="aba-edit-name">{t('binding.admin.name')}</label>
             </div>
-            <div className="field">
+            <div className="aba-field">
               <input
                 id="aba-edit-desc"
                 type="text"
@@ -351,7 +351,7 @@ export default function BindAppsPanel() {
               />
               <label htmlFor="aba-edit-desc">{t('binding.admin.description')}</label>
             </div>
-            <div className="field">
+            <div className="aba-field">
               <input
                 id="aba-edit-homepage"
                 type="text"
@@ -362,7 +362,7 @@ export default function BindAppsPanel() {
               />
               <label htmlFor="aba-edit-homepage">{t('binding.admin.homepage')}</label>
             </div>
-            <div className="field">
+            <div className="aba-field">
               <textarea
                 id="aba-edit-uris"
                 rows={3}
@@ -404,7 +404,7 @@ export default function BindAppsPanel() {
               ['client_secret', credential.client_secret],
             ].map(([key, value]) => (
               <div key={key} className="aba-cred-row">
-                <span className="label">{key}</span>
+                <span className="aba-cred-key">{key}</span>
                 <code className="aba-mono">{value}</code>
                 <ActionButton size="sm" variant="secondary" onClick={() => copy(value, key)}>
                   {copied === key ? t('binding.admin.copied') : t('binding.admin.copy')}

@@ -116,25 +116,6 @@ const UI_ICONS = {
   check: (
     <polyline points="20 6 9 17 4 12" />
   ),
-  menu: (
-    <>
-      <line x1="3" y1="7" x2="21" y2="7" />
-      <line x1="3" y1="12" x2="21" y2="12" />
-      <line x1="3" y1="17" x2="21" y2="17" />
-    </>
-  ),
-  close: (
-    <>
-      <line x1="5" y1="5" x2="19" y2="19" />
-      <line x1="19" y1="5" x2="5" y2="19" />
-    </>
-  ),
-  'chevron-left': (
-    <polyline points="15 18 9 12 15 6" />
-  ),
-  'chevron-right': (
-    <polyline points="9 18 15 12 9 6" />
-  ),
   img2latex: (
     <>
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />

@@ -103,11 +103,11 @@ export default function CampusCredPanel() {
   const dormPreview = buildDorm(form.campus, form.building, form.room)
 
   return (
-    <section className="ccp-panel">
-      <header className="ccp-head">
-        <h3 className="ccp-title">{t('campusService.cred.title')}</h3>
+    <div className="ccp-panel">
+      <div className="ccp-head">
+        <div className="ccp-title">{t('campusService.cred.title')}</div>
         <p className="ccp-sub">{t('campusService.cred.subtitle')}</p>
-      </header>
+      </div>
 
       {loading ? (
         <div className="ccp-loading">{t('campusService.loading')}</div>
@@ -120,73 +120,65 @@ export default function CampusCredPanel() {
         </div>
       ) : (
         <>
-          {/* 当前配置：hairline 行 + .label 字段名（不再用彩色胶囊） */}
           {info.configured ? (
-            <dl className="ccp-current">
-              <div className="ccp-current-item">
-                <dt className="label">{t('campusService.cred.current')}</dt>
-                <dd>{info.student_id_masked || '—'}</dd>
-              </div>
-              <div className="ccp-current-item">
-                <dt className="label">{t('campusService.cred.realName')}</dt>
-                <dd>{info.real_name || '—'}</dd>
-              </div>
-              <div className="ccp-current-item">
-                <dt className="label">{t('campusService.cred.payPassword')}</dt>
-                <dd className={info.has_pay_password ? '' : 'is-muted'}>
-                  {info.has_pay_password ? t('campusService.cred.paySet') : t('campusService.cred.payNotSet')}
-                </dd>
-              </div>
-            </dl>
-          ) : (
-            <div className="ccp-none">
-              <span className="label">{t('campusService.cred.notConfigured')}</span>
-              <p className="ccp-none-hint">{t('campusService.cred.noneHint')}</p>
+            <div className="ccp-current">
+              <span className="ccp-current-label">{t('campusService.cred.current')}</span>
+              <span className="ccp-chip">{info.student_id_masked}</span>
+              <span className="ccp-chip">{info.real_name}</span>
+              <span className={`ccp-chip ${info.has_pay_password ? 'ccp-chip-ok' : 'ccp-chip-off'}`}>
+                {info.has_pay_password ? t('campusService.cred.paySet') : t('campusService.cred.payNotSet')}
+              </span>
             </div>
+          ) : (
+            <>
+              <span className="ccp-chip ccp-chip-off">{t('campusService.cred.notConfigured')}</span>
+              <p className="ccp-none">{t('campusService.cred.noneHint')}</p>
+            </>
           )}
 
           <div className="ccp-form">
-            <div className="field">
+            <div className="ccp-field">
+              <label className="ccp-label" htmlFor="ccp-student-id">{t('campusService.cred.studentId')}</label>
               <input
                 id="ccp-student-id"
-                placeholder=" "
+                className="ccp-input"
                 type="text"
                 value={form.student_id}
                 maxLength={32}
                 autoComplete="off"
+                placeholder={info.configured ? `${t('campusService.cred.sidMasked', { sid: info.student_id_masked })}` : ''}
                 onChange={e => setField('student_id', e.target.value)}
               />
-              <label htmlFor="ccp-student-id">{t('campusService.cred.studentId')}</label>
             </div>
 
-            <div className="field">
+            <div className="ccp-field">
+              <label className="ccp-label" htmlFor="ccp-real-name">{t('campusService.cred.realName')}</label>
               <input
                 id="ccp-real-name"
-                placeholder=" "
+                className="ccp-input"
                 type="text"
                 value={form.real_name}
                 maxLength={32}
                 autoComplete="off"
                 onChange={e => setField('real_name', e.target.value)}
               />
-              <label htmlFor="ccp-real-name">{t('campusService.cred.realName')}</label>
             </div>
 
-            <div className="field">
+            <div className="ccp-field">
+              <label className="ccp-label" htmlFor="ccp-vpn-pwd">{t('campusService.cred.vpnPassword')}</label>
               <input
                 id="ccp-vpn-pwd"
-                placeholder=" "
+                className="ccp-input"
                 type="password"
                 value={form.vpn_password}
                 maxLength={128}
                 autoComplete="new-password"
                 onChange={e => setField('vpn_password', e.target.value)}
               />
-              <label htmlFor="ccp-vpn-pwd">{t('campusService.cred.vpnPassword')}</label>
+              {info.configured && <p className="ccp-hint">{t('campusService.cred.keepHint')}</p>}
             </div>
-            {info.configured && <p className="ccp-hint">{t('campusService.cred.keepHint')}</p>}
 
-            <label className="ccp-checkbox-row">
+            <label className="ccp-row ccp-checkbox-row">
               <input
                 type="checkbox"
                 checked={!!form.auto_captcha}
@@ -196,25 +188,26 @@ export default function CampusCredPanel() {
               <span className="ccp-hint">{t('campusService.cred.autoCaptchaHint')}</span>
             </label>
 
-            <div className="field">
+            <div className="ccp-field">
+              <label className="ccp-label" htmlFor="ccp-pay-pwd">{t('campusService.cred.payPassword')}</label>
               <input
                 id="ccp-pay-pwd"
-                placeholder=" "
+                className="ccp-input"
                 type="password"
                 value={form.pay_password}
                 maxLength={128}
                 autoComplete="new-password"
                 onChange={e => setField('pay_password', e.target.value)}
               />
-              <label htmlFor="ccp-pay-pwd">{t('campusService.cred.payPassword')}</label>
+              <p className="ccp-hint">{t('campusService.cred.payHint')}</p>
             </div>
-            <p className="ccp-hint">{t('campusService.cred.payHint')}</p>
 
             <div className="ccp-dorm-grid">
-              <div className="field">
+              <div className="ccp-field">
+                <label className="ccp-label" htmlFor="ccp-dorm-campus">{t('campusService.cred.campus')}</label>
                 <select
                   id="ccp-dorm-campus"
-                  className="filled"
+                  className="ccp-input"
                   value={form.campus}
                   onChange={e => setField('campus', e.target.value)}
                 >
@@ -222,13 +215,13 @@ export default function CampusCredPanel() {
                     <option key={c} value={c}>{t(CAMPUS_LABEL_KEYS[c])}</option>
                   ))}
                 </select>
-                <label htmlFor="ccp-dorm-campus">{t('campusService.cred.campus')}</label>
               </div>
 
-              <div className="field">
+              <div className="ccp-field">
+                <label className="ccp-label" htmlFor="ccp-dorm-building">{t('campusService.cred.building')}</label>
                 <input
                   id="ccp-dorm-building"
-                  placeholder=" "
+                  className="ccp-input"
                   type="text"
                   inputMode="numeric"
                   value={form.building}
@@ -236,20 +229,19 @@ export default function CampusCredPanel() {
                   autoComplete="off"
                   onChange={e => setField('building', e.target.value.replace(/\D/g, ''))}
                 />
-                <label htmlFor="ccp-dorm-building">{t('campusService.cred.building')}</label>
               </div>
 
-              <div className="field">
+              <div className="ccp-field">
+                <label className="ccp-label" htmlFor="ccp-dorm-room">{t('campusService.cred.room')}</label>
                 <input
                   id="ccp-dorm-room"
-                  placeholder=" "
+                  className="ccp-input"
                   type="text"
                   value={form.room}
                   maxLength={12}
                   autoComplete="off"
                   onChange={e => setField('room', e.target.value.replace(/[^0-9A-Za-z]/g, ''))}
                 />
-                <label htmlFor="ccp-dorm-room">{t('campusService.cred.room')}</label>
               </div>
             </div>
 
@@ -262,11 +254,11 @@ export default function CampusCredPanel() {
               <ActionButton variant="accent" onClick={handleSave} disabled={saving}>
                 {saving ? t('campusService.cred.saving') : t('campusService.cred.save')}
               </ActionButton>
-              {saved && <span className="ccp-saved">{t('campusService.cred.saved')}</span>}
+              {saved && <span className="ccp-saved">&#10003; {t('campusService.cred.saved')}</span>}
             </div>
           </div>
         </>
       )}
-    </section>
+    </div>
   )
 }

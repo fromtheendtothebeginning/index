@@ -9,6 +9,7 @@ import './Img2LatexPage.css'
 import PdfPreview from './PdfPreview'
 
 const STEPS = [1, 2, 3]
+const STEP_ICON = { 1: 'image', 2: 'edit', 3: 'img2latex' }
 
 function Img2LatexPage() {
   const token = localStorage.getItem('token')
@@ -271,7 +272,7 @@ function Img2LatexPage() {
       <Navbar activePage="tools" />
       <div className="tool-main i2l-main">
         <header className="tool-header">
-          <Link to="/tools" className="tool-back label link-underline">{t('img2latex.backToTools')}</Link>
+          <Link to="/tools" className="tool-back">{t('img2latex.backToTools')}</Link>
           <h1 className="tool-title">{t('img2latex.title')}</h1>
           <p className="tool-subtitle">{t('img2latex.subtitle')}</p>
         </header>
@@ -282,22 +283,21 @@ function Img2LatexPage() {
           </div>
         )}
 
-        {/* 步骤指示器（页码式） */}
+        {/* 步骤指示器 */}
         <div className="i2l-stepper">
           {STEPS.map(n => (
             <button
               key={n}
               type="button"
               className={`i2l-step ${step === n ? 'active' : ''} ${step > n ? 'done' : ''}`}
-              aria-current={step === n ? 'step' : undefined}
               onClick={() => {
                 if (n === 2 && step === 1) return goNext1()
                 if (n === 3 && step === 2) return goNext2()
                 if (n < step) { setStep(n); saveStep(n) }
               }}
             >
-              <span className="folio">{`0${n}`}</span>
-              <span className="label">{t(`img2latex.stepNav.${n}`)}</span>
+              <span className="i2l-step-num">{step > n ? '✓' : <UiIcon name={STEP_ICON[n]} size={13} />}</span>
+              <span className="i2l-step-label">{t(`img2latex.stepNav.${n}`)}</span>
             </button>
           ))}
         </div>
@@ -335,7 +335,7 @@ function Img2LatexPage() {
                       <span className="i2l-file-md-icon"><UiIcon name="text" size={16} /></span>
                     )}
                     <span className="i2l-file-name">{it.name}</span>
-                    <button type="button" className="i2l-thumb-del" title={t('img2latex.removeImage')} onClick={() => removeFile(i)}><UiIcon name="close" size={12} /></button>
+                    <button type="button" className="i2l-thumb-del" title={t('img2latex.removeImage')} onClick={() => removeFile(i)}>×</button>
                   </div>
                 ))}
               </div>
@@ -348,7 +348,7 @@ function Img2LatexPage() {
               onChange={e => setNotes(e.target.value)}
             />
             <div className="i2l-nav-row">
-              <button className="btn btn-primary" onClick={goNext1} disabled={!token || saving}>
+              <button className="btn btn-primary i2l-btn" onClick={goNext1} disabled={!token || saving}>
                 {saving ? t('img2latex.saving') : t('img2latex.next')}
               </button>
             </div>
@@ -360,7 +360,7 @@ function Img2LatexPage() {
           <section className="i2l-card">
             <h2 className="i2l-card-title"><UiIcon name="edit" size={15} /> {t('img2latex.step.code')}</h2>
             {!code && (
-              <button className="btn btn-primary" onClick={handleGenerate} disabled={!token || genLoading}>
+              <button className="btn btn-primary i2l-btn" onClick={handleGenerate} disabled={!token || genLoading}>
                 {genLoading ? t('img2latex.generating') : t('img2latex.generate')}
               </button>
             )}
@@ -373,14 +373,14 @@ function Img2LatexPage() {
               placeholder={t('img2latex.codePlaceholder')}
             />
             <div className="i2l-btn-row">
-              <button className="btn btn-secondary" onClick={handleGenerate} disabled={genLoading}>
+              <button className="btn btn-secondary i2l-btn-sm" onClick={handleGenerate} disabled={genLoading}>
                 {genLoading ? t('img2latex.generating') : t('img2latex.regenerate')}
               </button>
-              <button className="btn btn-secondary" onClick={handleCopy}>{copied ? t('img2latex.copied') : t('img2latex.copyCode')}</button>
+              <button className="btn btn-secondary i2l-btn-sm" onClick={handleCopy}>{copied ? t('img2latex.copied') : t('img2latex.copyCode')}</button>
             </div>
             <div className="i2l-nav-row">
-              <button className="btn btn-secondary" onClick={goBack}>{t('img2latex.back')}</button>
-              <button className="btn btn-primary" onClick={goNext2}>{t('img2latex.next')}</button>
+              <button className="btn btn-secondary i2l-btn" onClick={goBack}>{t('img2latex.back')}</button>
+              <button className="btn btn-primary i2l-btn" onClick={goNext2}>{t('img2latex.next')}</button>
             </div>
           </section>
         )}
@@ -393,11 +393,11 @@ function Img2LatexPage() {
               <>
                 <div className="i2l-pdf-head">
                   <div className="i2l-btn-row">
-                    <button className="btn btn-primary" onClick={handleCompile} disabled={compiling}
+                    <button className="btn btn-primary i2l-btn-sm" onClick={handleCompile} disabled={compiling}
                       title={!engine ? t('img2latex.noEngine') : ''}>
                       {compiling ? t('img2latex.compiling') : t('img2latex.recompile')}
                     </button>
-                    <a className="btn btn-secondary" href={pdfUrl} download="document.pdf">{t('img2latex.downloadPdf')}</a>
+                    <a className="btn btn-secondary i2l-btn-sm" href={pdfUrl} download="document.pdf">{t('img2latex.downloadPdf')}</a>
                   </div>
                 </div>
                 <PdfPreview url={pdfUrl} />
@@ -406,7 +406,7 @@ function Img2LatexPage() {
               <div className="i2l-pdf-empty">
                 <p>{t('img2latex.compileHint')}</p>
                 <div className="i2l-btn-row">
-                  <button className="btn btn-primary" onClick={handleCompile} disabled={compiling || !engine}
+                  <button className="btn btn-primary i2l-btn-sm" onClick={handleCompile} disabled={compiling || !engine}
                     title={!engine ? t('img2latex.noEngine') : ''}>
                     {compiling ? t('img2latex.compiling') : t('img2latex.compile')}
                   </button>
@@ -415,7 +415,7 @@ function Img2LatexPage() {
               </div>
             )}
             <div className="i2l-nav-row">
-              <button className="btn btn-secondary" onClick={goBack}>{t('img2latex.back')}</button>
+              <button className="btn btn-secondary i2l-btn" onClick={goBack}>{t('img2latex.back')}</button>
             </div>
           </section>
         )}

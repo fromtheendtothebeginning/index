@@ -1,30 +1,25 @@
 /* ============================================
    我的绑定面板（BindingsPanel，abp- 前缀，「我的 → 账号绑定」tab）
-   Editorial：纸墨单色 · 全直角 · 细线分隔 · 衬线标题
-   基元（.field / .label / .action-btn）见 index.css 与 App.css，此处只补布局。
+   沿用站点既有视觉语言：卡片底 + 细描边 + 12px 圆角 + 紫色强调
    ============================================ */
 
 .abp-panel {
   display: flex;
   flex-direction: column;
-  gap: 28px;
-  padding: 28px 0 0;
-  border-top: 1px solid var(--ink-10);
+  gap: 24px;
 }
 
 .abp-head {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .abp-title {
   margin: 0;
-  font-family: var(--font-serif);
-  font-size: 21px;
-  font-weight: 400;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.3;
   color: var(--text-primary);
 }
 
@@ -32,24 +27,24 @@
   margin: 0;
   max-width: 62ch;
   font-size: 13px;
-  line-height: 1.75;
-  color: var(--ink-60);
+  line-height: 1.7;
+  color: var(--text-secondary);
 }
 
 .abp-loading {
   padding: 8px 0;
-  font-size: 11px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--ink-40);
+  font-size: 13px;
+  color: var(--text-muted);
 }
 
 .abp-err {
   padding: 14px 16px;
-  border: 1px solid var(--ink);
-  background: var(--ink-04);
+  border: 1px solid var(--danger-border);
+  border-radius: 10px;
+  background: var(--danger-soft);
+  color: var(--danger);
   font-size: 13px;
-  line-height: 1.75;
+  line-height: 1.7;
 }
 
 .abp-err-ops {
@@ -57,23 +52,35 @@
 }
 
 .abp-empty {
-  padding: 8px 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.abp-empty-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .abp-empty-hint {
-  margin: 10px 0 0;
+  margin: 0;
   max-width: 62ch;
   font-size: 13px;
-  line-height: 1.75;
-  color: var(--ink-60);
+  line-height: 1.7;
+  color: var(--text-secondary);
 }
 
-/* ── 绑定列表：hairline 分行，无卡片无阴影 ── */
+/* ── 绑定列表：卡片式条目 ── */
 .abp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   margin: 0;
   padding: 0;
   list-style: none;
-  border-top: 1px solid var(--ink-10);
 }
 
 .abp-item {
@@ -81,8 +88,16 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 24px;
-  padding: 22px 0;
-  border-bottom: 1px solid var(--ink-10);
+  padding: 18px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.abp-item:hover {
+  border-color: var(--accent-1-border);
+  box-shadow: 0 4px 16px var(--glow-accent);
 }
 
 .abp-item-main {
@@ -91,50 +106,49 @@
 
 .abp-item-name {
   display: flex;
-  align-items: baseline;
-  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
   margin: 0;
-  font-family: var(--font-serif);
-  font-size: 18px;
-  font-weight: 400;
-  letter-spacing: -0.01em;
+  font-size: 16px;
+  font-weight: 600;
   color: var(--text-primary);
 }
 
 .abp-item-name a {
-  color: inherit;
+  color: var(--accent-1);
   text-decoration: none;
-  border-bottom: 1px solid var(--ink-20);
+  transition: opacity 0.2s ease;
 }
 
 .abp-item-name a:hover {
-  border-bottom-color: var(--text-primary);
+  opacity: 0.8;
+  text-decoration: underline;
 }
 
-/* 状态：靠字重与描边区分，不用彩色 */
+/* 状态胶囊：生效中=紫，已过期=红 */
 .abp-status {
   flex: 0 0 auto;
-  font-family: var(--font-sans);
-  font-size: 10px;
+  padding: 2px 9px;
+  border-radius: 100px;
+  background: var(--accent-1-soft);
+  color: var(--accent-1);
+  font-size: 11px;
   font-weight: 500;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--ink-40);
-  border: 1px solid var(--ink-20);
-  padding: 3px 7px;
+  line-height: 1.6;
 }
 
 .abp-status.is-expired {
-  border-color: var(--ink);
-  color: var(--text-primary);
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 .abp-item-desc {
   margin: 8px 0 0;
   max-width: 60ch;
   font-size: 13px;
-  line-height: 1.75;
-  color: var(--ink-60);
+  line-height: 1.7;
+  color: var(--text-secondary);
 }
 
 .abp-meta {
@@ -146,6 +160,9 @@
 
 .abp-meta dt {
   margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
 }
 
 .abp-meta dd {
@@ -163,17 +180,17 @@
 .abp-notice {
   margin: 0;
   font-size: 13px;
-  line-height: 1.75;
-  color: var(--ink-60);
+  line-height: 1.7;
+  color: var(--text-secondary);
 }
 
 .abp-hint {
   margin: 0;
-  padding-top: 18px;
-  border-top: 1px solid var(--ink-10);
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
   font-size: 12px;
-  line-height: 1.75;
-  color: var(--ink-40);
+  line-height: 1.7;
+  color: var(--text-muted);
 }
 
 @media (max-width: 640px) {

@@ -119,38 +119,29 @@ function BlogEditorPage() {
       <Navbar activePage="blog" />
 
       <div className="blog-main">
-        <div className="blog-editor">
-          <div className="editor-header">
-            <Link to="/blogs" className="blog-back-link">&larr; {t('blogEditor.backToList')}</Link>
-          </div>
-
-          <div className="section-head editor-head">
-            <div className="section-head-meta">
-              <span className="folio">03</span>
-              <span className="label">Write</span>
+          <div className="blog-editor">
+            <div className="editor-header">
+              <Link to="/blogs" className="blog-back-link">&larr; {t('blogEditor.backToList')}</Link>
             </div>
-            <h1 className="section-title">{isEdit ? t('blogEditor.editTitle') : t('blogEditor.newTitle')}</h1>
-          </div>
+            <h1 className="editor-title">{isEdit ? t('blogEditor.editTitle') : t('blogEditor.newTitle')}</h1>
 
           {error && <div className="form-server-error">{error}</div>}
 
-          <div className="field editor-field">
+          <div className="editor-field">
             <input
-              id="editor-title"
               type="text"
               className="editor-title-input"
-              placeholder=" "
+              placeholder={t('blogEditor.titlePlaceholder')}
               value={title}
               onChange={e => setTitle(e.target.value)}
             />
-            <label htmlFor="editor-title">{t('blogEditor.titlePlaceholder')}</label>
           </div>
 
           <div className="editor-toolbar">
-            <button type="button" className="action-btn action-btn-secondary action-btn-sm" onClick={handleInsertImage} title={t('blogEditor.insertImage')}>
+            <button type="button" className="toolbar-btn" onClick={handleInsertImage} title={t('blogEditor.insertImage')}>
               <UiIcon name="image" size={15} /> {t('blogEditor.imageBed')}
             </button>
-            <span className="toolbar-hint label">{t('blogEditor.markdownHint')}</span>
+            <span className="toolbar-hint">{t('blogEditor.markdownHint')}</span>
           </div>
 
           <div className="editor-split">
@@ -163,7 +154,7 @@ function BlogEditorPage() {
               />
             </div>
             <div className="editor-pane preview-pane">
-              <div className="preview-label label">{t('blogEditor.preview')}</div>
+              <div className="preview-label">{t('blogEditor.preview')}</div>
               <div
                 className="markdown-body preview-content"
                 dangerouslySetInnerHTML={{ __html: renderMd(content) || `<p style="color:var(--text-muted)">${t('blogEditor.previewEmpty')}</p>` }}

@@ -1,121 +1,290 @@
-/* ToolParsePage.css — 工具页共享外壳（图文转 LaTeX / 校园服务 共用）
-   只写两个工具页共用的部分：页面壳、页面头部、提示条、错误条、文本输入。
-   两个工具页各自的专有元素见 Img2LatexPage.css / CampusServicePage.css。 */
-
 .tool-page {
   min-height: 100vh;
   background: var(--bg-primary);
   color: var(--text-primary);
 }
 
+.tool-page .navbar {
+  opacity: 1;
+  transform: translateY(0);
+}
 
-/* 页面容器：预留固定导航高度 + 大留白，容器宽度与左右留白同 .section-inner */
 .tool-main {
-  width: 100%;
-  max-width: var(--max-width);
+  max-width: 720px;
   margin: 0 auto;
-  padding: calc(var(--nav-h) + 80px) var(--gutter) 96px;
+  padding: 100px 20px 60px;
 }
 
-/* ---------- 页面头部 ---------- */
 .tool-header {
-  border-top: 1px solid var(--ink-10);
-  padding-top: 28px;
-  margin-bottom: 64px;
+  margin-bottom: 24px;
 }
 
-/* 返回链接：小字标签 + 下划线延展（.label / .link-underline 由 index.css 提供） */
 .tool-back {
-  display: inline-block;
-  margin-bottom: 28px;
-  font-family: var(--font-sans);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--ink-40);
-  transition: color 0.4s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--text-muted);
+  text-decoration: none;
+  margin-bottom: 8px;
 }
 
 .tool-back:hover {
-  color: var(--text-primary);
+  color: var(--accent-1);
 }
 
 .tool-title {
-  font-family: var(--font-serif);
-  font-weight: 400;
-  font-size: clamp(1.75rem, 4vw, 3rem);
-  line-height: 1.1;
-  letter-spacing: -0.035em;
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .tool-subtitle {
-  margin-top: 14px;
-  max-width: 62ch;
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: clamp(1rem, 1.6vw, 1.25rem);
-  line-height: 1.6;
-  color: var(--ink-60);
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
 }
 
-/* ---------- 提示条 / 错误条（整体 1px 描边，无彩色） ---------- */
 .tool-login-hint {
-  padding: 18px 20px;
-  margin-bottom: 40px;
-  border: 1px solid var(--ink-20);
-  background: var(--ink-04);
-  font-size: 14px;
-  line-height: 1.75;
-  color: var(--ink-60);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  border-radius: 10px;
+  background: var(--accent-1-soft);
+  border: 1px solid var(--border-color);
+  font-size: 13px;
+  color: var(--text-secondary);
 }
 
 .tool-login-hint a {
-  color: var(--text-primary);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  color: var(--accent-1);
+  text-decoration: none;
+  font-weight: 600;
 }
 
-/* 错误态靠描边深浅与字重表达：1px 墨色描边 + --ink-04 底 */
-.tool-error {
-  padding: 16px 18px;
-  margin-bottom: 40px;
-  border: 1px solid var(--ink);
-  background: var(--ink-04);
-  font-size: 14px;
-  line-height: 1.7;
-  color: var(--text-primary);
-  white-space: pre-wrap;
-  word-break: break-word;
+.tool-input-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
-/* ---------- 底线文本输入（无圆角无阴影，focus 底线变墨色） ---------- */
 .tool-input {
   flex: 1;
   min-width: 0;
-  padding: 8px 0;
-  border: 0;
-  border-bottom: 1px solid var(--ink-20);
-  background: transparent;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-card);
   color: var(--text-primary);
-  font-family: var(--font-sans);
-  font-size: 15px;
-  line-height: 1.6;
+  font-size: 14px;
   outline: none;
-  transition: border-color 0.4s ease;
+  transition: border-color 0.2s;
 }
 
 .tool-input:focus {
-  border-bottom-color: var(--ink);
+  border-color: var(--accent-1);
 }
 
-.tool-input::placeholder {
-  color: var(--ink-40);
+.tool-btn {
+  padding: 10px 22px;
+  font-size: 14px;
+  white-space: nowrap;
 }
 
-@media (min-width: 768px) {
+.tool-dl-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.tool-error {
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  border-radius: 10px;
+  background: rgba(220, 38, 38, 0.1);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  color: #e04b4b;
+  font-size: 13px;
+}
+
+.tool-card {
+  display: flex;
+  gap: 18px;
+  padding: 18px;
+  border-radius: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+}
+
+.tool-card-cover {
+  width: 180px;
+  height: 101px; /* 180 × 9/16 ≈ 101，16:9 横向（与 B 站网页端封面一致） */
+  flex-shrink: 0;
+  align-self: flex-start; /* 防止作为 flex item 被交叉轴 stretch 拉伸破坏长宽比 */
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg-elevated);
+}
+
+.tool-card-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.tool-card-cover-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.tool-brand-icon {
+  width: 36px;
+  height: 36px;
+}
+
+.tool-card-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tool-card-title {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.tool-meta-grid {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.tool-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+}
+
+.tool-meta-label {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.tool-formats-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.tool-format-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tool-format-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tool-format-chip em {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.tool-format-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.tool-dl-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tool-dl-bar {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  overflow: hidden;
+}
+
+.tool-dl-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--progress-gradient);
+}
+
+.tool-dl-text {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.tool-origin-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--accent-1);
+  text-decoration: none;
+}
+
+.tool-origin-link:hover {
+  text-decoration: underline;
+}
+
+.tool-disclaimer {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+@media (max-width: 640px) {
   .tool-main {
-    padding-left: 48px;
-    padding-right: 48px;
+    padding-top: 84px;
+  }
+
+  .tool-card {
+    flex-direction: column;
+  }
+
+  .tool-card-cover {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9; /* 移动端自适应 16:9 横向 */
+  }
+
+  .tool-input-row {
+    flex-direction: column;
+  }
+
+  .tool-btn {
+    width: 100%;
   }
 }

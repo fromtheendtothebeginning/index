@@ -568,27 +568,22 @@ function MyPage() {
     <div className="my-page">
       <Navbar activePage="my" />
       <div className="my-container">
-        <header className="section-head my-head">
-          <div className="section-head-meta">
-            <span className="folio">01</span>
-            <span className="label">Account</span>
+        <div className="my-header">
+          <h1 className="my-title">{t('myPage.title')}</h1>
+          <div className="my-tabs">
+            <button type="button" className={`my-tab ${tab === 'notify' ? 'active' : ''}`} onClick={() => switchTab('notify')}>
+              {t('myPage.tab.notifications')}{unread > 0 && <span className="my-tab-badge">{unread}</span>}
+            </button>
+            <button type="button" className={`my-tab ${tab === 'ai' ? 'active' : ''}`} onClick={() => switchTab('ai')}>
+              {t('myPage.tab.aiSettings')}
+            </button>
+            <button type="button" className={`my-tab ${tab === 'campus' ? 'active' : ''}`} onClick={() => switchTab('campus')}>
+              {t('myPage.tab.campus')}
+            </button>
+            <button type="button" className={`my-tab ${tab === 'bindings' ? 'active' : ''}`} onClick={() => switchTab('bindings')}>
+              {t('myPage.tab.bindings')}
+            </button>
           </div>
-          <h1 className="section-title">{t('myPage.title')}</h1>
-        </header>
-
-        <div className="my-tabs">
-          <button type="button" className={`my-tab ${tab === 'notify' ? 'active' : ''}`} onClick={() => switchTab('notify')}>
-            {t('myPage.tab.notifications')}{unread > 0 && <span className="my-tab-badge">{unread}</span>}
-          </button>
-          <button type="button" className={`my-tab ${tab === 'ai' ? 'active' : ''}`} onClick={() => switchTab('ai')}>
-            {t('myPage.tab.aiSettings')}
-          </button>
-          <button type="button" className={`my-tab ${tab === 'campus' ? 'active' : ''}`} onClick={() => switchTab('campus')}>
-            {t('myPage.tab.campus')}
-          </button>
-          <button type="button" className={`my-tab ${tab === 'bindings' ? 'active' : ''}`} onClick={() => switchTab('bindings')}>
-            {t('myPage.tab.bindings')}
-          </button>
         </div>
 
         {tab === 'notify' && (
@@ -608,13 +603,14 @@ function MyPage() {
               <div className="my-empty">{t('myPage.notify.empty')}</div>
             ) : (
               <ul className="my-list">
-                {notifications.map((n) => {
+                {notifications.map((n, i) => {
                   const meta = TYPE_META[n.type] || { icon: '•', label: n.type }
                   return (
                     <li
                       key={n.id}
                       className={`my-item ${n.is_read ? '' : 'my-item-unread'} ${n.blog_id ? 'my-item-link' : ''}`}
                       onClick={() => handleClick(n)}
+                      style={{ animationDelay: `${i * 60}ms` }}
                     >
                       <span className="my-item-icon" title={t(meta.label)}><UiIcon name={meta.icon} size={15} /></span>
                       <div className="my-item-main">
@@ -644,7 +640,7 @@ function MyPage() {
                 {/* ═══ Key 管理 ═══ */}
                 <div className="ai-section">
                   <div className="ai-section-head">
-                    <h2 className="ai-section-title">{t('myPage.key.manage')}</h2>
+                    <span className="ai-section-title">{t('myPage.key.manage')}</span>
                     <ActionButton size="sm" onClick={openAddKey}>+ {t('myPage.key.addButton')}</ActionButton>
                   </div>
 
@@ -687,7 +683,7 @@ function MyPage() {
                 {/* ═══ 选择当前模型（点击可用模型项）═══ */}
                 <div className="ai-section">
                   <div className="ai-section-head">
-                    <h2 className="ai-section-title">{t('myPage.model.select')}</h2>
+                    <span className="ai-section-title">{t('myPage.model.select')}</span>
                     {currentProv && <span className="ai-key-provider">{currentProv.label}</span>}
                     <div className="ai-section-ops">
                       <ActionButton
@@ -725,7 +721,7 @@ function MyPage() {
                                 title={t('myPage.model.setCurrent')}
                               >
                                 {m.model}
-                                {m.custom && <span className="tag ai-model-tag">{t('myPage.model.custom')}</span>}
+                                {m.custom && <span className="ai-model-tag">{t('myPage.model.custom')}</span>}
                               </button>
                               <div className="ai-model-ops">
                                 <button
@@ -753,12 +749,12 @@ function MyPage() {
                 {/* ═══ 识图模型（识图类工具使用）═══ */}
                 <div className="ai-section">
                   <div className="ai-section-head">
-                    <h2 className="ai-section-title">{t('myPage.visionSpeech.title')}</h2>
+                    <span className="ai-section-title">{t('myPage.visionSpeech.title')}</span>
                     <span className="ai-section-sub">{t('myPage.visionSpeech.sub')}</span>
                   </div>
 
                   <div className="ai-field">
-                    <span className="label ai-label">{t('myPage.visionSpeech.visionLabel')}</span>
+                    <label className="ai-label">{t('myPage.visionSpeech.visionLabel')}</label>
                     <div className="vs-config-row">
                       <CategoryDropdown
                         value={visionKeyId || ''}
@@ -786,7 +782,7 @@ function MyPage() {
                   {/* 识图思考深度：档位按识图 Key 的厂商/模型解析；厂商不支持则不显示 */}
                   {visionThinkingEnabled && (
                     <div className="ai-field">
-                      <span className="label ai-label">{t('myPage.visionSpeech.thinking')}</span>
+                      <label className="ai-label">{t('myPage.visionSpeech.thinking')}</label>
                       <CategoryDropdown
                         value={visionThinking}
                         onChange={setVisionThinking}
@@ -807,12 +803,12 @@ function MyPage() {
                 {model ? (
                   <div className="ai-section">
                     <div className="ai-section-head">
-                      <h2 className="ai-section-title">{t('myPage.sampling.title')}</h2>
+                      <span className="ai-section-title">{t('myPage.sampling.title')}</span>
                       <span className="ai-section-sub">{t('myPage.sampling.currentModel', { model })}</span>
                     </div>
 
                     <div className="ai-field">
-                      <span className="label ai-label">{t('myPage.sampling.thinking')}</span>
+                      <label className="ai-label">{t('myPage.sampling.thinking')}</label>
                       <CategoryDropdown
                         value={thinking}
                         onChange={setThinking}
@@ -827,10 +823,10 @@ function MyPage() {
                     {getProvider(currentKey ? currentKey.provider : 'deepseek')?.sampling !== false && (
                       <>
                         <div className="ai-field">
-                          <span className="label ai-label">
+                          <label className="ai-label">
                             {t('myPage.sampling.temperature')}
                             <span className="ai-value">{temperature.toFixed(2)}</span>
-                          </span>
+                          </label>
                           <input
                             type="range"
                             className="ai-range"
@@ -842,10 +838,10 @@ function MyPage() {
                         </div>
 
                         <div className="ai-field">
-                          <span className="label ai-label">
+                          <label className="ai-label">
                             {t('myPage.sampling.topK')}
                             <span className="ai-value">{topK}</span>
-                          </span>
+                          </label>
                           <input
                             type="range"
                             className="ai-range"
@@ -873,7 +869,7 @@ function MyPage() {
                   </button>
                 </div>
 
-                {aiSaved && <div className="profile-success ai-saved">{t('myPage.save.done')}</div>}
+                {aiSaved && <div className="profile-success ai-saved">&#10003; {t('myPage.save.done')}</div>}
                 {testResult && (
                   <div className={`ai-test ${testResult.ok ? 'ok' : 'err'}`}>{testResult.text}</div>
                 )}
@@ -883,14 +879,13 @@ function MyPage() {
         )}
 
         {tab === 'campus' && <CampusCredPanel />}
-
         {tab === 'bindings' && <BindingsPanel />}
       </div>
 
       {/* ═══ 二级弹窗（新增/编辑 Key）═══ */}
       <Modal open={addKeyOpen} title={t('myPage.key.addModal.title')} confirmText={t('myPage.key.addModal.confirm')} onCancel={() => setAddKeyOpen(false)} onConfirm={handleAddKey} confirmDisabled={savingKey}>
         <div className="ai-modal-field">
-          <span className="label">{t('myPage.key.addModal.provider')}</span>
+          <label className="ai-label">{t('myPage.key.addModal.provider')}</label>
           <CategoryDropdown
             value={newKey.provider}
             onChange={(v) => setNewKey({ ...newKey, provider: v })}
@@ -899,102 +894,99 @@ function MyPage() {
             hideClear
           />
         </div>
-        <div className="field">
+        <div className="ai-modal-field">
+          <label className="ai-label">{t('myPage.key.addModal.apiKey')}</label>
           <input
-            id="ai-key-add-apikey"
             type="password"
-            placeholder=" "
+            className="profile-input ai-input"
+            placeholder={t('myPage.key.addModal.apiKeyPlaceholder')}
             value={newKey.api_key}
             onChange={(e) => setNewKey({ ...newKey, api_key: e.target.value })}
             maxLength={300}
             autoComplete="off"
           />
-          <label htmlFor="ai-key-add-apikey">{t('myPage.key.addModal.apiKey')}</label>
         </div>
-        <div className="field">
+        <div className="ai-modal-field">
+          <label className="ai-label">{t('myPage.key.addModal.label')}</label>
           <input
-            id="ai-key-add-label"
             type="text"
-            placeholder=" "
+            className="profile-input ai-input"
+            placeholder={t('myPage.key.addModal.labelPlaceholder')}
             value={newKey.label}
             onChange={(e) => setNewKey({ ...newKey, label: e.target.value })}
             maxLength={50}
           />
-          <label htmlFor="ai-key-add-label">{t('myPage.key.addModal.label')}</label>
         </div>
         {newKey.provider === 'custom' && (
-          <div className="field">
+          <div className="ai-modal-field">
+            <label className="ai-label">{t('myPage.key.addModal.baseUrlRequired')}</label>
             <input
-              id="ai-key-add-baseurl"
               type="text"
-              placeholder=" "
+              className="profile-input ai-input"
+              placeholder={t('myPage.key.addModal.baseUrlPlaceholder')}
               value={newKey.base_url}
               onChange={(e) => setNewKey({ ...newKey, base_url: e.target.value })}
               maxLength={500}
             />
-            <label htmlFor="ai-key-add-baseurl">{t('myPage.key.addModal.baseUrlRequired')}</label>
           </div>
         )}
         {aiError && addKeyOpen && <div className="ai-modal-err">{aiError}</div>}
       </Modal>
 
       <Modal open={!!editKeyTarget} title={t('myPage.key.editModal.title', { label: editKeyTarget ? (editKeyTarget.label ? editKeyTarget.label : '') : '' })} confirmText={t('myPage.key.editModal.confirm')} onCancel={() => setEditKeyTarget(null)} onConfirm={handleSaveEditKey}>
-        <div className="field">
+        <div className="ai-modal-field">
+          <label className="ai-label">{t('myPage.key.editModal.label')}</label>
           <input
-            id="ai-key-edit-label"
             type="text"
-            placeholder=" "
+            className="profile-input ai-input"
+            placeholder={t('myPage.key.editModal.labelPlaceholder')}
             value={editKey.label}
             onChange={(e) => setEditKey({ ...editKey, label: e.target.value })}
             maxLength={50}
           />
-          <label htmlFor="ai-key-edit-label">{t('myPage.key.editModal.label')}</label>
         </div>
-        <div className="field">
+        <div className="ai-modal-field">
+          <label className="ai-label">{t('myPage.key.editModal.apiKey')}</label>
           <input
-            id="ai-key-edit-apikey"
             type="password"
-            placeholder=" "
+            className="profile-input ai-input"
+            placeholder={editKeyTarget?.key_hint ? t('myPage.key.editModal.overwriteHint', { hint: editKeyTarget.key_hint }) : t('myPage.key.editModal.apiKey')}
             value={editKey.api_key}
             onChange={(e) => setEditKey({ ...editKey, api_key: e.target.value })}
             maxLength={300}
             autoComplete="off"
           />
-          <label htmlFor="ai-key-edit-apikey">{t('myPage.key.editModal.apiKey')}</label>
         </div>
-        {editKeyTarget?.key_hint && (
-          <p className="ai-hint">{t('myPage.key.editModal.overwriteHint', { hint: editKeyTarget.key_hint })}</p>
-        )}
         {editKeyTarget?.provider === 'custom' && (
-          <div className="field">
+          <div className="ai-modal-field">
+            <label className="ai-label">{t('myPage.key.editModal.baseUrl')}</label>
             <input
-              id="ai-key-edit-baseurl"
               type="text"
-              placeholder=" "
+              className="profile-input ai-input"
+              placeholder={t('myPage.key.editModal.baseUrl')}
               value={editKey.base_url}
               onChange={(e) => setEditKey({ ...editKey, base_url: e.target.value })}
               maxLength={500}
             />
-            <label htmlFor="ai-key-edit-baseurl">{t('myPage.key.editModal.baseUrl')}</label>
           </div>
         )}
         {aiError && editKeyTarget && <div className="ai-modal-err">{aiError}</div>}
       </Modal>
 
       <Modal open={addModelOpen} title={t('myPage.model.addModal.title')} confirmText={t('myPage.model.addModal.confirm')} onCancel={() => setAddModelOpen(false)} onConfirm={handleAddModel}>
-        <div className="field">
+        <div className="ai-modal-field">
+          <label className="ai-label">{t('myPage.model.addModal.modelId')}</label>
           <input
-            id="ai-model-add-name"
             type="text"
-            placeholder=" "
+            className="profile-input ai-input"
+            placeholder={t('myPage.model.addModal.modelIdPlaceholder')}
             value={newModelName}
             onChange={(e) => setNewModelName(e.target.value)}
             maxLength={100}
             autoFocus
           />
-          <label htmlFor="ai-model-add-name">{t('myPage.model.addModal.modelId')}</label>
+          <p className="ai-hint">{t('myPage.model.addModal.hint')}</p>
         </div>
-        <p className="ai-hint">{t('myPage.model.addModal.hint')}</p>
         {aiError && addModelOpen && <div className="ai-modal-err">{aiError}</div>}
       </Modal>
 

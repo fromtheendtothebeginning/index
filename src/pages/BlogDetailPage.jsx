@@ -72,21 +72,15 @@ function CommentCard({
         </div>
         {showReplyBox && (
           <form className="comment-inline-reply" onSubmit={handlePostReply}>
-            <div className="field">
-              <textarea
-                id={`reply-input-${c.id}`}
-                className="comment-input"
-                placeholder=" "
-                value={replyText}
-                onChange={e => setReplyText(e.target.value)}
-                rows={2}
-                maxLength={2000}
-                autoFocus
-              />
-              <label htmlFor={`reply-input-${c.id}`}>
-                {t('blogDetail.comment.replyPlaceholder', { name: c.user?.nickname || c.user?.username || t('blogDetail.anonymous') })}
-              </label>
-            </div>
+            <textarea
+              className="comment-input"
+              placeholder={t('blogDetail.comment.replyPlaceholder', { name: c.user?.nickname || c.user?.username || t('blogDetail.anonymous') })}
+              value={replyText}
+              onChange={e => setReplyText(e.target.value)}
+              rows={2}
+              maxLength={2000}
+              autoFocus
+            />
             {replyError && <div className="form-server-error">{replyError}</div>}
             <div className="comment-form-actions">
               <button type="submit" className="btn btn-primary" disabled={replyPosting}>
@@ -491,24 +485,24 @@ function BlogDetailPage() {
             <Link to="/blogs" className="blog-back-link">{t('blogDetail.backToList')}</Link>
           </div>
 
-          <header className="blog-detail-head">
-            <h1 className="blog-detail-title">{blog.title}</h1>
-            <div className="blog-detail-meta">
-              {blog.category && <span className="blog-card-category">{blog.category}</span>}
-              <span className="blog-detail-author">
-                {t('blogDetail.author', { name: blog.author?.nickname || blog.author?.username || t('blogDetail.anonymous') })}
-              </span>
-              <span className="blog-detail-date">
-                {new Date(blog.created_at).toLocaleDateString('zh-CN', {
-                  year: 'numeric', month: 'long', day: 'numeric'
-                })}
-              </span>
-            </div>
-          </header>
+          <h1 className="blog-detail-title">
+            {blog.category && <span className="blog-card-category">{blog.category}</span>}
+            {blog.title}
+          </h1>
+          <div className="blog-detail-meta">
+            <span className="blog-detail-author">
+              {t('blogDetail.author', { name: blog.author?.nickname || blog.author?.username || t('blogDetail.anonymous') })}
+            </span>
+            <span className="blog-detail-date">
+              {new Date(blog.created_at).toLocaleDateString('zh-CN', {
+                year: 'numeric', month: 'long', day: 'numeric'
+              })}
+            </span>
+          </div>
 
           {(isAuthor || isAdmin) && (
             <div className="blog-detail-actions">
-              {(isAuthor || isAdmin) && <Link to={`/blogs/${blog.id}/edit`} className="btn btn-secondary action-btn-sm">{t('blogDetail.edit')}</Link>}
+              {(isAuthor || isAdmin) && <Link to={`/blogs/${blog.id}/edit`} className="btn-edit">{t('blogDetail.edit')}</Link>}
               {isAdmin && (
                 <div title={t('blogDetail.adminSetCategory')}>
                   <CategoryDropdown
@@ -519,7 +513,7 @@ function BlogDetailPage() {
                   />
                 </div>
               )}
-              <button className="btn btn-danger action-btn-sm" onClick={() => setShowDeleteModal(true)} disabled={deleting}>
+              <button className="btn-delete" onClick={() => setShowDeleteModal(true)} disabled={deleting}>
                 {deleting ? t('blogDetail.deleting') : (isAdmin && !isAuthor ? t('blogDetail.withdraw') : t('blogDetail.delete'))}
               </button>
             </div>
@@ -561,18 +555,14 @@ function BlogDetailPage() {
 
             {user ? (
               <form className="comment-form" onSubmit={handlePostComment}>
-                <div className="field">
-                  <textarea
-                    id="comment-input"
-                    className="comment-input"
-                    placeholder=" "
-                    value={commentText}
-                    onChange={e => setCommentText(e.target.value)}
-                    rows={3}
-                    maxLength={2000}
-                  />
-                  <label htmlFor="comment-input">{t('blogDetail.comment.placeholder')}</label>
-                </div>
+                <textarea
+                  className="comment-input"
+                  placeholder={t('blogDetail.comment.placeholder')}
+                  value={commentText}
+                  onChange={e => setCommentText(e.target.value)}
+                  rows={3}
+                  maxLength={2000}
+                />
                 {commentError && <div className="form-server-error">{commentError}</div>}
                 <div className="comment-form-actions">
                   <button type="submit" className="btn btn-primary" disabled={commentPosting}>

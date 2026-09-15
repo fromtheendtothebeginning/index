@@ -1,30 +1,25 @@
 /* ============================================
    绑定应用白名单面板（BindAppsPanel，aba- 前缀，「管理后台 → 绑定应用」tab）
-   Editorial：纸墨单色 · 全直角 · 细线分隔 · 衬线标题
-   基元（.field / .label / .action-btn）见 index.css 与 App.css，此处只补布局。
+   沿用站点既有视觉语言：卡片底 + 细描边 + 圆角 + 紫色强调
    ============================================ */
 
 .aba-panel {
   display: flex;
   flex-direction: column;
-  gap: 28px;
-  padding: 36px 0 0;
-  border-top: 1px solid var(--ink-10);
+  gap: 24px;
 }
 
 .aba-head {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .aba-head h2 {
   margin: 0;
-  font-family: var(--font-serif);
-  font-size: 24px;
-  font-weight: 400;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
   color: var(--text-primary);
 }
 
@@ -32,28 +27,81 @@
   margin: 0;
   max-width: 68ch;
   font-size: 13px;
-  line-height: 1.75;
-  color: var(--ink-60);
+  line-height: 1.7;
+  color: var(--text-secondary);
 }
 
-/* ── 登记表单：底线浮动标签，回调地址独占一行 ── */
+/* ── 登记表单：标签在上、输入框在下的方格输入 ── */
 .aba-form {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 28px 32px;
-  align-items: end;
+  gap: 18px 20px;
+  padding: 22px 22px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
 }
 
 .aba-form-uris {
   grid-column: 1 / -1;
 }
 
+/* DOM 顺序是 input → label（便于与旧 UI 一致地整块替换输入框）；
+   这里用 order 把标签排到输入框上方 */
+.aba-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.aba-field > label {
+  order: 1;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.aba-field > input,
+.aba-field > textarea {
+  order: 2;
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.aba-field > textarea {
+  resize: vertical;
+  min-height: 76px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+}
+
+.aba-field > input:focus,
+.aba-field > textarea:focus {
+  outline: none;
+  border-color: var(--accent-1);
+  background: var(--bg-card);
+}
+
+.aba-field > input::placeholder,
+.aba-field > textarea::placeholder {
+  color: var(--text-muted);
+}
+
 .aba-form-hint {
   grid-column: 1 / -1;
   margin: 0;
   font-size: 12px;
-  line-height: 1.75;
-  color: var(--ink-40);
+  line-height: 1.7;
+  color: var(--text-muted);
 }
 
 .aba-form-ops {
@@ -65,10 +113,12 @@
 
 .aba-err {
   padding: 14px 16px;
-  border: 1px solid var(--ink);
-  background: var(--ink-04);
+  border: 1px solid var(--danger-border);
+  border-radius: 10px;
+  background: var(--danger-soft);
+  color: var(--danger);
   font-size: 13px;
-  line-height: 1.75;
+  line-height: 1.7;
 }
 
 .aba-err-ops {
@@ -77,24 +127,28 @@
 
 .aba-loading {
   padding: 8px 0;
-  font-size: 11px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--ink-40);
+  font-size: 13px;
+  color: var(--text-muted);
 }
 
 .aba-empty {
-  padding: 24px 0;
-  border-top: 1px solid var(--ink-10);
-  border-bottom: 1px solid var(--ink-10);
+  padding: 24px 20px;
+  background: var(--bg-card);
+  border: 1px dashed var(--border-color);
+  border-radius: 12px;
   font-size: 13px;
-  color: var(--ink-40);
+  color: var(--text-muted);
 }
 
-/* ── 列表：hairline 网格（与后台其它 tab 的表格同一套语言）── */
+/* ── 白名单表格 ── */
 .aba-table {
   display: flex;
   flex-direction: column;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  overflow: hidden;
+  overflow-x: auto;
 }
 
 .aba-row {
@@ -102,30 +156,31 @@
   grid-template-columns: 1.3fr 1.9fr 70px 80px 1.9fr;
   gap: 14px;
   align-items: center;
-  padding: 16px 8px;
-  border-bottom: 1px solid var(--ink-10);
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-color);
   font-size: 13px;
   min-width: 780px;
-  transition: background-color 0.5s ease;
+  transition: background-color 0.2s ease;
+}
+
+.aba-row:last-child {
+  border-bottom: 0;
 }
 
 .aba-row:hover {
-  background: var(--ink-02);
+  background: var(--accent-1-soft);
 }
 
 .aba-row-head {
-  padding: 0 8px 14px;
-  border-bottom: 1px solid var(--ink-20);
-  font-family: var(--font-sans);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--ink-40);
+  padding: 12px 16px;
+  background: var(--bg-elevated);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
 }
 
 .aba-row-head:hover {
-  background: transparent;
+  background: var(--bg-elevated);
 }
 
 .aba-cell-app {
@@ -148,11 +203,11 @@
 }
 
 .aba-mono {
-  font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
   font-style: normal;
   line-height: 1.6;
-  color: var(--ink-60);
+  color: var(--text-secondary);
   word-break: break-all;
 }
 
@@ -161,22 +216,21 @@
   color: var(--text-primary);
 }
 
+/* 状态胶囊：启用=紫，停用=灰 */
 .aba-status {
-  font-family: var(--font-sans);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--ink-40);
-  border: 1px solid var(--ink-20);
-  padding: 3px 7px;
   justify-self: start;
+  padding: 2px 9px;
+  border-radius: 100px;
+  background: var(--accent-1-soft);
+  color: var(--accent-1);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.6;
 }
 
 .aba-status.is-off {
-  border-color: var(--ink);
-  border-style: dashed;
-  color: var(--text-primary);
+  background: var(--neutral-soft);
+  color: var(--text-muted);
 }
 
 .aba-actions {
@@ -187,21 +241,20 @@
 
 .aba-hint {
   margin: 0;
-  padding-top: 18px;
-  border-top: 1px solid var(--ink-10);
   font-size: 12px;
-  line-height: 1.75;
-  color: var(--ink-40);
+  line-height: 1.7;
+  color: var(--text-muted);
 }
 
 /* ── 凭证弹窗 ── */
 .aba-cred-warn {
   margin: 0 0 18px;
   padding: 12px 14px;
-  border: 1px solid var(--ink);
-  background: var(--ink-04);
+  border: 1px solid var(--accent-1-border);
+  border-radius: 10px;
+  background: var(--accent-1-soft);
   font-size: 12px;
-  line-height: 1.75;
+  line-height: 1.7;
   color: var(--text-primary);
 }
 
@@ -211,15 +264,22 @@
   gap: 6px 12px;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 1px solid var(--ink-10);
+  border-bottom: 1px solid var(--border-color);
 }
 
-.aba-cred-row .label {
+.aba-cred-row:last-child {
+  border-bottom: 0;
+}
+
+.aba-cred-key {
   grid-column: 1 / -1;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
 }
 
 .aba-cred-row .aba-mono {
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--text-primary);
 }
 

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { changeThemeWithTransition } from '../utils/themeTransition'
-import { UiIcon } from '../components/Icons'
 import { t } from '../i18n'
 import './ProfileEdit.css'
 
@@ -147,168 +146,155 @@ function ProfileEdit() {
 
   return (
     <div className="profile-page">
-      <div className="section-inner">
-        {/* 页头 */}
-        <header className="section-head">
-          <div className="section-head-meta">
-            <span className="folio">01</span>
-            <span className="label">Account</span>
-            <Link to={backTarget} className="profile-back link-underline" onClick={handleBack}>&larr; {backLabel}</Link>
+      <div className="profile-grid" />
+      <div className="profile-glow pg-1" />
+      <div className="profile-glow pg-2" />
+
+      <div className="profile-container">
+        {/* 头部 */}
+        <div className="profile-header">
+          <h1 className="profile-title">{t('profile.title')}</h1>
+          <Link to={backTarget} className="profile-back" onClick={handleBack}>&larr; {backLabel}</Link>
+        </div>
+
+        {/* 主题模式（浅色 / 深色 / 跟随系统，渐变切换） */}
+        <div className="profile-theme">
+          <span className="profile-theme-label">{t('profile.theme.label')}</span>
+          <div className="profile-theme-toggle">
+            {[
+              ['system', t('profile.theme.system')],
+              ['light', t('profile.theme.light')],
+              ['dark', t('profile.theme.dark')],
+            ].map(([v, label]) => (
+              <button
+                key={v}
+                type="button"
+                className={`profile-theme-option ${theme === v ? 'active' : ''}`}
+                onClick={() => handleChangeTheme(v)}
+              >
+                {label}
+              </button>
+            ))}
           </div>
-          <h1 className="section-title">{t('profile.title')}</h1>
-        </header>
+        </div>
 
-        <div className="profile-body">
-          {/* 主题模式（浅色 / 深色 / 跟随系统，渐变切换） */}
-          <div className="profile-theme">
-            <span className="label">{t('profile.theme.label')}</span>
-            <div className="profile-theme-toggle">
-              {[
-                ['system', t('profile.theme.system')],
-                ['light', t('profile.theme.light')],
-                ['dark', t('profile.theme.dark')],
-              ].map(([v, label]) => (
-                <button
-                  key={v}
-                  type="button"
-                  className={`profile-theme-option label ${theme === v ? 'active' : ''}`}
-                  onClick={() => handleChangeTheme(v)}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+        {/* 头像预览 */}
+        <div className="profile-avatar-section">
+          <div className="profile-avatar-preview">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="avatar" className="avatar-img" />
+            ) : (
+              <span className="avatar-letter">{getInitial(nickname || user.username)}</span>
+            )}
+          </div>
+          <div className="profile-avatar-info">
+            <p className="avatar-name">{nickname || user.username}</p>
+            <p className="avatar-username">@{user.username}</p>
+          </div>
+        </div>
+
+        {/* 表单 */}
+        <div className="profile-form">
+          {error && <div className="profile-error">{error}</div>}
+
+          <div className="profile-field">
+            <label className="profile-label">{t('profile.nickname')}</label>
+            <input
+              type="text"
+              className="profile-input"
+              placeholder={t('profile.nicknamePlaceholder')}
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              maxLength={50}
+            />
           </div>
 
-          {/* 头像预览 */}
-          <div className="profile-avatar-section">
-            <div className="profile-avatar-preview">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="avatar" className="avatar-img" />
-              ) : (
-                <span className="avatar-letter">{getInitial(nickname || user.username)}</span>
-              )}
-            </div>
-            <div className="profile-avatar-info">
-              <p className="avatar-name">{nickname || user.username}</p>
-              <p className="avatar-username">@{user.username}</p>
-            </div>
+          <div className="profile-field">
+            <label className="profile-label">{t('profile.avatarUrl')}</label>
+            <input
+              type="text"
+              className="profile-input"
+              placeholder={t('profile.avatarUrlPlaceholder')}
+              value={avatarUrl}
+              onChange={(e) => setAvatarUrl(e.target.value)}
+              maxLength={500}
+            />
+            <p className="profile-field-hint">{t('profile.avatarHint')}</p>
           </div>
 
-          {/* 表单 */}
-          <div className="profile-form">
-            {error && <div className="profile-error">{error}</div>}
+          <button
+            className="btn btn-primary profile-save-btn"
+            onClick={handleSave}
+            disabled={saving}
+          >
+            {saving ? t('profile.saving') : t('profile.save')}
+          </button>
 
-            <div className="field">
+          {saved && <div className="profile-success">&#10003; {t('profile.saveSuccess')}</div>}
+
+          {user.role === 'admin' && (
+            <Link to="/admin" className="btn btn-primary profile-admin-btn">
+              {t('profile.admin')}
+            </Link>
+          )}
+
+          <hr className="profile-divider" />
+
+          <button
+            className="btn btn-danger profile-logout-btn"
+            onClick={() => {
+              localStorage.removeItem('token')
+              localStorage.removeItem('user')
+              navigate('/')
+            }}
+          >
+            {t('profile.logout')}
+          </button>
+
+          <button
+            className="btn btn-danger profile-delete-btn"
+            onClick={() => {
+              setDeleteOpen(prev => !prev)
+              setDeleteForm({ username: '', password: '' })
+            }}
+          >
+            {t('profile.deleteAccount')}
+          </button>
+
+          {deleteOpen && (
+            <div className="profile-delete-form">
+              <p className="profile-delete-tip">{t('profile.deleteTip')}</p>
               <input
-                id="profile-nickname"
                 type="text"
-                placeholder=" "
-                value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
+                className="profile-input"
+                placeholder={t('profile.username')}
+                value={deleteForm.username}
+                onChange={e => setDeleteForm({ ...deleteForm, username: e.target.value })}
                 maxLength={50}
               />
-              <label htmlFor="profile-nickname">{t('profile.nickname')}</label>
-            </div>
-
-            <div className="field">
               <input
-                id="profile-avatar-url"
-                type="text"
-                placeholder=" "
-                value={avatarUrl}
-                onChange={(e) => setAvatarUrl(e.target.value)}
-                maxLength={500}
+                type="password"
+                className="profile-input"
+                placeholder={t('profile.password')}
+                value={deleteForm.password}
+                onChange={e => setDeleteForm({ ...deleteForm, password: e.target.value })}
               />
-              <label htmlFor="profile-avatar-url">{t('profile.avatarUrl')}</label>
-              <p className="profile-field-hint">{t('profile.avatarHint')}</p>
+              <div className="profile-delete-actions">
+                <button className="btn btn-danger" onClick={handleDeleteAccount} disabled={deleting}>
+                  {deleting ? t('profile.deleting') : t('profile.confirmDelete')}
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setDeleteOpen(false)
+                    setDeleteForm({ username: '', password: '' })
+                  }}
+                >
+                  {t('profile.cancel')}
+                </button>
+              </div>
             </div>
-
-            <button
-              className="btn btn-primary profile-save-btn"
-              onClick={handleSave}
-              disabled={saving}
-            >
-              {saving ? t('profile.saving') : t('profile.save')}
-            </button>
-
-            {saved && (
-              <div className="profile-success">
-                <UiIcon name="check" size={14} />
-                {t('profile.saveSuccess')}
-              </div>
-            )}
-
-            {user.role === 'admin' && (
-              <Link to="/admin" className="btn btn-primary profile-admin-btn">
-                {t('profile.admin')}
-              </Link>
-            )}
-
-            <hr className="profile-divider" />
-
-            <button
-              className="btn btn-danger profile-logout-btn"
-              onClick={() => {
-                localStorage.removeItem('token')
-                localStorage.removeItem('user')
-                navigate('/')
-              }}
-            >
-              {t('profile.logout')}
-            </button>
-
-            <button
-              className="btn btn-danger profile-delete-btn"
-              onClick={() => {
-                setDeleteOpen(prev => !prev)
-                setDeleteForm({ username: '', password: '' })
-              }}
-            >
-              {t('profile.deleteAccount')}
-            </button>
-
-            {deleteOpen && (
-              <div className="profile-delete-form">
-                <p className="profile-delete-tip">{t('profile.deleteTip')}</p>
-                <div className="field">
-                  <input
-                    id="delete-username"
-                    type="text"
-                    placeholder=" "
-                    value={deleteForm.username}
-                    onChange={e => setDeleteForm({ ...deleteForm, username: e.target.value })}
-                    maxLength={50}
-                  />
-                  <label htmlFor="delete-username">{t('profile.username')}</label>
-                </div>
-                <div className="field">
-                  <input
-                    id="delete-password"
-                    type="password"
-                    placeholder=" "
-                    value={deleteForm.password}
-                    onChange={e => setDeleteForm({ ...deleteForm, password: e.target.value })}
-                  />
-                  <label htmlFor="delete-password">{t('profile.password')}</label>
-                </div>
-                <div className="profile-delete-actions">
-                  <button className="btn btn-danger" onClick={handleDeleteAccount} disabled={deleting}>
-                    {deleting ? t('profile.deleting') : t('profile.confirmDelete')}
-                  </button>
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => {
-                      setDeleteOpen(false)
-                      setDeleteForm({ username: '', password: '' })
-                    }}
-                  >
-                    {t('profile.cancel')}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          )}
         </div>
       </div>
     </div>

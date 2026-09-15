@@ -1,363 +1,372 @@
-/* ============================================================================
-   LeetCode 刷题榜 — Editorial「报纸数据版」
-   纸墨单色 · 细线数据栏 · 衬线数字 · 全站直角
-   令牌与风格规则见 index.css 顶部说明；按钮/弹窗/表单基元外观在 App.css 与 index.css，
-   本文件只做版面组合，不重定义共享件
-   ============================================================================ */
-
 .lc-page {
   min-height: 100vh;
   background: var(--bg-primary);
   color: var(--text-primary);
 }
 
+.lc-page .navbar {
+  opacity: 1;
+  transform: translateY(0);
+}
 
-/* 版心：顶部让出固定导航 + 版块留白；容器宽度与左右内边距由 .section-inner 提供 */
 .lc-main {
-  padding-top: calc(var(--nav-h) + var(--section-y));
-  padding-bottom: var(--section-y);
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 100px 20px 60px;
 }
 
-@media (min-width: 768px) {
-  .lc-main {
-    padding-top: calc(var(--nav-h) + 96px);
-    padding-bottom: 160px;
-  }
+.lc-header {
+  margin-bottom: 24px;
 }
 
-/* ---------- 数据工具行（刷新 / 更新时刻 / 自动同步） ---------- */
+.lc-title {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.lc-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
 .lc-toolbar {
   display: flex;
-  align-items: baseline;
-  gap: 24px;
-  flex-wrap: wrap;
-  padding-bottom: 18px;
-  border-bottom: 1px solid var(--ink-10);
-  margin-bottom: 56px;
-}
-
-/* 「数据已更新」：小字印章式实心墨块 */
-.lc-updated-tip {
-  display: inline-block;
-  padding: 3px 9px;
-  background: var(--ink);
-  color: var(--paper);
-  font-family: var(--font-sans);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  animation: lc-tip-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@keyframes lc-tip-in {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* 自动同步指示：小字标签 + 直角墨点（呼吸只改透明度，不位移） */
-.lc-heartbeat-hint {
-  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-family: var(--font-sans);
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.lc-refresh-btn {
+  padding: 8px 20px;
+  font-size: 13px;
+}
+
+.lc-debug-tag {
   font-size: 11px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--ink-40);
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #1976d2;
+  color: var(--white);
   cursor: help;
-}
-
-.lc-heartbeat-hint::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  background: var(--ink-40);
-  animation: lc-heartbeat-pulse 2.4s ease-in-out infinite;
-}
-
-@keyframes lc-heartbeat-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.25; }
-}
-
-/* ---------- 我的排名 / 绑定账号 ---------- */
-.lc-mine {
-  margin-bottom: 72px;
-}
-
-/* 未绑定：细描边数据框 + 底线浮动标签表单 */
-.lc-bind-box {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding: 32px;
-  border: 1px solid var(--ink-10);
-}
-
-.lc-bind-head {
-  display: flex;
-  align-items: baseline;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-/* 错误提示：单色——墨色文字 + 1px 墨色描边 + 极浅墨底 */
-.lc-bind-error {
-  padding: 3px 10px;
-  border: 1px solid var(--ink);
-  background: var(--ink-04);
-  font-family: var(--font-sans);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.lc-bind-hint {
-  max-width: 72ch;
-  font-size: 14px;
-  line-height: 1.75;
-  color: var(--ink-60);
-}
-
-.lc-bind-row {
-  display: flex;
-  align-items: flex-end;
-  gap: 16px;
-  flex-wrap: wrap;
-  max-width: 620px;
-}
-
-.lc-bind-field {
-  flex: 1 1 260px;
-  min-width: 0;
-}
-
-.lc-bind-btn {
-  flex: 0 0 auto;
   white-space: nowrap;
 }
 
-/* 已绑定：细线数据栏（相邻单元共用 1px 线，报纸数据栏式，无独立卡片/阴影/圆角） */
-.lc-mine-strip {
-  display: grid;
-  grid-template-columns: 160px minmax(0, 1.25fr) minmax(0, 1.4fr) 160px;
-  gap: 1px;
-  background: var(--ink-10);
-  border: 1px solid var(--ink-10);
+/* 置顶"我的排名"卡片（第一名上方） */
+.lc-mine {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  border-radius: 14px;
+  background: var(--bg-card);
+  border: 1px dashed var(--border-color);
+  font-size: 13px;
 }
 
-.lc-mine-cell {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 22px 24px;
-  background: var(--bg-primary);
-  min-width: 0;
+.lc-mine-ranked {
+  border: 1px solid var(--accent-1);
+  border-left: 4px solid var(--accent-1);
+  background: var(--accent-1-soft);
+  box-shadow: 0 4px 16px var(--accent-1-soft);
+}
+
+.lc-mine-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
 }
 
 .lc-mine-rank {
-  font-family: var(--font-serif);
-  font-size: clamp(2rem, 3.4vw, 2.75rem);
-  line-height: 1;
-  letter-spacing: -0.03em;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-primary);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--accent-1);
 }
 
 .lc-mine-user {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 8px;
   min-width: 0;
+  flex-wrap: wrap;
 }
 
 .lc-mine-stats {
-  font-size: 13px;
-  line-height: 1.9;
   color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
-}
-
-.lc-mine-stats b {
-  font-weight: 600;
-  color: var(--text-primary);
+  font-size: 12px;
 }
 
 .lc-mine-score {
-  font-family: var(--font-serif);
-  font-size: clamp(1.5rem, 2.4vw, 1.875rem);
-  line-height: 1;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-primary);
+  font-weight: 700;
+  color: var(--accent-1);
+  margin-left: auto;
 }
 
-/* ---------- 模式开关（直角单色：开＝墨底纸字实心，关＝1px 描边） ---------- */
 .lc-mine-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  padding-top: 20px;
+  gap: 12px;
 }
 
 .lc-mode-toggle {
-  position: relative;
-  display: inline-flex;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
   cursor: pointer;
   user-select: none;
 }
 
-/* 原生 checkbox 铺满面板之上：保持可聚焦，原有 onChange 逻辑不动 */
-.lc-mode-toggle input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.lc-mode-toggle-face {
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 16px;
-  border: 1px solid var(--ink-40);
+.lc-unbind-btn {
+  border: none;
   background: transparent;
-  color: var(--text-secondary);
-  font-family: var(--font-sans);
+  color: var(--danger);
   font-size: 12px;
-  letter-spacing: 0.06em;
-  white-space: nowrap;
-  transition: background-color 0.5s ease, color 0.5s ease, border-color 0.5s ease;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
 }
 
-.lc-mode-toggle:hover .lc-mode-toggle-face {
-  border-color: var(--ink);
-  color: var(--text-primary);
+.lc-unbind-btn:hover {
+  background: var(--danger-soft);
 }
 
-.lc-mode-toggle input:checked + .lc-mode-toggle-face {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--paper);
-}
-
-.lc-mode-toggle input:focus-visible + .lc-mode-toggle-face {
-  outline: 1px solid var(--ink);
-  outline-offset: 3px;
-}
-
-/* ---------- 解绑二次确认（整体 1px 墨色描边 + 极浅墨底，不用红色） ---------- */
+/* 解绑二次确认 */
 .lc-unbind-confirm {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--danger-border);
+  border-radius: 10px;
+  background: var(--danger-soft);
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  margin-top: 24px;
-  padding: 24px;
-  border: 1px solid var(--ink);
-  background: var(--ink-04);
+  gap: 10px;
 }
 
 .lc-unbind-tip {
-  max-width: 76ch;
-  font-size: 13px;
-  line-height: 1.75;
+  margin: 0;
+  font-size: 12px;
   color: var(--text-secondary);
+  line-height: 1.6;
 }
 
 .lc-unbind-row {
   display: flex;
-  align-items: flex-end;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.lc-unbind-confirm-btn {
+  padding: 8px 18px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.lc-unbind-cancel {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 8px 12px;
+}
+
+/* 绑定表单 */
+.lc-bind-box {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lc-bind-head {
+  display: flex;
+  align-items: center;
   gap: 12px;
   flex-wrap: wrap;
 }
 
-.lc-unbind-row .lc-bind-field {
-  flex: 1 1 220px;
+.lc-bind-error {
+  font-size: 12px;
+  color: var(--danger);
 }
 
-.lc-unbind-confirm-btn {
-  flex: 0 0 auto;
+.lc-bind-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
-/* ---------- 排行榜（报纸数据表：四周细线框 + 表头小字标签 + 行 1px 底线） ---------- */
+.lc-bind-row {
+  display: flex;
+  gap: 10px;
+  max-width: 420px;
+}
+
+.lc-bind-input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.lc-bind-input:focus {
+  border-color: var(--accent-1);
+}
+
+.lc-bind-btn {
+  padding: 8px 18px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.lc-updated {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.lc-updated-tip {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-1);
+  animation: lc-tip-in 0.5s ease;
+}
+
+@keyframes lc-tip-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.lc-heartbeat-hint {
+  font-size: 11px;
+  color: var(--accent-1);
+  cursor: help;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.lc-heartbeat-hint::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-2);
+  animation: heartbeat-pulse 2s ease-in-out infinite;
+}
+
+@keyframes heartbeat-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.lc-bind-link {
+  font-size: 13px;
+  color: var(--accent-1);
+  text-decoration: none;
+}
+
+.lc-loading,
+.lc-empty {
+  text-align: center;
+  padding: 60px 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.lc-login-hint {
+  text-align: center;
+  padding: 80px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  color: var(--text-secondary);
+  font-size: 15px;
+}
+
+.lc-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
 .lc-board {
   display: flex;
   flex-direction: column;
-  /* 左右下为细线框，顶边加重为表头横线 */
-  border: 1px solid var(--ink-20);
-  border-top-color: var(--ink);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  overflow: hidden;
 }
 
 .lc-row {
   display: grid;
-  grid-template-columns: 72px minmax(0, 1.8fr) repeat(4, minmax(44px, 76px)) minmax(64px, 96px);
+  grid-template-columns: 64px 1.6fr repeat(4, 72px) 90px;
   align-items: center;
-  column-gap: 12px;
-  /* 行与边框同宽（hover 底色 / 分隔线贯穿整表），内容靠内边距与边框留出呼吸 */
-  padding: 18px 22px;
-  border-bottom: 1px solid var(--ink-10);
+  padding: 12px 18px;
+  gap: 8px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
   font-size: 14px;
-  animation: lc-row-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
-  transition: background-color 0.4s ease;
-}
-
-.lc-row:hover {
-  background: var(--ink-02);
+  animation: lc-row-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  position: relative;
 }
 
 @keyframes lc-row-in {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* 表头行：小字大写标签 + 上下 1px 线 */
-.lc-row-head {
-  padding: 12px 22px;
-  border-bottom: 1px solid var(--ink);
-  animation: none;
-}
-
-.lc-row-head:hover {
-  background: transparent;
-}
-
-.lc-row-head > span {
-  font-family: var(--font-sans);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--ink-40);
-}
-
-/* 自己那一行：极浅墨底 + 昵称加重（不用单侧色条） */
 .lc-row-self {
-  background: var(--ink-04);
+  background: var(--accent-1-soft);
+  border-left: 3px solid var(--accent-1);
+  z-index: 5;
 }
 
-.lc-row-self:hover {
-  background: var(--ink-10);
+.lc-row:last-child {
+  border-bottom: none;
 }
 
-.lc-row-self .lc-nickname {
+.lc-row-head {
+  background: var(--bg-card-strong, var(--bg-card));
+  font-size: 12px;
+  color: var(--text-muted);
   font-weight: 600;
 }
 
 .lc-col-rank {
+  font-weight: 700;
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
-  font-family: var(--font-serif);
-  font-size: 15px;
-  font-variant-numeric: tabular-nums;
-  color: var(--ink-40);
+  justify-content: center;
 }
 
-/* 前三名：镂空奖牌图标，按名次金 / 银 / 铜 */
 .lc-medal {
   display: inline-flex;
   align-items: center;
@@ -365,67 +374,64 @@
 }
 
 .lc-medal-gold {
-  color: var(--lc-medal-gold);
+  color: #f5b301;
 }
 
 .lc-medal-silver {
-  color: var(--lc-medal-silver);
+  color: #9aa5b1;
 }
 
 .lc-medal-bronze {
-  color: var(--lc-medal-bronze);
+  color: #cd7f32;
 }
 
-/* 头像：方角墨块 */
 .lc-avatar {
+  border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
-  border: 1px solid var(--ink-20);
-  background: var(--ink-04);
+  border: 1px solid var(--border-color);
 }
 
 .lc-avatar-letter {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--ink);
-  color: var(--paper);
-  font-family: var(--font-serif);
+  font-weight: 700;
+  color: var(--white);
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-1-light));
 }
 
 .lc-col-user {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   min-width: 0;
 }
 
-/* 用户信息列：第一行昵称 + @用户名，第二行模式标签 */
+/* 用户信息列：第一行昵称+@用户名，第二行模式标签（位于头像下方区域） */
 .lc-user-info {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
 }
 
 .lc-user-line {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
 }
 
 .lc-user-tags {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   flex-wrap: wrap;
 }
 
 .lc-nickname {
-  font-family: var(--font-serif);
-  font-size: 17px;
-  letter-spacing: -0.01em;
+  font-weight: 600;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
@@ -433,100 +439,85 @@
 }
 
 .lc-username {
-  font-family: var(--font-sans);
   font-size: 12px;
-  letter-spacing: 0.02em;
-  color: var(--ink-40);
+  color: var(--text-muted);
   white-space: nowrap;
-  transition: color 0.4s ease;
+}
+
+.lc-username-link {
+  color: var(--accent-1);
+  text-decoration: none;
+  transition: color .2s;
 }
 
 .lc-username-link:hover {
-  color: var(--text-primary);
+  text-decoration: underline;
 }
 
-/* ── 榜单状态色板 ──
-   Editorial 规则禁止彩色强调，但模式标签的颜色是用户明确要求保留的状态语义色
-   （调试 / 困难 / 严肃 / 激励 / 激励已得分），故在此局部放开色相；
-   形状仍遵守全局约定（直角、1px 描边、无位移），页面其余部分保持纸墨单色。 */
-.lc-page {
-  --lc-debug: #1976d2;
-  --lc-hard: #c0392b;
-  --lc-serious: #1e4f8f;
-  --lc-boost: #1e7f4f;
-  --lc-gold: #ffd700;
-  --lc-gold-ink: #a8841a;
-  /* 前三名奖牌：金（LeetCode 橙金）/ 银 / 铜 */
-  --lc-medal-gold: #ffa116;
-  --lc-medal-silver: #9aa5b1;
-  --lc-medal-bronze: #cd7f32;
+.lc-username-link:active {
+  opacity: 0.7;
 }
 
-/* 模式标签：未生效的占位槽仍为单色虚线，生效后按状态上色 */
-.lc-tag-slot,
-.lc-hard-tag,
-.lc-serious-tag,
-.lc-boost-tag,
-.lc-debug-tag {
-  display: inline-block;
-  padding: 2px 8px;
-  border: 1px solid var(--ink-20);
-  background: transparent;
-  color: var(--text-secondary);
-  font-family: var(--font-sans);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  cursor: help;
-  transition: background-color 0.4s ease, border-color 0.4s ease, color 0.4s ease;
-}
-
-/* 未开启占位槽：虚线描边表示「未生效」 */
+/* 模式标签占位槽（我的排名卡片）：未开启时显示灰色等宽占位，切模式不跳版；
+   排行榜行不留空，不渲染占位 */
 .lc-tag-slot {
-  border-style: dashed;
-  color: var(--ink-40);
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  background: var(--neutral-soft);
+  color: var(--text-muted);
+  cursor: help;
 }
 
 .lc-tag-slot:hover {
-  border-color: var(--ink-40);
-  color: var(--text-secondary);
-}
-
-.lc-debug-tag {
-  background: var(--lc-debug);
-  border-color: var(--lc-debug);
-  color: #ffffff;
+  background: var(--neutral-soft-hover);
 }
 
 .lc-hard-tag {
-  background: var(--lc-hard);
-  border-color: var(--lc-hard);
-  color: #ffffff;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: var(--white);
+  cursor: help;
+  white-space: nowrap;
 }
 
 .lc-serious-tag {
-  background: var(--lc-serious);
-  border-color: var(--lc-serious);
-  color: #ffffff;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #1e4f8f;
+  color: var(--white);
+  cursor: help;
+  white-space: nowrap;
 }
 
 .lc-boost-tag {
-  background: var(--lc-boost);
-  border-color: var(--lc-boost);
-  color: #ffffff;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #1e7f4f;
+  color: var(--white);
+  cursor: help;
+  white-space: nowrap;
 }
 
-/* 激励模式已得分：金色 + 光泽扫过（改版前的观感） */
 .lc-boost-tag-gold {
   position: relative;
   overflow: hidden;
-  background: var(--lc-gold);
-  border-color: var(--lc-gold-ink);
-  color: var(--lc-gold-ink);
+  background: #ffd700;
+  color: #a8841a;
   font-weight: 600;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.12),
+    0 1px 3px rgba(0, 0, 0, 0.25),
+    0 0 8px rgba(255, 215, 0, 0.45);
 }
+
 .lc-boost-tag-gold::after {
   content: '';
   position: absolute;
@@ -538,83 +529,74 @@
   transform: skewX(-20deg);
   animation: lc-shimmer 3s ease-in-out infinite;
 }
+
 @keyframes lc-shimmer {
-  0% { left: -45%; }
-  40% { left: 110%; }
-  100% { left: 110%; }
+  0% {
+    left: -45%;
+  }
+  40% {
+    left: 110%;
+  }
+  100% {
+    left: 110%;
+  }
 }
 
-/* ---------- 分数 / 统计数字（衬线 + 等宽数字，右对齐成数据栏） ---------- */
+.lc-username-link {
+  color: var(--accent-1);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.lc-username-link:hover {
+  text-decoration: underline;
+}
+
+.lc-username-link:active {
+  opacity: 0.75;
+}
+
 .lc-col-stat {
-  text-align: right;
-  font-family: var(--font-serif);
-  font-size: 15px;
-  font-variant-numeric: tabular-nums;
+  text-align: center;
   color: var(--text-secondary);
-}
-
-.lc-col-total {
-  color: var(--text-primary);
-  font-weight: 500;
 }
 
 .lc-col-score {
   text-align: right;
-  font-family: var(--font-serif);
-  font-size: 19px;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-primary);
+  font-weight: 700;
+  color: var(--accent-1);
 }
 
-/* 桌面端数据格不带标签（表头已有「简单/中等/困难/总数/得分」） */
+/* 桌面端数据格不带标签（表头已有"简单/中等/困难/总数/得分"） */
 .lc-stat-label {
   display: none;
 }
 
-/* ---------- 状态提示 ---------- */
-.lc-loading,
-.lc-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  padding: 96px 0;
-  text-align: center;
-}
-
-.lc-login-hint {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 32px;
-  padding: 96px 0;
-  border-top: 1px solid var(--ink-10);
-}
-
-/* ---------- 响应式 ---------- */
-@media (max-width: 1000px) {
-  .lc-mine-strip {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
 @media (max-width: 720px) {
-  .lc-row-head {
+  .lc-board {
+    overflow-x: visible;
+  }
+
+  .lc-row.lc-row-head {
     display: none;
   }
 
   .lc-row {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
     grid-template-areas:
       "rank user user"
       "easy med hard"
       "total total score";
-    column-gap: 12px;
-    row-gap: 10px;
-    padding: 16px 0;
+    column-gap: 10px;
+    row-gap: 6px;
+    min-width: 0;
+    padding: 10px 12px;
+    font-size: 12px;
+    align-items: center;
   }
 
-  .lc-row > *:nth-child(1) { grid-area: rank; }
+  .lc-row > *:nth-child(1) { grid-area: rank; justify-content: flex-start; }
   .lc-row > *:nth-child(2) { grid-area: user; min-width: 0; }
   .lc-row > *:nth-child(3) { grid-area: easy; }
   .lc-row > *:nth-child(4) { grid-area: med; }
@@ -627,44 +609,25 @@
   .lc-col-score {
     display: inline-flex;
     align-items: baseline;
-    gap: 4px;
+    gap: 3px;
     text-align: left;
-    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.6;
   }
 
   .lc-col-score {
-    font-size: 15px;
+    color: var(--accent-1);
+    font-weight: 700;
   }
 
   .lc-stat-label {
     display: inline;
-    font-family: var(--font-sans);
-    font-size: 10px;
-    font-weight: 500;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--ink-40);
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 400;
   }
 
   .lc-username-link {
-    display: inline-block;
-  }
-
-  .lc-bind-box {
-    padding: 24px 20px;
-  }
-
-  .lc-bind-row {
-    max-width: none;
-  }
-
-  .lc-mine-cell {
-    padding: 18px 20px;
-  }
-}
-
-@media (max-width: 560px) {
-  .lc-mine-strip {
-    grid-template-columns: 1fr;
+    display: inline;
   }
 }

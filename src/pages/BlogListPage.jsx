@@ -37,7 +37,7 @@ function BlogListPage() {
   const [debouncedQ, setDebouncedQ] = useState(() => saved?.q || '')
   const [timeRange, setTimeRange] = useState(saved?.timeRange || '')
   const [sort, setSort] = useState(saved?.sort || 'comprehensive')
-  const [view, setView] = useState(() => localStorage.getItem('blog_view') || 'list')
+  const [view, setView] = useState(() => localStorage.getItem('blog_view') || 'grid')
 
   // 管理员操作
   const [withdrawTarget, setWithdrawTarget] = useState(null) // { id, title }
@@ -229,28 +229,18 @@ function BlogListPage() {
 
   const totalPages = Math.ceil(total / limit)
 
-  // 分页页码窗口（最多 7 个连续页码，避免长列表页码溢出）
-  const pageWindow = (() => {
-    if (totalPages <= 1) return []
-    const size = Math.min(totalPages, 7)
-    const start = Math.max(0, Math.min(page - 3, totalPages - size))
-    return Array.from({ length: size }, (_, i) => start + i)
-  })()
-
   return (
     <div className="blog-page">
       <Navbar activePage="blog" />
 
       <div className="blog-main">
-        <Reveal className="section-head blog-head">
-          <div className="section-head-meta">
-            <span className="folio">01</span>
-            <span className="label">Archive</span>
+        <Reveal className="blog-header">
+          <div className="blog-header-content">
+            <h1 className="blog-title">{t('blogList.title')}</h1>
+            <p className="blog-subtitle">{t('blogList.subtitle')}</p>
           </div>
-          <h1 className="section-title">{t('blogList.title')}</h1>
-          <p className="section-desc">{t('blogList.subtitle')}</p>
           {user && (
-            <Link to="/blogs/new" className="btn btn-primary blog-head-action">
+            <Link to="/blogs/new" className="btn btn-primary blog-write-btn">
               {t('blogList.write')}
             </Link>
           )}
@@ -290,14 +280,14 @@ function BlogListPage() {
               onClick={() => switchView('grid')}
               title={t('blogList.view.gridTitle')}
             >
-              {t('blogList.view.gridTitle')}
+              {t('blogList.view.grid')}
             </button>
             <button
               className={`blog-view-btn ${view === 'list' ? 'active' : ''}`}
               onClick={() => switchView('list')}
               title={t('blogList.view.listTitle')}
             >
-              {t('blogList.view.listTitle')}
+              {t('blogList.view.list')}
             </button>
           </div>
         </div>
@@ -329,13 +319,9 @@ function BlogListPage() {
                   <Reveal key={blog.id} className="blog-card">
                     <Link to={`/blogs/${blog.id}`} className="blog-card-link">
                       <div className="blog-card-body">
-                        {(blog.category || blog.is_featured) && (
-                          <div className="blog-card-meta">
-                            {blog.category && <span className="blog-card-category">{blog.category}</span>}
-                            {blog.is_featured && <span className="blog-card-featured" title={t('blogList.featured')}><UiIcon name="star" filled size={14} /></span>}
-                          </div>
-                        )}
                         <h2 className="blog-card-title">
+                          {blog.category && <span className="blog-card-category">{blog.category}</span>}
+                          {blog.is_featured && <span className="blog-card-featured" title={t('blogList.featured')}><UiIcon name="star" filled size={14} /></span>}
                           {blog.title}
                         </h2>
                         <div className="blog-card-meta">
@@ -388,84 +374,71 @@ function BlogListPage() {
                       {blog.is_featured && <span className="blog-list-featured" title={t('blogList.featured')}><UiIcon name="star" filled size={14} /></span>}
                       {blog.title}
                     </Link>
-                    <div className="blog-list-foot">
-                      <div className="blog-list-meta">
-                        {blog.category && <span className="blog-card-category">{blog.category}</span>}
-                        <span>{blog.author?.nickname || blog.author?.username || t('blogList.anonymous')}</span>
-                        <span>{new Date(blog.created_at).toLocaleDateString('zh-CN')}</span>
-                        <button
-                          type="button"
-                          className={`blog-list-like ${blog.liked_by_me ? 'liked' : ''}`}
-                          onClick={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            handleToggleLike(blog.id)
-                          }}
-                        >
-                          <UiIcon name="heart" filled={blog.liked_by_me} size={13} /> {blog.like_count || 0}
-                        </button>
-                        <span><UiIcon name="message" size={13} /> {blog.comment_count || 0}</span>
-                      </div>
-                      {isAdmin && (
-                        <div className="blog-list-admin">
-                          <button
-                            className={`blog-card-featured-btn ${blog.is_featured ? 'active' : ''}`}
-                            onClick={() => handleToggleFeatured(blog.id)}
-                            title={blog.is_featured ? t('blogList.unfeatured') : t('blogList.setFeatured')}
-                          >
-                            <UiIcon name="star" size={13} /> {t('blogList.featured')}
-                          </button>
-                          <CategoryDropdown
-                            value={blog.category || ''}
-                            onChange={(v) => handleSetCategory(blog.id, v)}
-                            options={CATEGORIES.map(c => ({ value: c, label: c }))}
-                            placeholder={t('blogList.uncategorized')}
-                            size="sm"
-                          />
-                          <button
-                            className="blog-card-withdraw"
-                            onClick={() => setWithdrawTarget({ id: blog.id, title: blog.title })}
-                            title={t('blogList.withdraw')}
-                          >
-                            {t('blogList.withdraw')}
-                          </button>
-                        </div>
-                      )}
+                    <div className="blog-list-meta">
+                      {blog.category && <span className="blog-card-category">{blog.category}</span>}
+                      <span>{blog.author?.nickname || blog.author?.username || t('blogList.anonymous')}</span>
+                      <span>{new Date(blog.created_at).toLocaleDateString('zh-CN')}</span>
+                      <button
+                        type="button"
+                        className={`blog-list-like ${blog.liked_by_me ? 'liked' : ''}`}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          handleToggleLike(blog.id)
+                        }}
+                      >
+                        <UiIcon name="heart" filled={blog.liked_by_me} size={13} /> {blog.like_count || 0}
+                      </button>
+                      <span><UiIcon name="message" size={13} /> {blog.comment_count || 0}</span>
                     </div>
+                    {isAdmin && (
+                      <div className="blog-list-admin">
+                        <button
+                          className={`blog-card-featured-btn ${blog.is_featured ? 'active' : ''}`}
+                          onClick={() => handleToggleFeatured(blog.id)}
+                          title={blog.is_featured ? t('blogList.unfeatured') : t('blogList.setFeatured')}
+                        >
+                          <UiIcon name="star" size={13} /> {t('blogList.featured')}
+                        </button>
+                        <CategoryDropdown
+                          value={blog.category || ''}
+                          onChange={(v) => handleSetCategory(blog.id, v)}
+                          options={CATEGORIES.map(c => ({ value: c, label: c }))}
+                          placeholder={t('blogList.uncategorized')}
+                          size="sm"
+                        />
+                        <button
+                          className="blog-card-withdraw"
+                          onClick={() => setWithdrawTarget({ id: blog.id, title: blog.title })}
+                          title={t('blogList.withdraw')}
+                        >
+                          {t('blogList.withdraw')}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
             )}
 
             {totalPages > 1 && (
-              <nav className="blog-pagination">
+              <div className="blog-pagination">
                 <button
-                  className="blog-pagination-btn"
+                  className="pagination-btn"
                   disabled={page === 0}
                   onClick={() => setPage(p => p - 1)}
                 >
                   {t('blogList.prevPage')}
                 </button>
-                <div className="blog-pagination-pages">
-                  {pageWindow.map(p => (
-                    <button
-                      key={p}
-                      className={`blog-page-num ${p === page ? 'active' : ''}`}
-                      onClick={() => setPage(p)}
-                      aria-current={p === page ? 'page' : undefined}
-                    >
-                      {String(p + 1).padStart(2, '0')}
-                    </button>
-                  ))}
-                </div>
+                <span className="pagination-info">{page + 1} / {totalPages}</span>
                 <button
-                  className="blog-pagination-btn"
+                  className="pagination-btn"
                   disabled={page >= totalPages - 1}
                   onClick={() => setPage(p => p + 1)}
                 >
                   {t('blogList.nextPage')}
                 </button>
-              </nav>
+              </div>
             )}
           </>
         )}

@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { t } from '../i18n'
-import { UiIcon } from '../components/Icons'
 import './Auth.css'
 
 function AuthPage() {
@@ -83,52 +82,61 @@ function AuthPage() {
 
   return (
     <div className="auth-page">
-      <div className="section-inner">
-        <header className="section-head">
-          <div className="section-head-meta">
-            <span className="folio">01</span>
-            <span className="label">Account</span>
-            <Link to="/" className="auth-back-link link-underline">
+      <div className="auth-grid" />
+      <div className="auth-glow ag-1" />
+      <div className="auth-glow ag-2" />
+
+      <div className="auth-container">
+        <div className="auth-brand">
+          <div className="auth-brand-content">
+            <Link to="/" className="auth-brand-logo">
+              <img src="/favicon.svg" alt="anticraft" className="brand-logo-img" />
+            </Link>
+            <h1 className="auth-brand-title">
+              <span className="brand-title-en">anticraft</span>
+              <span className="brand-title-cn">anticraft</span>
+            </h1>
+            <p className="auth-brand-desc">
+              {t('auth.brand.desc')}
+            </p>
+            <blockquote className="auth-brand-quote">
+              &ldquo;{t('auth.brand.quote1')}<br />{t('auth.brand.quote2')}&rdquo;
+            </blockquote>
+            <Link to="/" className="auth-back-link">
               &larr; {t('auth.brand.backHome')}
             </Link>
           </div>
-          <h1 className="auth-title">
-            <span className="brand-title-en">anticraft</span>
-            <span className="brand-title-cn">anticraft</span>
-          </h1>
-          <p className="section-desc">
-            {mode === 'login'
-              ? t('auth.form.hintLogin')
-              : t('auth.form.hintRegister')}
-          </p>
-        </header>
+        </div>
 
-        <div className="auth-body">
-          <div className="auth-panel">
-            <div className="auth-tabs">
-              <button
-                type="button"
-                className={`auth-tab label ${mode === 'login' ? 'active' : ''}`}
-                onClick={() => switchMode()}
-                disabled={mode === 'login'}
-              >
-                {t('auth.tab.login')}
-              </button>
-              <button
-                type="button"
-                className={`auth-tab label ${mode === 'register' ? 'active' : ''}`}
-                onClick={() => switchMode()}
-                disabled={mode === 'register'}
-              >
-                {t('auth.tab.register')}
-              </button>
+        <div className="auth-form-wrap">
+          <div className="auth-form-card">
+            <div className="auth-form-header">
+              <div className="auth-tabs">
+                <button
+                  className={`auth-tab ${mode === 'login' ? 'active' : ''}`}
+                  onClick={() => switchMode()}
+                  disabled={mode === 'login'}
+                >
+                  {t('auth.tab.login')}
+                </button>
+                <button
+                  className={`auth-tab ${mode === 'register' ? 'active' : ''}`}
+                  onClick={() => switchMode()}
+                  disabled={mode === 'register'}
+                >
+                  {t('auth.tab.register')}
+                </button>
+              </div>
+              <p className="auth-form-hint">
+                {mode === 'login'
+                  ? t('auth.form.hintLogin')
+                  : t('auth.form.hintRegister')}
+              </p>
             </div>
 
             {submitted ? (
               <div className="auth-success">
-                <div className="success-icon">
-                  <UiIcon name="check" size={20} />
-                </div>
+                <div className="success-icon">&#10003;</div>
                 <h3>{mode === 'login' ? t('auth.success.login') : t('auth.success.register')}</h3>
                 <p>{t('auth.success.redirecting')}</p>
               </div>
@@ -138,83 +146,119 @@ function AuthPage() {
                   <div className="form-server-error">{serverError}</div>
                 )}
 
-                <div className={`field ${errors.username ? 'has-error' : ''}`}>
-                  <input
-                    id="auth-username"
-                    type="text"
-                    name="username"
-                    placeholder=" "
-                    value={form.username}
-                    onChange={handleChange}
-                    autoFocus
-                  />
-                  <label htmlFor="auth-username">{t('auth.form.usernameLabel')}</label>
+                <div className="form-group">
+                  <label className="form-label">{t('auth.form.usernameLabel')}</label>
+                  <div className="form-input-wrap">
+                    <span className="form-input-icon">&#128100;</span>
+                    <input
+                      type="text"
+                      name="username"
+                      className={`form-input ${errors.username ? 'error' : ''}`}
+                      placeholder={t('auth.form.usernamePlaceholder')}
+                      value={form.username}
+                      onChange={handleChange}
+                      autoFocus
+                    />
+                  </div>
                   {errors.username && <span className="form-error">{errors.username}</span>}
                 </div>
 
-                <div className={`field field-with-action ${errors.password ? 'has-error' : ''}`}>
-                  <input
-                    id="auth-password"
-                    type={showPwd ? 'text' : 'password'}
-                    name="password"
-                    placeholder=" "
-                    value={form.password}
-                    onChange={handleChange}
-                  />
-                  <button
-                    type="button"
-                    className="pwd-toggle"
-                    onClick={() => setShowPwd(!showPwd)}
-                    tabIndex={-1}
-                    aria-label={showPwd ? t('auth.form.hidePwd') : t('auth.form.showPwd')}
-                  >
-                    <UiIcon name={showPwd ? 'eye-off' : 'eye'} size={18} />
-                  </button>
-                  <label htmlFor="auth-password">{t('auth.form.passwordLabel')}</label>
-                  {errors.password && <span className="form-error">{errors.password}</span>}
-                </div>
-
-                {mode === 'login' && (
-                  <div className="auth-form-extra">
-                    <Link to="/reset-password" className="forgot-password-link link-underline">{t('auth.form.forgotPassword')}</Link>
-                  </div>
-                )}
-
-                {mode === 'register' && (
-                  <div className={`field field-with-action ${errors.confirm ? 'has-error' : ''}`}>
+                <div className="form-group">
+                  <label className="form-label">{t('auth.form.passwordLabel')}</label>
+                  <div className="form-input-wrap">
+                    <span className="form-input-icon">&#128274;</span>
                     <input
-                      id="auth-confirm"
-                      type={showConfirm ? 'text' : 'password'}
-                      name="confirm"
-                      placeholder=" "
-                      value={form.confirm}
+                      type={showPwd ? 'text' : 'password'}
+                      name="password"
+                      className={`form-input ${errors.password ? 'error' : ''}`}
+                      placeholder={t('auth.form.passwordPlaceholder')}
+                      value={form.password}
                       onChange={handleChange}
                     />
                     <button
                       type="button"
                       className="pwd-toggle"
-                      onClick={() => setShowConfirm(!showConfirm)}
+                      onClick={() => setShowPwd(!showPwd)}
                       tabIndex={-1}
-                      aria-label={showConfirm ? t('auth.form.hidePwd') : t('auth.form.showPwd')}
+                      aria-label={showPwd ? t('auth.form.hidePwd') : t('auth.form.showPwd')}
                     >
-                      <UiIcon name={showConfirm ? 'eye-off' : 'eye'} size={18} />
+                      {showPwd ? (
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                          <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                          <line x1="1" y1="1" x2="23" y2="23"/>
+                          <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/>
+                        </svg>
+                      ) : (
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                          <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                      )}
                     </button>
-                    <label htmlFor="auth-confirm">{t('auth.form.confirmLabel')}</label>
+                  </div>
+                  {errors.password && <span className="form-error">{errors.password}</span>}
+                </div>
+
+                {mode === 'login' && (
+                  <div className="form-group form-forgot">
+                    <Link to="/reset-password" className="forgot-password-link">{t('auth.form.forgotPassword')}</Link>
+                  </div>
+                )}
+
+                {mode === 'register' && (
+                  <div className="form-group">
+                    <label className="form-label">{t('auth.form.confirmLabel')}</label>
+                    <div className="form-input-wrap">
+                      <span className="form-input-icon">&#128274;</span>
+                      <input
+                        type={showConfirm ? 'text' : 'password'}
+                        name="confirm"
+                        className={`form-input ${errors.confirm ? 'error' : ''}`}
+                        placeholder={t('auth.form.confirmPlaceholder')}
+                        value={form.confirm}
+                        onChange={handleChange}
+                      />
+                      <button
+                        type="button"
+                        className="pwd-toggle"
+                        onClick={() => setShowConfirm(!showConfirm)}
+                        tabIndex={-1}
+                        aria-label={showConfirm ? t('auth.form.hidePwd') : t('auth.form.showPwd')}
+                      >
+                        {showConfirm ? (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                            <line x1="1" y1="1" x2="23" y2="23"/>
+                            <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/>
+                          </svg>
+                        ) : (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                          </svg>
+                        )}
+                      </button>
+                    </div>
                     {errors.confirm && <span className="form-error">{errors.confirm}</span>}
                   </div>
                 )}
 
                 {mode === 'register' && (
-                  <div className={`field ${errors.inviteCode ? 'has-error' : ''}`}>
-                    <input
-                      id="auth-invite"
-                      type="text"
-                      name="inviteCode"
-                      placeholder=" "
-                      value={form.inviteCode}
-                      onChange={handleChange}
-                    />
-                    <label htmlFor="auth-invite">{t('auth.form.inviteLabel')}</label>
+                  <div className="form-group">
+                    <label className="form-label">{t('auth.form.inviteLabel')}</label>
+                    <div className="form-input-wrap">
+                      <span className="form-input-icon">&#127873;</span>
+                      <input
+                        type="text"
+                        name="inviteCode"
+                        className={`form-input ${errors.inviteCode ? 'error' : ''}`}
+                        placeholder={t('auth.form.invitePlaceholder')}
+                        value={form.inviteCode}
+                        onChange={handleChange}
+                      />
+                    </div>
                     {errors.inviteCode && <span className="form-error">{errors.inviteCode}</span>}
                   </div>
                 )}
@@ -227,29 +271,17 @@ function AuthPage() {
                 <p className="auth-switch">
                   {mode === 'login' ? (
                     <>{t('auth.switch.noAccount')}
-                      <button type="button" className="auth-switch-btn link-underline" onClick={switchMode}>{t('auth.switch.toRegister')}</button>
+                      <button type="button" className="auth-switch-btn" onClick={switchMode}>{t('auth.switch.toRegister')}</button>
                     </>
                   ) : (
                     <>{t('auth.switch.hasAccount')}
-                      <button type="button" className="auth-switch-btn link-underline" onClick={switchMode}>{t('auth.switch.toLogin')}</button>
+                      <button type="button" className="auth-switch-btn" onClick={switchMode}>{t('auth.switch.toLogin')}</button>
                     </>
                   )}
                 </p>
               </form>
             )}
           </div>
-
-          <aside className="auth-brand">
-            <Link to="/" className="auth-brand-logo">
-              <img src="/favicon.svg" alt="anticraft" className="brand-logo-img" />
-            </Link>
-            <p className="auth-brand-desc">
-              {t('auth.brand.desc')}
-            </p>
-            <blockquote className="auth-brand-quote">
-              &ldquo;{t('auth.brand.quote1')}<br />{t('auth.brand.quote2')}&rdquo;
-            </blockquote>
-          </aside>
         </div>
       </div>
     </div>
