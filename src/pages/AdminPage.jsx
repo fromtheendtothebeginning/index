@@ -7,6 +7,8 @@ import { CONTACT_ICON_OPTIONS, ContactIcon } from '../components/Icons'
 import { BLOG_CATEGORIES as CATEGORIES } from '../constants'
 import BindAppsPanel from '../features/account-binding/BindAppsPanel'
 import { t } from '../i18n'
+import { apiFetch } from '../utils/api'
+import { fmtDateTimeMinute } from '../utils/format'
 import './AdminPage.css'
 
 function AdminPage() {
@@ -51,7 +53,14 @@ function AdminPage() {
       navigate('/auth')
       return
     }
-    const u = JSON.parse(userStr)
+    let u = null
+    try {
+      u = JSON.parse(userStr)
+    } catch { /* user 信息损坏时按未登录处理，避免整页白屏 */ }
+    if (!u) {
+      navigate('/auth')
+      return
+    }
     if (u.role !== 'admin') {
       navigate('/profile')
       return
@@ -60,16 +69,11 @@ function AdminPage() {
     setAuthChecked(true)
   }, [navigate])
 
-  const authHeaders = () => {
-    const token = localStorage.getItem('token')
-    return { Authorization: `Bearer ${token}` }
-  }
-
   const loadUsers = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/admin/users', { headers: authHeaders() })
+      const res = await apiFetch('/api/admin/users')
       if (res.status === 403) { navigate('/profile'); return }
       const data = await res.json()
       setUsers(data.users || [])
@@ -81,7 +85,7 @@ function AdminPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/admin/comments', { headers: authHeaders() })
+      const res = await apiFetch('/api/admin/comments')
       const data = await res.json()
       setComments(data.comments || [])
     } catch { setError(t('admin.error.network')) }
@@ -92,7 +96,7 @@ function AdminPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/admin/blogs', { headers: authHeaders() })
+      const res = await apiFetch('/api/admin/blogs')
       const data = await res.json()
       setBlogs(data.blogs || [])
     } catch { setError(t('admin.error.network')) }
@@ -103,7 +107,7 @@ function AdminPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/admin/invite-codes', { headers: authHeaders() })
+      const res = await apiFetch('/api/admin/invite-codes')
       const data = await res.json()
       setCodes(data.codes || [])
     } catch { setError(t('admin.error.network')) }
@@ -114,7 +118,7 @@ function AdminPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/admin/friend-links', { headers: authHeaders() })
+      const res = await apiFetch('/api/admin/friend-links')
       const data = await res.json()
       setLinks(data.links || [])
     } catch { setError(t('admin.error.network')) }
@@ -127,7 +131,7 @@ function AdminPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/site-settings')
+      const res = await apiFetch('/api/site-settings')
       const data = await res.json()
       setSettings({
         email: data.email || '',
@@ -157,9 +161,9 @@ function AdminPage() {
   // 设置角色
   const handleSetRole = async (userId, role) => {
     try {
-      const res = await fetch(`/api/admin/users/${userId}/role`, {
+      const res = await apiFetch(`/api/admin/users/${userId}/role`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role }),
       })
       const data = await res.json()
@@ -181,9 +185,9 @@ function AdminPage() {
 
   const handleSaveUser = async (userId) => {
     try {
-      const res = await fetch(`/api/admin/users/${userId}`, {
+      const res = await apiFetch(`/api/admin/users/${userId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nickname: editForm.nickname.trim() || undefined,
           avatar_url: editForm.avatar_url.trim() || undefined,
@@ -201,9 +205,8 @@ function AdminPage() {
   const handleDeleteUser = async (userId) => {
     if (!userId) return
     try {
-      const res = await fetch(`/api/admin/users/${userId}`, {
+      const res = await apiFetch(`/api/admin/users/${userId}`, {
         method: 'DELETE',
-        headers: authHeaders(),
       })
       if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.detail || t('admin.error.deleteFailed')); return }
       setUsers(prev => prev.filter(u => u.id !== userId))
@@ -215,9 +218,8 @@ function AdminPage() {
   const handleDeleteComment = async (commentId) => {
     if (!commentId) return
     try {
-      const res = await fetch(`/api/admin/comments/${commentId}`, {
+      const res = await apiFetch(`/api/admin/comments/${commentId}`, {
         method: 'DELETE',
-        headers: authHeaders(),
       })
       if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.detail || t('admin.error.deleteFailed')); return }
       setComments(prev => prev.filter(c => c.id !== commentId))
@@ -229,9 +231,8 @@ function AdminPage() {
   const handleDeleteBlog = async (blogId) => {
     if (!blogId) return
     try {
-      const res = await fetch(`/api/admin/blogs/${blogId}`, {
+      const res = await apiFetch(`/api/admin/blogs/${blogId}`, {
         method: 'DELETE',
-        headers: authHeaders(),
       })
       if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.detail || t('admin.error.operationFailed')); return }
       setBlogs(prev => prev.filter(b => b.id !== blogId))
@@ -242,9 +243,9 @@ function AdminPage() {
   // 设置博客分类
   const handleSetCategory = async (blogId, category) => {
     try {
-      const res = await fetch(`/api/admin/blogs/${blogId}/category`, {
+      const res = await apiFetch(`/api/admin/blogs/${blogId}/category`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ category: category || null }),
       })
       const data = await res.json()
@@ -256,9 +257,8 @@ function AdminPage() {
   // 生成邀请码
   const handleCreateCode = async () => {
     try {
-      const res = await fetch('/api/admin/invite-codes', {
+      const res = await apiFetch('/api/admin/invite-codes', {
         method: 'POST',
-        headers: authHeaders(),
       })
       const data = await res.json()
       if (!res.ok) { alert(data.detail || t('admin.error.generateFailed')); return }
@@ -271,9 +271,8 @@ function AdminPage() {
   const handleDeleteCode = async (codeId) => {
     if (!codeId) return
     try {
-      const res = await fetch(`/api/admin/invite-codes/${codeId}`, {
+      const res = await apiFetch(`/api/admin/invite-codes/${codeId}`, {
         method: 'DELETE',
-        headers: authHeaders(),
       })
       if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.detail || t('admin.error.deleteFailed')); return }
       setCodes(prev => prev.filter(c => c.id !== codeId))
@@ -284,9 +283,9 @@ function AdminPage() {
   // 切换可重复使用
   const handleToggleReusable = async (codeId, currentReusable) => {
     try {
-      const res = await fetch(`/api/admin/invite-codes/${codeId}/reusable`, {
+      const res = await apiFetch(`/api/admin/invite-codes/${codeId}/reusable`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_reusable: !currentReusable }),
       })
       const data = await res.json()
@@ -301,9 +300,9 @@ function AdminPage() {
     try {
       const url = linkEditingId ? `/api/admin/friend-links/${linkEditingId}` : '/api/admin/friend-links'
       const method = linkEditingId ? 'PUT' : 'POST'
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: linkForm.name.trim(),
           url: linkForm.url.trim(),
@@ -326,9 +325,8 @@ function AdminPage() {
   const handleDeleteLink = async (linkId) => {
     if (!linkId) return
     try {
-      const res = await fetch(`/api/admin/friend-links/${linkId}`, {
+      const res = await apiFetch(`/api/admin/friend-links/${linkId}`, {
         method: 'DELETE',
-        headers: authHeaders(),
       })
       if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.detail || t('admin.error.deleteFailed')); return }
       setLinks(prev => prev.filter(l => l.id !== linkId))
@@ -367,7 +365,7 @@ function AdminPage() {
 
   // LeetCode 调试模式
   const loadLcDebug = () => {
-    fetch('/api/leetcode/me', { headers: authHeaders() })
+    apiFetch('/api/leetcode/me')
       .then(r => r.ok ? r.json() : null)
       .then(d => {
         if (d && d.bound) {
@@ -385,9 +383,9 @@ function AdminPage() {
   const handleLcDebugToggle = async (on) => {
     setLcDebugBusy(true)
     try {
-      const res = await fetch('/api/leetcode/me/debug', {
+      const res = await apiFetch('/api/leetcode/me/debug', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ debug_mode: on }),
       })
       const d = await res.json()
@@ -401,9 +399,9 @@ function AdminPage() {
   const handleLcDebugSet = async () => {
     setLcDebugBusy(true)
     try {
-      const res = await fetch('/api/leetcode/me/debug/set', {
+      const res = await apiFetch('/api/leetcode/me/debug/set', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ easy: Number(lcDebugInput.easy) || 0, medium: Number(lcDebugInput.medium) || 0, hard: Number(lcDebugInput.hard) || 0 }),
       })
       const d = await res.json()
@@ -417,9 +415,9 @@ function AdminPage() {
   const handleSaveSettings = async () => {
     setSettingsSaving(true)
     try {
-      const res = await fetch('/api/admin/site-settings', {
+      const res = await apiFetch('/api/admin/site-settings', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: settings.email.trim() || null,
           github_url: settings.github_url.trim() || null,
@@ -443,10 +441,6 @@ function AdminPage() {
   }
 
   if (!authChecked) return null
-
-  const fmtTime = (t) => new Date(t).toLocaleString('zh-CN', {
-    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
-  })
 
   return (
     <div className="admin-page">
@@ -494,7 +488,7 @@ function AdminPage() {
                   <span>
                     <span className={`role-badge ${u.role}`}>{u.role === 'admin' ? t('admin.users.admin') : t('admin.users.user')}</span>
                   </span>
-                  <span className="admin-cell-time">{fmtTime(u.created_at)}</span>
+                  <span className="admin-cell-time">{fmtDateTimeMinute(u.created_at)}</span>
                   <span className="admin-user-actions">
                     {u.id !== user.id && (
                       <button
@@ -576,7 +570,7 @@ function AdminPage() {
                             <Link to={`/blogs/${c.blog_id}`} target="_blank" rel="noopener noreferrer">{c.blog_title || `#${c.blog_id}`}</Link>
                           )}
                         </span>
-                        <span className="admin-cell-time">{fmtTime(c.created_at)}</span>
+                        <span className="admin-cell-time">{fmtDateTimeMinute(c.created_at)}</span>
                       </div>
                       {c.parent_id && (
                         <div className="admin-comment-parent">{t('admin.comments.replyTo', { name: c.parent_username || t('admin.anonymous') })}：{c.parent_content}</div>
@@ -637,7 +631,7 @@ function AdminPage() {
                         size="sm"
                       />
                     </span>
-                    <span className="admin-cell-time">{fmtTime(b.created_at)}</span>
+                    <span className="admin-cell-time">{fmtDateTimeMinute(b.created_at)}</span>
                     <span>
                       <button
                         className="btn btn-danger btn-sm"
@@ -787,7 +781,7 @@ function AdminPage() {
                         <span className="reusable-slider"></span>
                       </label>
                     </span>
-                    <span className="admin-cell-time">{fmtTime(c.created_at)}</span>
+                    <span className="admin-cell-time">{fmtDateTimeMinute(c.created_at)}</span>
                     <span className="admin-code-actions">
                       <button className="btn-copy" onClick={() => copyCode(c.code, c.id)}>{copiedKey === c.id ? t('admin.codes.copied') : t('admin.codes.copy')}</button>
                       <button

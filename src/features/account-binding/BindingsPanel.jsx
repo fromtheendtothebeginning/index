@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import Modal from '../../components/Modal'
 import ActionButton from '../../components/ActionButton'
 import { t } from '../../i18n'
+import { apiFetch } from '../../utils/api'
+import { fmtLocaleDateTime } from '../../utils/format'
 import './BindingsPanel.css'
 
 /**
@@ -15,13 +17,11 @@ export default function BindingsPanel() {
   const [confirm, setConfirm] = useState(null)
   const [notice, setNotice] = useState('')
 
-  const authHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` })
-
   const load = useCallback(async () => {
     setLoading(true)
     setLoadErr(false)
     try {
-      const res = await fetch('/api/bind/mine', { headers: authHeaders() })
+      const res = await apiFetch('/api/bind/mine')
       const body = await res.json().catch(() => null)
       if (!res.ok || !body) { setLoadErr(true); return }
       setBindings(body.bindings || [])
@@ -37,7 +37,7 @@ export default function BindingsPanel() {
   const unbind = async (appId) => {
     setConfirm(null)
     try {
-      const res = await fetch(`/api/bind/mine/${appId}`, { method: 'DELETE', headers: authHeaders() })
+      const res = await apiFetch(`/api/bind/mine/${appId}`, { method: 'DELETE' })
       const body = await res.json().catch(() => null)
       if (!res.ok) {
         setNotice(t('binding.mine.unbindFailed', { error: body?.detail || '' }))
@@ -50,11 +50,7 @@ export default function BindingsPanel() {
     }
   }
 
-  const fmt = (value) => {
-    if (!value) return '—'
-    const d = new Date(value)
-    return Number.isNaN(d.getTime()) ? value : d.toLocaleString()
-  }
+  const fmt = (value) => (value ? fmtLocaleDateTime(value) : '—')
 
   return (
     <section className="abp-panel">

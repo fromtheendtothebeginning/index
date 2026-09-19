@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { changeThemeWithTransition } from '../utils/themeTransition'
+import { apiFetch } from '../utils/api'
 import { t } from '../i18n'
 import './ProfileEdit.css'
 
@@ -24,12 +25,10 @@ function ProfileEdit() {
       navigate('/auth')
       return
     }
-    // 校验账户是否仍在数据库中存在，不存在则退出登录
-    fetch('/api/user/me', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    // 校验账户是否仍在数据库中存在，不存在则退出登录（401 由 apiFetch 统一处理）
+    apiFetch('/api/user/me')
       .then(r => {
-        if (r.status === 401 || r.status === 404) {
+        if (r.status === 404) {
           localStorage.removeItem('token')
           localStorage.removeItem('user')
           navigate('/auth')
@@ -46,10 +45,12 @@ function ProfileEdit() {
       })
       .catch(() => {
         // 网络错误时回退到 localStorage
-        const u = JSON.parse(userStr)
-        setUser(u)
-        setNickname(u.nickname || '')
-        setAvatarUrl(u.avatar_url || '')
+        try {
+          const u = JSON.parse(userStr)
+          setUser(u)
+          setNickname(u.nickname || '')
+          setAvatarUrl(u.avatar_url || '')
+        } catch { /* localStorage 用户信息损坏时忽略 */ }
       })
   }, [navigate])
 
@@ -58,17 +59,15 @@ function ProfileEdit() {
   }
 
   const handleSave = async () => {
-    const token = localStorage.getItem('token')
     setSaving(true)
     setError('')
     setSaved(false)
 
     try {
-      const res = await fetch('/api/user/profile', {
+      const res = await apiFetch('/api/user/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           nickname: nickname.trim() || null,
@@ -98,11 +97,10 @@ function ProfileEdit() {
     if (!deleteForm.username.trim() || !deleteForm.password) { alert(t('profile.enterAccountPassword')); return }
     setDeleting(true)
     try {
-      const res = await fetch('/api/user/delete-account', {
+      const res = await apiFetch('/api/user/delete-account', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify({
           username: deleteForm.username.trim(),

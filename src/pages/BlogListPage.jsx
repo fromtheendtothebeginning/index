@@ -7,6 +7,8 @@ import CategoryDropdown from '../components/CategoryDropdown'
 import { UiIcon } from '../components/Icons'
 import { ALL_CATEGORY, BLOG_CATEGORIES as CATEGORIES } from '../constants'
 import { t } from '../i18n'
+import { apiFetch } from '../utils/api'
+import { fmtDate } from '../utils/format'
 import './Blog.css'
 
 const API_BASE = '/api'
@@ -63,6 +65,7 @@ function BlogListPage() {
   }, [q])
 
   useEffect(() => {
+    let cancelled = false
     setLoading(true)
     const from =
       timeRange === '7d' ? new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10)
@@ -77,14 +80,16 @@ function BlogListPage() {
       `sort=${sort}`,
       from ? `from=${from}` : '',
     ].filter(Boolean).join('&')
-    fetch(`${API_BASE}/blogs?${qs}`, { headers: authHeaders() })
+    apiFetch(`${API_BASE}/blogs?${qs}`)
       .then(r => r.json())
       .then(data => {
+        if (cancelled) return
         setBlogs(data.blogs || [])
         setTotal(data.total || 0)
       })
       .catch(() => {})
-      .finally(() => setLoading(false))
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
   }, [page, filterCategory, debouncedQ, sort, timeRange])
 
   // 从 URL searchParams 同步分类（导航栏下拉点击时触发）
@@ -121,11 +126,6 @@ function BlogListPage() {
 
   const isAdmin = user && user.role === 'admin'
 
-  const authHeaders = () => {
-    const token = localStorage.getItem('token')
-    return { Authorization: `Bearer ${token}` }
-  }
-
   const switchView = (v) => {
     setView(v)
     localStorage.setItem('blog_view', v)
@@ -138,9 +138,9 @@ function BlogListPage() {
     const next = !blog.is_featured
     setBlogs(prev => prev.map(b => b.id === blogId ? { ...b, is_featured: next } : b))
     try {
-      const res = await fetch(`/api/admin/blogs/${blogId}/featured`, {
+      const res = await apiFetch(`/api/admin/blogs/${blogId}/featured`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_featured: next }),
       })
       if (!res.ok) {
@@ -168,7 +168,7 @@ function BlogListPage() {
     setLikePending(prev => new Set(prev).add(blogId))
     setBlogs(prev => prev.map(b => b.id === blogId ? { ...b, liked_by_me: !prevLiked, like_count: prevCount + (prevLiked ? -1 : 1) } : b))
     try {
-      const res = await fetch(`/api/blogs/${blogId}/like`, { method: 'POST', headers: authHeaders() })
+      const res = await apiFetch(`/api/blogs/${blogId}/like`, { method: 'POST' })
       if (res.ok) {
         const data = await res.json()
         setBlogs(prev => prev.map(b => b.id === blogId ? { ...b, liked_by_me: data.liked, like_count: data.like_count } : b))
@@ -190,9 +190,8 @@ function BlogListPage() {
   const handleWithdraw = async () => {
     if (!withdrawTarget) return
     try {
-      const res = await fetch(`/api/admin/blogs/${withdrawTarget.id}`, {
+      const res = await apiFetch(`/api/admin/blogs/${withdrawTarget.id}`, {
         method: 'DELETE',
-        headers: authHeaders(),
       })
       if (!res.ok) {
         const d = await res.json().catch(() => ({}))
@@ -211,9 +210,9 @@ function BlogListPage() {
   // 管理员设置分类
   const handleSetCategory = async (blogId, newCat) => {
     try {
-      const res = await fetch(`/api/admin/blogs/${blogId}/category`, {
+      const res = await apiFetch(`/api/admin/blogs/${blogId}/category`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ category: newCat || null }),
       })
       if (!res.ok) {
@@ -329,7 +328,7 @@ function BlogListPage() {
                             {blog.author?.nickname || blog.author?.username || t('blogList.anonymous')}
                           </span>
                           <span className="blog-card-date">
-                            {new Date(blog.created_at).toLocaleDateString('zh-CN')}
+                            {fmtDate(blog.created_at)}
                           </span>
                         </div>
                       </div>
@@ -377,7 +376,7 @@ function BlogListPage() {
                     <div className="blog-list-meta">
                       {blog.category && <span className="blog-card-category">{blog.category}</span>}
                       <span>{blog.author?.nickname || blog.author?.username || t('blogList.anonymous')}</span>
-                      <span>{new Date(blog.created_at).toLocaleDateString('zh-CN')}</span>
+                      <span>{fmtDate(blog.created_at)}</span>
                       <button
                         type="button"
                         className={`blog-list-like ${blog.liked_by_me ? 'liked' : ''}`}

@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar'
 import ProjectCover from '../components/ProjectCover'
 import Reveal from '../components/Reveal'
 import { t } from '../i18n'
+import { fmtDate } from '../utils/format'
 import './Project.css'
 
 const API_BASE = '/api'
@@ -71,7 +72,7 @@ function ProjectListPage() {
                       {project.author?.nickname || project.author?.username || t('projectList.anonymous')}
                     </span>
                     <span className="project-card-date">
-                      {new Date(project.created_at).toLocaleDateString('zh-CN')}
+                      {fmtDate(project.created_at)}
                     </span>
                     <span className="project-card-blogs">{t('projectList.blogCount', { count: project.blog_count || 0 })}</span>
                   </div>

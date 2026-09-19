@@ -3,9 +3,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
-from auth import decode_access_token, hash_password, verify_password
+from auth import hash_password, verify_password
 from database import get_db
-from deps import _client_ip, get_current_user_obj, oauth2_scheme
+from deps import _client_ip, get_current_user_obj
 from models import InviteCode, User
 from ratelimit import check_username_ip, reset_ip, reset_lock
 from schemas import (
@@ -25,31 +25,19 @@ def get_current_user(current_user: User = Depends(get_current_user_obj)):
 @router.put("/api/user/profile", response_model=UserResponse, tags=["用户"])
 def update_profile(
     req: UpdateProfileRequest,
-    token: str = Depends(oauth2_scheme),
+    current_user: User = Depends(get_current_user_obj),
     db: Session = Depends(get_db),
 ):
     """更新当前用户昵称和头像"""
-    payload = decode_access_token(token)
-    if payload is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
-
-    try:
-        user_id = int(payload.get("sub"))
-    except (TypeError, ValueError):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
-
     if req.nickname is not None:
-        user.nickname = req.nickname
+        current_user.nickname = req.nickname
     if req.avatar_url is not None:
-        user.avatar_url = req.avatar_url
+        current_user.avatar_url = req.avatar_url
 
     db.commit()
-    db.refresh(user)
+    db.refresh(current_user)
 
-    return UserResponse.model_validate(user)
+    return UserResponse.model_validate(current_user)
 
 
 @router.get("/api/user/check-username", tags=["用户"])

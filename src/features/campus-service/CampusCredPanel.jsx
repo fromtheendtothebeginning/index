@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import ActionButton from '../../components/ActionButton'
 import { t } from '../../i18n'
+import { apiFetch } from '../../utils/api'
 import { CAMPUSES, DEFAULT_CAMPUS, parseDorm, buildDorm } from './dorm'
 import './CampusCredPanel.css'
 
@@ -29,11 +30,9 @@ export default function CampusCredPanel() {
   const [saved, setSaved] = useState(false)
   const [err, setErr] = useState('')
 
-  const authHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` })
-
   const refreshInfo = async (keepForm) => {
     try {
-      const res = await fetch('/api/campus/cred', { headers: authHeaders() })
+      const res = await apiFetch('/api/campus/cred')
       const b = await res.json().catch(() => null)
       if (!res.ok || !b) return null
       setInfo(b)
@@ -69,9 +68,9 @@ export default function CampusCredPanel() {
     setErr('')
     setSaved(false)
     try {
-      const res = await fetch('/api/campus/cred', {
+      const res = await apiFetch('/api/campus/cred', {
         method: 'PUT',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           student_id: form.student_id.trim(),
           real_name: form.real_name.trim(),

@@ -5,6 +5,7 @@ import Modal from '../../components/Modal'
 import CategoryDropdown from '../../components/CategoryDropdown'
 import PdfPreview from '../img2latex/PdfPreview'
 import { t } from '../../i18n'
+import { authHeaders } from '../../utils/api'
 import '../../pages/ToolParsePage.css'
 import './PrintPage.css'
 
@@ -75,13 +76,9 @@ export default function PrintPage() {
   const [pages, setPages] = useState('')
   const [nup, setNup] = useState('')
 
-  const authHeaders = useCallback(
-    () => ({ Authorization: `Bearer ${token}` }),
-    [token]
-  )
   const printHeaders = useCallback(
     () => ({ ...authHeaders(), 'X-Print-Token': printToken }),
-    [authHeaders, printToken]
+    [printToken]
   )
 
   const resetBind = useCallback((msg) => {

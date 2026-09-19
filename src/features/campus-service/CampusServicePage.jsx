@@ -4,6 +4,7 @@ import Navbar from '../../components/Navbar'
 import Modal from '../../components/Modal'
 import CategoryDropdown from '../../components/CategoryDropdown'
 import { t } from '../../i18n'
+import { apiFetch } from '../../utils/api'
 import '../../pages/ToolParsePage.css'
 import './CampusServicePage.css'
 
@@ -559,17 +560,12 @@ export default function CampusServicePage() {
 
   useEffect(() => () => { if (toastTimerRef.current) clearTimeout(toastTimerRef.current) }, [])
 
-  const authHeaders = useCallback(
-    () => ({ Authorization: `Bearer ${token}` }),
-    [token],
-  )
-
   // ── 状态获取 / 轮询 ──
   const fetchStatus = useCallback(async () => {
     if (!token) return null
     const ep = epochRef.current
     try {
-      const res = await fetch('/api/campus/status', { headers: authHeaders() })
+      const res = await apiFetch('/api/campus/status')
       if (res.status === 503) {
         const b = await res.json().catch(() => null)
         if (ep === epochRef.current) setUnavailable((b && b.detail) ? String(b.detail) : t('campusService.serverUnavailable'))
@@ -585,7 +581,7 @@ export default function CampusServicePage() {
     } catch {
       return null
     }
-  }, [token, authHeaders])
+  }, [token])
 
   useEffect(() => {
     if (!token) return
@@ -626,7 +622,7 @@ export default function CampusServicePage() {
   const fetchElecHistory = useCallback(async () => {
     if (!token) return
     try {
-      const res = await fetch('/api/campus/electricity/history?days=90', { headers: authHeaders() })
+      const res = await apiFetch('/api/campus/electricity/history?days=90')
       if (!res.ok) return
       const b = await res.json().catch(() => null)
       if (b && Array.isArray(b.records)) {
@@ -634,7 +630,7 @@ export default function CampusServicePage() {
         setElecHistSeq(s => s + 1)
       }
     } catch { /* 忽略 */ }
-  }, [token, authHeaders])
+  }, [token])
 
   // ── 子页面进入时先用上次查询结果渲染（缓存带用户 id，互不串数据） ──
   useEffect(() => {
@@ -670,7 +666,7 @@ export default function CampusServicePage() {
     setErrMsg('')
     setCredBanner(false)
     try {
-      const res = await fetch('/api/campus/connect', { method: 'POST', headers: authHeaders() })
+      const res = await apiFetch('/api/campus/connect', { method: 'POST' })
       const b = await res.json().catch(() => null)
       if (ep !== epochRef.current) return
       if (res.status === 503) {
@@ -694,7 +690,7 @@ export default function CampusServicePage() {
     if (!token || statusBusy || busyRef.current) return
     setStatusBusy(true)
     try {
-      await fetch('/api/campus/disconnect', { method: 'POST', headers: authHeaders() })
+      await apiFetch('/api/campus/disconnect', { method: 'POST' })
     } catch { /* 忽略 */ }
     epochRef.current += 1
     setStatusBusy(false)
@@ -756,9 +752,9 @@ export default function CampusServicePage() {
     // 电费走独立端点（不经过 query/{kind}，也不需要 VPN 隧道）
     if (kind === 'electricity') {
       try {
-        const res = await fetch('/api/campus/electricity/query', {
+        const res = await apiFetch('/api/campus/electricity/query', {
           method: 'POST',
-          headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json' },
           body: '{}',
         })
         const b = await res.json().catch(() => null)
@@ -781,7 +777,7 @@ export default function CampusServicePage() {
     // 第二课堂活动走独立端点（/api/campus/activities，需 VPN 隧道）
     if (kind === 'activities') {
       try {
-        const res = await fetch('/api/campus/activities', { method: 'POST', headers: authHeaders() })
+        const res = await apiFetch('/api/campus/activities', { method: 'POST' })
         const b = await res.json().catch(() => null)
         if (ep !== epochRef.current) return
         if (res.status === 503) {
@@ -826,9 +822,9 @@ export default function CampusServicePage() {
     }
 
     try {
-      const res = await fetch(`/api/campus/query/${kind}`, {
+      const res = await apiFetch(`/api/campus/query/${kind}`, {
         method: 'POST',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ xnm: params.xnm || '', xqm: params.xqm || '' }),
       })
       const b = await res.json().catch(() => null)
@@ -884,7 +880,7 @@ export default function CampusServicePage() {
     const ep = epochRef.current
     setActDetails(prev => ({ ...prev, [aid]: { loading: true } }))
     try {
-      const res = await fetch(`/api/campus/activities/${aid}/detail`, { headers: authHeaders() })
+      const res = await apiFetch(`/api/campus/activities/${aid}/detail`)
       const b = await res.json().catch(() => null)
       if (ep !== epochRef.current) return
       if (b && b.vpn_connecting) {
@@ -914,9 +910,9 @@ export default function CampusServicePage() {
     const ep = epochRef.current
     setCaptcha({ ...c, submitting: true, err: '' })
     try {
-      const res = await fetch('/api/campus/login', {
+      const res = await apiFetch('/api/campus/login', {
         method: 'POST',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ kind: c.kind, captcha: capInput.trim(), xnm: c.xnm, xqm: c.xqm }),
       })
       const b = await res.json().catch(() => null)
@@ -1256,9 +1252,9 @@ export default function CampusServicePage() {
     setRechargeBusy(true)
     setRechargeMsg('')
     try {
-      const res = await fetch('/api/campus/electricity/recharge', {
+      const res = await apiFetch('/api/campus/electricity/recharge', {
         method: 'POST',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount: amt }),
       })
       const b = await res.json().catch(() => null)

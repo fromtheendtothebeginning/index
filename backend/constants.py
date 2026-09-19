@@ -7,6 +7,9 @@ BLOG_CATEGORIES = ["技术讨论", "更新日志", "娱乐论坛"]
 ROLE_USER = "user"
 ROLE_ADMIN = "admin"
 
+# 初始化管理员用户名（数据库迁移时提升为管理员的目标账号，见 run_migrations）
+BOOTSTRAP_ADMIN_USERNAME = "end"
+
 # LeetCode
 LEETCODE_GRAPHQL = "https://leetcode.cn/graphql"
 

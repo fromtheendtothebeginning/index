@@ -6,7 +6,7 @@ from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import URL
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
-from constants import ROLE_ADMIN
+from constants import BOOTSTRAP_ADMIN_USERNAME, ROLE_ADMIN
 
 # 优先使用根目录的 .env（本机开发环境），
 # 回退到 backend/.env（服务器环境）
@@ -397,16 +397,16 @@ def run_migrations():
         if users_without_code:
             db.commit()
 
-        # 将 end 用户提升为管理员（部署后初始化管理员账号）
+        # 将站长账号提升为管理员（部署后初始化管理员账号）
         # 守卫：仅当系统当前没有任何管理员、且用户数 > 1 时才提升，
-        # 防止全新库上抢注 end 即获管理员，也防止已有多管理员时反复提升
+        # 防止全新库上抢注该用户名即获管理员，也防止已有多管理员时反复提升
         admin_count = db.query(User).filter(User.role == ROLE_ADMIN).count()
         total = db.query(User).count()
-        end_user = db.query(User).filter(User.username == "end").first()
+        end_user = db.query(User).filter(User.username == BOOTSTRAP_ADMIN_USERNAME).first()
         if end_user and admin_count == 0 and total > 1 and end_user.role != ROLE_ADMIN:
             end_user.role = ROLE_ADMIN
             db.commit()
-            print("[migrations] user 'end' promoted to admin")
+            print(f"[migrations] user '{BOOTSTRAP_ADMIN_USERNAME}' promoted to admin")
 
     # 站点设置默认行（首次初始化）/ 旧数据补默认联系项
     from models import SiteSetting

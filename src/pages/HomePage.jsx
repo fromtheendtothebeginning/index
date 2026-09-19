@@ -27,6 +27,7 @@ export default function HomePage() {
     fetch('/api/projects')
       .then(r => r.json())
       .then(d => setRecentProjects((d.projects || []).slice(0, 3)))
+      .catch(() => {})
       .finally(() => setProjectsLoading(false))
   }, [])
 

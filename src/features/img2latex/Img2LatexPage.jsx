@@ -4,6 +4,7 @@ import Navbar from '../../components/Navbar'
 import Modal from '../../components/Modal'
 import { UiIcon } from '../../components/Icons'
 import { t } from '../../i18n'
+import { apiFetch } from '../../utils/api'
 import '../../pages/ToolParsePage.css'
 import './Img2LatexPage.css'
 import PdfPreview from './PdfPreview'
@@ -29,17 +30,25 @@ function Img2LatexPage() {
   const [showConfigModal, setShowConfigModal] = useState(false)
   const [copied, setCopied] = useState(false)
   const dropInputRef = useRef(null)
-
-  const authHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` })
+  // 本页创建的所有 blob URL：卸载时统一回收（removeFile 已单独撤销的重复 revoke 无害）
+  const blobUrlsRef = useRef(new Set())
+  function createBlobUrl(source) {
+    const url = URL.createObjectURL(source)
+    blobUrlsRef.current.add(url)
+    return url
+  }
+  useEffect(() => () => {
+    blobUrlsRef.current.forEach(URL.revokeObjectURL)
+  }, [])
 
   // 进入页面：引擎可用性 + 恢复会话快照（含 PDF）
   useEffect(() => {
     if (!token) return
-    fetch('/api/tools/img2latex/available', { headers: authHeaders() })
+    apiFetch('/api/tools/img2latex/available')
       .then(r => r.json())
       .then(d => setEngine(!!d.engine))
       .catch(() => {})
-    fetch('/api/tools/img2latex/session', { headers: authHeaders() })
+    apiFetch('/api/tools/img2latex/session')
       .then(r => r.json())
       .then(d => {
         const s = d.session
@@ -50,9 +59,9 @@ function Img2LatexPage() {
         hydrateImageUrls(s.files || [])   // 图片已存文件 → 拉 blob 预览
         // PDF 预览需鉴权（iframe 无法带 header），用带 Authorization 的 fetch 拉取后转 blob
         if (s.pdf) {
-          fetch(s.pdf, { headers: authHeaders() })
+          apiFetch(s.pdf)
             .then(r => { if (!r.ok) throw new Error(); return r.blob() })
-            .then(blob => setPdfUrl(URL.createObjectURL(blob)))
+            .then(blob => setPdfUrl(createBlobUrl(blob)))
             .catch(() => {})
         }
       })
@@ -71,7 +80,7 @@ function Img2LatexPage() {
       const mdCount = files.filter(x => x.kind === 'md').length + next.filter(x => x.kind === 'md').length
       if (isImage && imgCount >= 5) continue
       if (isMd && mdCount >= 2) continue
-      next.push({ file: f, name: f.name, kind: isImage ? 'image' : 'md', url: isImage ? URL.createObjectURL(f) : null, saved: null })
+      next.push({ file: f, name: f.name, kind: isImage ? 'image' : 'md', url: isImage ? createBlobUrl(f) : null, saved: null })
     }
     if (next.length) setFiles(prev => [...prev, ...next])
   }
@@ -99,10 +108,10 @@ function Img2LatexPage() {
     const imgs = list.filter(f => f.kind === 'image' && !f.url && f.saved)
     if (!imgs.length) return
     imgs.forEach(f => {
-      fetch(`/api/tools/img2latex/session/file/${f.saved}`, { headers: authHeaders() })
+      apiFetch(`/api/tools/img2latex/session/file/${f.saved}`)
         .then(r => (r.ok ? r.blob() : null))
         .then(b => {
-          if (b) setFiles(prev => prev.map(x => x.saved === f.saved ? { ...x, url: URL.createObjectURL(b) } : x))
+          if (b) setFiles(prev => prev.map(x => x.saved === f.saved ? { ...x, url: createBlobUrl(b) } : x))
         })
         .catch(() => {})
     })
@@ -126,8 +135,8 @@ function Img2LatexPage() {
       // 保留后端已存文件（回退/刷新恢复的，无需重新上传）；未保留的旧文件后端会清理
       fd.append('keep_saved', savedOnly.map(f => f.saved).join(','))
       local.forEach(f => fd.append(f.kind === 'image' ? 'images' : 'md_files', f.file))
-      const res = await fetch('/api/tools/img2latex/session', {
-        method: 'POST', headers: authHeaders(), body: fd,
+      const res = await apiFetch('/api/tools/img2latex/session', {
+        method: 'POST', body: fd,
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(typeof data.detail === 'object' ? data.detail.message : (data.detail || t('img2latex.err.saveFailed')))
@@ -140,9 +149,9 @@ function Img2LatexPage() {
       // 代码/PDF 以后端判定为准：输入无变化则保留（回退后直接推进），有变化则被清空
       setCode(data.session.code || '')
       if (data.session.pdf) {
-        fetch(data.session.pdf, { headers: authHeaders() })
+        apiFetch(data.session.pdf)
           .then(r => (r.ok ? r.blob() : null))
-          .then(b => { if (b) setPdfUrl(URL.createObjectURL(b)) })
+          .then(b => { if (b) setPdfUrl(createBlobUrl(b)) })
           .catch(() => {})
       } else {
         setPdfUrl(null)
@@ -158,8 +167,8 @@ function Img2LatexPage() {
 
   async function saveStep(n) {
     try {
-      await fetch('/api/tools/img2latex/session/step', {
-        method: 'POST', headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      await apiFetch('/api/tools/img2latex/session/step', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ step: n }),
       })
     } catch { /* 静默 */ }
@@ -167,8 +176,8 @@ function Img2LatexPage() {
 
   async function saveCode(c) {
     try {
-      await fetch('/api/tools/img2latex/session/code', {
-        method: 'POST', headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      await apiFetch('/api/tools/img2latex/session/code', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: c }),
       })
     } catch { /* 静默 */ }
@@ -197,8 +206,8 @@ function Img2LatexPage() {
       files.filter(f => f.file).forEach(f => fd.append(f.kind === 'image' ? 'images' : 'md_files', f.file))
       if (files.every(f => !f.file)) fd.append('use_session', '1')
       fd.append('notes', notes)
-      const res = await fetch('/api/tools/img2latex/generate', {
-        method: 'POST', headers: authHeaders(), body: fd,
+      const res = await apiFetch('/api/tools/img2latex/generate', {
+        method: 'POST', body: fd,
       })
       const data = await res.json().catch(() => ({}))
       if (e_isAiConfig(data)) { setShowConfigModal(true); return }
@@ -228,8 +237,8 @@ function Img2LatexPage() {
     setCompiling(true)
     setError('')
     try {
-      const res = await fetch('/api/tools/img2latex/compile', {
-        method: 'POST', headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      const res = await apiFetch('/api/tools/img2latex/compile', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code }),
       })
       if (!res.ok) {
@@ -240,12 +249,12 @@ function Img2LatexPage() {
       const blob = await res.blob()
       // 预览始终用本地 blob（iframe 无法带 Authorization header，直接显示后端 URL 会 401 空白）
       if (pdfUrl && pdfUrl.startsWith('blob:')) URL.revokeObjectURL(pdfUrl)
-      setPdfUrl(URL.createObjectURL(blob))
+      setPdfUrl(createBlobUrl(blob))
       // 同步保存到后端会话（刷新/回退后带鉴权 fetch 拉取恢复）；失败不影响本次预览
       try {
         const pfd = new FormData()
         pfd.append('file', blob, 'document.pdf')
-        await fetch('/api/tools/img2latex/session/pdf', { method: 'POST', headers: authHeaders(), body: pfd })
+        await apiFetch('/api/tools/img2latex/session/pdf', { method: 'POST', body: pfd })
       } catch { /* 静默 */ }
     } catch (e) {
       setError(e.message || t('img2latex.err.compile'))

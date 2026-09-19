@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Modal from '../../components/Modal'
 import ActionButton from '../../components/ActionButton'
 import { t } from '../../i18n'
+import { apiFetch } from '../../utils/api'
 import './BindAppsPanel.css'
 
 /**
@@ -25,13 +26,11 @@ export default function BindAppsPanel() {
   const [copied, setCopied] = useState('')
   const copiedTimer = useRef(null)
 
-  const authHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` })
-
   const load = useCallback(async () => {
     setLoading(true)
     setLoadErr(false)
     try {
-      const res = await fetch('/api/admin/bind-apps', { headers: authHeaders() })
+      const res = await apiFetch('/api/admin/bind-apps')
       const body = await res.json().catch(() => null)
       if (!res.ok || !body) { setLoadErr(true); return }
       setApps(body.apps || [])
@@ -66,9 +65,9 @@ export default function BindAppsPanel() {
     if (uris.length === 0) { setErr(t('binding.admin.urisRequired')); return }
     setBusy(true)
     try {
-      const res = await fetch('/api/admin/bind-apps', {
+      const res = await apiFetch('/api/admin/bind-apps', {
         method: 'POST',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: form.name.trim(),
           description: form.description.trim() || null,
@@ -99,9 +98,9 @@ export default function BindAppsPanel() {
     setBusy(true)
     setErr('')
     try {
-      const res = await fetch(`/api/admin/bind-apps/${editing.id}`, {
+      const res = await apiFetch(`/api/admin/bind-apps/${editing.id}`, {
         method: 'PUT',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: editing.name.trim(),
           description: editing.description.trim() || null,
@@ -126,9 +125,9 @@ export default function BindAppsPanel() {
   const toggleActive = async (app) => {
     setErr('')
     try {
-      const res = await fetch(`/api/admin/bind-apps/${app.id}`, {
+      const res = await apiFetch(`/api/admin/bind-apps/${app.id}`, {
         method: 'PUT',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_active: !app.is_active }),
       })
       if (!res.ok) {
@@ -145,7 +144,7 @@ export default function BindAppsPanel() {
   const rotateSecret = async (app) => {
     setErr('')
     try {
-      const res = await fetch(`/api/admin/bind-apps/${app.id}/secret`, { method: 'POST', headers: authHeaders() })
+      const res = await apiFetch(`/api/admin/bind-apps/${app.id}/secret`, { method: 'POST' })
       const body = await res.json().catch(() => null)
       if (!res.ok || !body) {
         setErr(t('binding.admin.saveFailed', { error: body?.detail || '' }))
@@ -161,7 +160,7 @@ export default function BindAppsPanel() {
     setConfirm(null)
     setErr('')
     try {
-      const res = await fetch(`/api/admin/bind-apps/${app.id}`, { method: 'DELETE', headers: authHeaders() })
+      const res = await apiFetch(`/api/admin/bind-apps/${app.id}`, { method: 'DELETE' })
       if (!res.ok) {
         const body = await res.json().catch(() => null)
         setErr(t('binding.admin.saveFailed', { error: body?.detail || '' }))

@@ -6,6 +6,8 @@ import CategoryDropdown from '../components/CategoryDropdown'
 import Modal from '../components/Modal'
 import ActionButton from '../components/ActionButton'
 import { PROVIDERS, getProvider, getThinkingLevels, isValidThinkingLevel, AI_DEFAULTS } from '../utils/aiProviders'
+import { apiFetch } from '../utils/api'
+import { fmtDateTime } from '../utils/format'
 import { t } from '../i18n'
 import CampusCredPanel from '../features/campus-service/CampusCredPanel'
 import BindingsPanel from '../features/account-binding/BindingsPanel'
@@ -103,20 +105,6 @@ function MyPage() {
     setBadgeOn(next)
   }
 
-  const authHeaders = () => ({
-    Authorization: `Bearer ${localStorage.getItem('token')}`,
-  })
-
-  const handleAuthFail = (r) => {
-    if (r.status === 401) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
-      navigate('/auth')
-      return true
-    }
-    return false
-  }
-
   useEffect(() => {
     if (!localStorage.getItem('token')) {
       navigate('/auth')
@@ -124,11 +112,8 @@ function MyPage() {
     }
     let cancelled = false
     setLoading(true)
-    fetch('/api/notifications', { headers: authHeaders() })
-      .then(r => {
-        if (handleAuthFail(r)) return null
-        return r.ok ? r.json() : null
-      })
+    apiFetch('/api/notifications')
+      .then(r => (r.ok ? r.json() : null))
       .then(data => {
         if (cancelled || !data) return
         setNotifications(data.notifications || [])
@@ -146,10 +131,10 @@ function MyPage() {
     setAiLoading(true)
     setAiError('')
     Promise.all([
-      fetch('/api/user/ai-settings', { headers: authHeaders() }),
-      fetch('/api/user/ai-keys', { headers: authHeaders() }),
-      fetch('/api/user/ai-favorites', { headers: authHeaders() }),
-      fetch('/api/user/ai-models', { headers: authHeaders() }),
+      apiFetch('/api/user/ai-settings'),
+      apiFetch('/api/user/ai-keys'),
+      apiFetch('/api/user/ai-favorites'),
+      apiFetch('/api/user/ai-models'),
     ])
       .then(async ([sRes, kRes, fRes, mRes]) => {
         const [s, k, f, m] = await Promise.all([sRes.json(), kRes.json(), fRes.json(), mRes.json()])
@@ -174,8 +159,11 @@ function MyPage() {
   }, [tab])
 
   // 拉取指定 Key 的可用模型列表（识图配置用，带 localStorage 缓存；capability 过滤能力）
+  // seq 防竞态：快速切换 Key 时旧响应不得覆盖新 Key 的模型
+  const keyModelReqRef = useRef(0)
   const fetchKeyModelList = (keyId, setter, capability = '') => {
     if (!keyId) { setter([]); return }
+    const seq = ++keyModelReqRef.current
     const cacheKey = `ai_models_${keyId}${capability ? '_' + capability : ''}`
     const cached = localStorage.getItem(cacheKey)
     if (cached) {
@@ -184,9 +172,10 @@ function MyPage() {
         if (Array.isArray(arr) && arr.length > 0) setter(arr)
       } catch { /* 缓存损坏忽略 */ }
     }
-    fetch(`/api/user/ai-keys/${keyId}/models${capability ? `?capability=${capability}` : ''}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
+    apiFetch(`/api/user/ai-keys/${keyId}/models${capability ? `?capability=${capability}` : ''}`)
       .then(r => (r.ok ? r.json() : null))
       .then(data => {
+        if (seq !== keyModelReqRef.current) return
         if (data && data.models && data.models.length > 0) {
           setter(data.models)
           try { localStorage.setItem(cacheKey, JSON.stringify(data.models)) } catch { /* 忽略 */ }
@@ -196,9 +185,11 @@ function MyPage() {
   }
 
   // 拉取动态模型（可复用：进入页面/切 key 自动，刷新按钮手动）
-  // 先读 localStorage 缓存立即显示，再后台拉取更新并写缓存
+  // 先读 localStorage 缓存立即显示，再后台拉取更新并写缓存；seq 防快速切换 Key 的竞态
+  const dynModelReqRef = useRef(0)
   const loadModels = useCallback((keyId) => {
     if (!keyId) { setDynModels([]); return }
+    const seq = ++dynModelReqRef.current
     const cacheKey = `ai_models_${keyId}`
     const cached = localStorage.getItem(cacheKey)
     if (cached) {
@@ -208,9 +199,10 @@ function MyPage() {
       } catch { /* 缓存损坏忽略 */ }
     }
     setModelsLoading(true)
-    fetch(`/api/user/ai-keys/${keyId}/models`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
+    apiFetch(`/api/user/ai-keys/${keyId}/models`)
       .then(r => (r.ok ? r.json() : null))
       .then(data => {
+        if (seq !== dynModelReqRef.current) return
         if (data) {
           setDynModels(data.models || [])
           if (data.models && data.models.length > 0) {
@@ -219,14 +211,14 @@ function MyPage() {
         }
       })
       .catch(() => {})
-      .finally(() => setModelsLoading(false))
+      .finally(() => { if (seq === dynModelReqRef.current) setModelsLoading(false) })
   }, [])
 
   // 手动刷新：同时重新拉取动态模型 + 自定义模型（新增模型后靠此看到新模型）
   const refreshModels = useCallback((keyId) => {
     loadModels(keyId)
     if (currentKey) {
-      fetch('/api/user/ai-models', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
+      apiFetch('/api/user/ai-models')
         .then(r => (r.ok ? r.json() : null))
         .then(data => { if (data) setCustomModels((data.models || []).map(mm => ({ model: mm }))) })
         .catch(() => {})
@@ -271,9 +263,9 @@ function MyPage() {
     setSavingKey(true)
     setAiError('')
     try {
-      const res = await fetch('/api/user/ai-keys', {
+      const res = await apiFetch('/api/user/ai-keys', {
         method: 'POST',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           provider: newKey.provider,
           api_key: newKey.api_key.trim(),
@@ -308,9 +300,9 @@ function MyPage() {
       const body = { label: editKey.label.trim() }
       if (editKey.base_url.trim()) body.custom_base_url = editKey.base_url.trim()
       if (editKey.api_key.trim()) body.api_key = editKey.api_key.trim()
-      const res = await fetch(`/api/user/ai-keys/${editKeyTarget.id}`, {
+      const res = await apiFetch(`/api/user/ai-keys/${editKeyTarget.id}`, {
         method: 'PUT',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
       const data = await res.json()
@@ -332,9 +324,8 @@ function MyPage() {
     setDeleting(true)
     setAiError('')
     try {
-      const res = await fetch(`/api/user/ai-keys/${deleteTarget.id}`, {
+      const res = await apiFetch(`/api/user/ai-keys/${deleteTarget.id}`, {
         method: 'DELETE',
-        headers: authHeaders(),
       })
       if (!res.ok) { setAiError(t('myPage.key.delete.failed')); setDeleting(false); return }
       setKeys(ks => ks.filter(x => x.id !== deleteTarget.id))
@@ -351,9 +342,9 @@ function MyPage() {
   const restoreKey = async (keyId) => {
     setCurrentKeyId(keyId)
     try {
-      const res = await fetch('/api/user/ai-settings', {
+      const res = await apiFetch('/api/user/ai-settings', {
         method: 'PUT',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key_id: keyId, restore: true }),
       })
       const data = await res.json()
@@ -380,9 +371,9 @@ function MyPage() {
     const p = { ...pendingRef.current }
     pendingRef.current = {}
     const s = stateRef.current
-    fetch('/api/user/ai-settings', {
+    apiFetch('/api/user/ai-settings', {
       method: 'PUT',
-      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         key_id: p.key_id !== undefined ? p.key_id : s.currentKeyId,
         model: p.model !== undefined ? (p.model || null) : (s.model.trim() || null),
@@ -430,9 +421,9 @@ function MyPage() {
     if (!currentKey) { setAiError(t('myPage.model.add.needKey')); return }
     setAiError('')
     try {
-      const res = await fetch('/api/user/ai-models', {
+      const res = await apiFetch('/api/user/ai-models', {
         method: 'POST',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ provider: currentKey.provider, model: name }),
       })
       const data = await res.json()
@@ -449,9 +440,9 @@ function MyPage() {
     const newFavs = wasFav ? favorites.filter(f => f !== m.model) : [...favorites, m.model]
     setFavorites(newFavs)
     try {
-      const res = await fetch('/api/user/ai-favorites/toggle', {
+      const res = await apiFetch('/api/user/ai-favorites/toggle', {
         method: 'POST',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ provider: currentKey.provider, model: m.model }),
       })
       const data = await res.json()
@@ -465,9 +456,9 @@ function MyPage() {
     if (!currentKey) return
     setAiError('')
     try {
-      const res = await fetch('/api/user/ai-models', {
+      const res = await apiFetch('/api/user/ai-models', {
         method: 'DELETE',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ provider: currentKey.provider, model: m.model }),
       })
       const data = await res.json()
@@ -492,9 +483,9 @@ function MyPage() {
       body.vision_model = visionModel || ''
       // 识图厂商不支持思考档位时不提交档位（保持 ''）
       body.vision_thinking = visionThinkingEnabled ? visionThinking : ''
-      const res = await fetch('/api/user/ai-settings', {
+      const res = await apiFetch('/api/user/ai-settings', {
         method: 'PUT',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
       const data = await res.json()
@@ -516,9 +507,9 @@ function MyPage() {
     try {
       const body = {}
       if (model.trim()) body.model = model.trim()
-      const res = await fetch('/api/user/ai-settings/test', {
+      const res = await apiFetch('/api/user/ai-settings/test', {
         method: 'POST',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
       const data = await res.json()
@@ -538,9 +529,9 @@ function MyPage() {
 
   const handleReadAll = async () => {
     try {
-      await fetch('/api/notifications/read', {
+      await apiFetch('/api/notifications/read', {
         method: 'PUT',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
       })
       setNotifications(ns => ns.map(n => ({ ...n, is_read: true })))
@@ -551,9 +542,9 @@ function MyPage() {
   const handleClick = (n) => {
     if (!n.blog_id) return
     if (!n.is_read) {
-      fetch('/api/notifications/read', {
+      apiFetch('/api/notifications/read', {
         method: 'PUT',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids: [n.id] }),
       }).catch(() => {})
       setNotifications(ns => ns.map(x => (x.id === n.id ? { ...x, is_read: true } : x)))
@@ -561,8 +552,6 @@ function MyPage() {
     }
     navigate(`/blogs/${n.blog_id}`)
   }
-
-  const formatTime = (s) => (s ? new Date(s).toLocaleString('zh-CN') : '')
 
   return (
     <div className="my-page">
@@ -617,7 +606,7 @@ function MyPage() {
                         <p className="my-item-content">{n.content}</p>
                         <p className="my-item-meta">
                           {n.actor_username && <span className="my-item-actor">{n.actor_username}</span>}
-                          <span className="my-item-time">{formatTime(n.created_at)}</span>
+                          <span className="my-item-time">{fmtDateTime(n.created_at)}</span>
                         </p>
                       </div>
                       {!n.is_read && <span className="my-item-dot" />}

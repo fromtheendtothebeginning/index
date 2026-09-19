@@ -10,18 +10,22 @@ from schemas import MarkNotificationsReadRequest, MessageResponse, NotificationL
 
 router = APIRouter()
 
+# 单次返回的通知条数上限（防止历史通知无限累积拖垮响应）
+_LIST_CAP = 200
+
 
 @router.get("/api/notifications", response_model=NotificationListResponse, tags=["通知"])
 def list_notifications(
     current_user: User = Depends(get_current_user_obj),
     db: Session = Depends(get_db),
 ):
-    """获取当前用户的通知列表（按时间倒序）"""
+    """获取当前用户的通知列表（按时间倒序，最多返回 _LIST_CAP 条）"""
     notifications = (
         db.query(Notification)
         .options(joinedload(Notification.actor))
         .filter(Notification.user_id == current_user.id)
         .order_by(Notification.created_at.desc())
+        .limit(_LIST_CAP)
         .all()
     )
     unread_count = (
@@ -29,11 +33,12 @@ def list_notifications(
         .filter(Notification.user_id == current_user.id, Notification.is_read.is_(False))
         .count()
     )
+    total = db.query(Notification).filter(Notification.user_id == current_user.id).count()
     # 附加 actor_username（不在模型中，动态赋值）
     for n in notifications:
         n.actor_username = n.actor.username if n.actor else None
     return NotificationListResponse(
-        total=len(notifications),
+        total=total,
         unread_count=unread_count,
         notifications=notifications,
     )

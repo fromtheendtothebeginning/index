@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useNavigate } from 'react-router-dom'
 import NavItem from './NavItem'
 import { navItems as featureNavItems } from '../appRoutes'
 import { BLOG_CATEGORIES } from '../constants'
 import { t } from '../i18n'
+import { apiFetch } from '../utils/api'
 
 function Navbar({ activePage }) {
   const navigate = useNavigate()
@@ -44,19 +45,17 @@ function Navbar({ activePage }) {
   }, [])
 
   // 校验当前登录用户的账户是否仍在数据库中存在
-  // 若后端返回 401/404（账户已被删除），则清除本地登录态并刷新
+  // 若账户已被删除（404），则清除本地登录态并刷新（401 由 apiFetch 统一处理）
   useEffect(() => {
     const token = localStorage.getItem('token')
     const storedUser = localStorage.getItem('user')
     if (!token || !storedUser) return
     let cancelled = false
-    fetch('/api/user/me', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    apiFetch('/api/user/me')
       .then(r => {
         if (cancelled) return null
-        if (r.status === 401 || r.status === 404) {
-          // 账户不存在或令牌无效 —— 退出登录
+        if (r.status === 404) {
+          // 账户不存在 —— 退出登录
           localStorage.removeItem('token')
           localStorage.removeItem('user')
           setUser(null)
@@ -86,9 +85,7 @@ function Navbar({ activePage }) {
       return
     }
     let cancelled = false
-    fetch('/api/notifications', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    apiFetch('/api/notifications')
       .then(r => (r.ok ? r.json() : null))
       .then(data => {
         if (cancelled || !data) return
@@ -98,6 +95,8 @@ function Navbar({ activePage }) {
     return () => { cancelled = true }
   }, [user])
 
+  // 跨页滚动的轮询定时器：连点时先清掉上一个，避免 interval 叠加
+  const sectionScrollTimerRef = useRef(null)
   const scrollToSection = (id) => {
     const go = () => {
       const el = document.getElementById(id)
@@ -110,9 +109,13 @@ function Navbar({ activePage }) {
     if (window.location.pathname !== '/') {
       navigate('/')
       // 等待首页目标区块挂载后滚动（轮询，最多约 1.5s，兼容慢设备/慢网络）
+      if (sectionScrollTimerRef.current) clearInterval(sectionScrollTimerRef.current)
       let tries = 0
-      const timer = setInterval(() => {
-        if (go() || ++tries >= 10) clearInterval(timer)
+      sectionScrollTimerRef.current = setInterval(() => {
+        if (go() || ++tries >= 10) {
+          clearInterval(sectionScrollTimerRef.current)
+          sectionScrollTimerRef.current = null
+        }
       }, 150)
     } else {
       go()

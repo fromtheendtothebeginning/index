@@ -5,7 +5,6 @@
 # 全部走 OpenAI 兼容 /chat/completions（Anthropic/Gemini 官方均提供兼容层）。
 
 import os
-import re
 import json
 import base64
 import hashlib
@@ -244,16 +243,6 @@ PROVIDERS = {
         ],
         "topk": False,
     },
-}
-
-THINKING_LEVELS = ("off", "low", "medium", "high", "max")
-
-DEFAULTS = {
-    "provider": "deepseek",
-    "model": "deepseek-v4-flash",
-    "thinking_level": "medium",
-    "temperature": 0.7,
-    "top_k": 40,
 }
 
 

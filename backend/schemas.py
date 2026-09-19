@@ -4,6 +4,15 @@ from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
 from typing import Optional
 
+from constants import BLOG_CATEGORIES
+
+
+def _validate_blog_category(value):
+    """博客分类必须是固定中文字符串之一（None/空串表示未分类，放行）"""
+    if value and value not in BLOG_CATEGORIES:
+        raise ValueError("分类无效")
+    return value
+
 
 def _validate_http_url(value):
     """校验必须是 http:// 或 https:// 开头的 URL；None / 空串放行"""
@@ -80,12 +89,22 @@ class CreateBlogRequest(BaseModel):
     content_md: str = Field(..., min_length=1, max_length=65535, description="Markdown 内容")
     project_id: Optional[int] = None
 
+    @field_validator("category")
+    @classmethod
+    def _category_valid(cls, v):
+        return _validate_blog_category(v)
+
 
 class UpdateBlogRequest(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=200, description="文章标题")
     category: Optional[str] = Field(None, max_length=50, description="分类：技术讨论 / 更新日志 / 娱乐论坛")
     content_md: Optional[str] = Field(None, min_length=1, max_length=65535, description="Markdown 内容")
     project_id: Optional[int] = None
+
+    @field_validator("category")
+    @classmethod
+    def _category_valid(cls, v):
+        return _validate_blog_category(v)
 
 
 # ── 项目请求 ──
@@ -437,6 +456,11 @@ class AdminBlogListResponse(BaseModel):
 
 class UpdateBlogCategoryRequest(BaseModel):
     category: Optional[str] = Field(None, max_length=50, description="分类：技术讨论/更新日志/娱乐论坛/空")
+
+    @field_validator("category")
+    @classmethod
+    def _category_valid(cls, v):
+        return _validate_blog_category(v)
 
 
 class UpdateBlogFeaturedRequest(BaseModel):

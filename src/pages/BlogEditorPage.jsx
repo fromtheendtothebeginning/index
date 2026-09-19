@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import CategoryDropdown from '../components/CategoryDropdown'
 import { renderMd } from '../utils/markdown'
+import { apiFetch } from '../utils/api'
 import CodeEditor from '../components/CodeEditor'
 import { UiIcon } from '../components/Icons'
 import { BLOG_CATEGORIES } from '../constants'
@@ -76,18 +77,16 @@ function BlogEditorPage() {
   const handleSave = async () => {
     if (!title.trim()) { setError(t('blogEditor.titleRequired')); return }
     if (!content.trim()) { setError(t('blogEditor.contentRequired')); return }
-    const token = localStorage.getItem('token')
     setSaving(true)
     setError('')
 
     try {
       const url = isEdit ? `/api/blogs/${id}` : '/api/blogs'
       const method = isEdit ? 'PUT' : 'POST'
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           title: title.trim(),

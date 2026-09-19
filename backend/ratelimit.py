@@ -8,16 +8,25 @@ from collections import deque
 class SlidingWindow:
     """内存滑动窗口限流器：按 key 在 window_seconds 内最多放行 limit 次"""
 
+    _SWEEP_EVERY = 1024  # 每放行 N 次做一轮过期条目清扫，避免唯一 IP/用户名无限累积
+
     def __init__(self, limit: int, window_seconds: int):
         self.limit = limit
         self.window_seconds = window_seconds
         self._lock = threading.Lock()
         self._hits = {}
+        self._calls = 0
 
     def allow(self, key: str) -> bool:
         """记录一次访问；窗口内次数未超限返回 True，否则返回 False（不记录）"""
         now = time.monotonic()
         with self._lock:
+            self._calls += 1
+            if self._calls >= self._SWEEP_EVERY:
+                self._calls = 0
+                cutoff = now - self.window_seconds
+                for k in [k for k, v in self._hits.items() if not v or v[-1] <= cutoff]:
+                    del self._hits[k]
             timestamps = self._hits.setdefault(key, deque())
             cutoff = now - self.window_seconds
             while timestamps and timestamps[0] <= cutoff:

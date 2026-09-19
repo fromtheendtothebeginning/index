@@ -9,7 +9,7 @@ import aisettings
 
 from constants import SPEECH_MODEL_PATTERNS, VISION_MODEL_PATTERNS
 from database import get_db
-from deps import get_current_user_obj
+from deps import _assert_public_http_url, get_current_user_obj
 from models import AiFavorite, AiKey, AiModel, AiSetting, User
 from schemas import (
     AiCustomModelRequest, AiCustomModelResponse,
@@ -244,6 +244,8 @@ def list_ai_key_models(
     api_key = aisettings.decrypt_secret(k.api_key_enc) if k.api_key_enc else None
     if not api_key:
         return AiModelsResponse(provider=k.provider, models=[], error="该 Key 无有效凭证")
+    if k.custom_base_url:
+        _assert_public_http_url(k.custom_base_url)  # 自定义 Base URL 只允许公网，防 SSRF
     ok, models, error = aisettings.list_models(k.provider, api_key, k.custom_base_url)
     if capability in ("vision", "speech"):
         patterns = VISION_MODEL_PATTERNS if capability == "vision" else SPEECH_MODEL_PATTERNS
@@ -348,5 +350,7 @@ def test_ai_settings(
     if not api_key:
         return AiSettingsTestResponse(ok=False, error="该 Key 无有效凭证")
     model = (req.model or model_default or p["default_model"]).strip()
+    if k.custom_base_url:
+        _assert_public_http_url(k.custom_base_url)  # 自定义 Base URL 只允许公网，防 SSRF
     ok, latency_ms, error = aisettings.test_chat(k.provider, api_key, model, k.custom_base_url)
     return AiSettingsTestResponse(ok=ok, latency_ms=latency_ms, error=error)

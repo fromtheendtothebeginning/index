@@ -4,6 +4,8 @@ import Navbar from '../components/Navbar'
 import Modal from '../components/Modal'
 import { UiIcon } from '../components/Icons'
 import { t } from '../i18n'
+import { apiFetch } from '../utils/api'
+import { fmtDateTime } from '../utils/format'
 import './LeetCodePage.css'
 
 const MEDAL_COLORS = { 0: 'lc-medal-gold', 1: 'lc-medal-silver', 2: 'lc-medal-bronze' }
@@ -54,10 +56,8 @@ function LeetCodePage() {
 
 const CACHE_KEY = 'lc_me_cache'
 
-const lcHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` })
-
 const loadLc = () => {
-  fetch('/api/leetcode/me', { headers: lcHeaders() })
+  apiFetch('/api/leetcode/me')
     .then(r => r.ok ? r.json() : null)
     .then(d => {
       if (!d) return
@@ -78,8 +78,8 @@ const load = () => {
   const loggedIn = !!localStorage.getItem('token')
 
   useEffect(() => {
-    if (!loggedIn) { setLoading(false); return }
-    load()
+    if (!loggedIn) return
+    // 榜单首拉由下方轮询 effect 的立即 poll() 承担，避免挂载时重复请求两次
     // 先渲染本地缓存的绑定状态，避免切换页面时闪出绑定表单（实时同步 LeetCode 需 1-3s）
     try {
       const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null')
@@ -112,6 +112,7 @@ const load = () => {
           prevBoardRef.current = key
         })
         .catch(() => {})
+        .finally(() => setLoading(false))
     }
     poll()
     const timer = setInterval(poll, 30000)
@@ -124,9 +125,9 @@ const load = () => {
     setLcSaving(true)
     setLcError('')
     try {
-      const res = await fetch('/api/leetcode/me', {
+      const res = await apiFetch('/api/leetcode/me', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...lcHeaders() },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ leetcode_username: name }),
       })
       const d = await res.json()
@@ -142,7 +143,7 @@ const load = () => {
     if (unbindText.trim() !== t('leetcode.unbind.confirmText')) return
     setUnbinding(true)
     try {
-      const res = await fetch('/api/leetcode/me', { method: 'DELETE', headers: lcHeaders() })
+      const res = await apiFetch('/api/leetcode/me', { method: 'DELETE' })
       if (res.ok) {
         setMe(null)
         localStorage.removeItem(CACHE_KEY)
@@ -156,9 +157,9 @@ const load = () => {
 
   const handleMode = async (patch) => {
     try {
-      const res = await fetch('/api/leetcode/me/mode', {
+      const res = await apiFetch('/api/leetcode/me/mode', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...lcHeaders() },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(patch),
       })
       const d = await res.json()
@@ -169,7 +170,7 @@ const load = () => {
   const handleRefresh = async () => {
     setRefreshing(true)
     try {
-      await fetch('/api/leetcode/refresh', { method: 'POST', headers: lcHeaders() })
+      await apiFetch('/api/leetcode/refresh', { method: 'POST' })
     } catch {}
     load()
     setRefreshing(false)
@@ -356,7 +357,7 @@ const load = () => {
             {refreshing ? t('leetcode.refresh.syncing') : t('leetcode.refresh.label')}
           </button>
           <span className="lc-updated">
-            {board ? t('leetcode.updatedAt', { time: new Date(board.generated_at).toLocaleString('zh-CN') }) : ''}
+            {board ? t('leetcode.updatedAt', { time: fmtDateTime(board.generated_at) }) : ''}
           </span>
           {updatedTip && <span className="lc-updated-tip">{t('leetcode.updated')}</span>}
           <span className="lc-heartbeat-hint" title={t('leetcode.heartbeatHint')}>{t('leetcode.heartbeat')}</span>

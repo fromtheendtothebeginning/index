@@ -6,7 +6,6 @@ import re
 import shutil
 import subprocess
 import tempfile
-import urllib.request
 import uuid
 from pathlib import Path
 from typing import Optional
@@ -19,7 +18,7 @@ from sqlalchemy.orm import Session
 
 import aisettings
 from database import Base, get_db
-from deps import _assert_public_http_url, get_current_user_obj, _log
+from deps import ai_vision_text, get_current_user_obj, _log
 from models import AiKey, AiSetting, User
 
 router = APIRouter()
@@ -176,8 +175,17 @@ def img2latex_session_save(
     # 保留旧会话中仍被引用的文件
     kept = [f for f in _session_files(db, current_user.id) if f["saved"] in keep]
     files = kept + new_files
-    # 清理磁盘上不再被引用的旧文件
+
+    s = _get_session_row(db, current_user.id)
+    # 只有输入真正变化（文件集合或文字说明不同）才丢弃旧代码/PDF；纯回退后原样保存则保留
+    old_sig = sorted((f["name"], f["kind"]) for f in _session_files(db, current_user.id))
+    new_sig = sorted((f["name"], f["kind"]) for f in files)
+    changed = (old_sig != new_sig) or ((notes or None) != (s.notes if s else None))
+
+    # 清理磁盘上不再被引用的旧文件；未变化时已编译 PDF 仍被会话引用，一并保留
     saved_set = {f["saved"] for f in files}
+    if not changed and s.pdf:
+        saved_set.add(s.pdf)
     d = _files_dir(current_user.id)
     for fn in os.listdir(d):
         if fn not in saved_set:
@@ -186,11 +194,6 @@ def img2latex_session_save(
             except OSError:
                 pass
 
-    s = _get_session_row(db, current_user.id)
-    # 只有输入真正变化（文件集合或文字说明不同）才丢弃旧代码/PDF；纯回退后原样保存则保留
-    old_sig = sorted((f["name"], f["kind"]) for f in _session_files(db, current_user.id))
-    new_sig = sorted((f["name"], f["kind"]) for f in files)
-    changed = (old_sig != new_sig) or ((notes or None) != (s.notes if s else None))
     s.step = max(1, min(step, 3))
     s.notes = notes or None
     s.files = json.dumps(files, ensure_ascii=False)
@@ -343,74 +346,10 @@ def _ai_review(provider_id, api_key, model, base_url, code: str, log_tail: str =
 
 
 def _ai_vision_chat(provider_id, api_key, model, base_url, system, user_text, images):
-    """带图对话：images = [(mime, b64)]，user_text 为已组装好的文字/Markdown 说明。按 provider api 风格构造，返回文本。"""
-    p = aisettings.get_provider(provider_id)
-    api = aisettings.resolve_api(provider_id, model)
-    base = base_url or (p["base_url"] if p else "")
-    url = _assert_public_http_url(aisettings._endpoint_url(api, base, provider_id))
-
-    user_text = user_text or "请根据输入内容生成 LaTeX 文档。"
-
-    if api == "anthropic":
-        parts = [{"type": "image", "source": {"type": "base64", "media_type": mime, "data": b64}}
-                 for mime, b64 in images]
-        parts.append({"type": "text", "text": user_text})
-        payload = {"model": model, "max_tokens": 8192, "system": system,
-                   "messages": [{"role": "user", "content": parts}]}
-    elif api == "responses":
-        parts = [{"type": "input_text", "text": user_text}]
-        parts += [{"type": "input_image", "image_url": f"data:{mime};base64,{b64}"} for mime, b64 in images]
-        payload = {"model": model, "instructions": system, "max_output_tokens": 8192,
-                   "input": [{"role": "user", "content": parts}]}
-    else:
-        parts = [{"type": "text", "text": user_text}]
-        parts += [{"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}} for mime, b64 in images]
-        payload = {"model": model,
-                   "messages": [{"role": "system", "content": system}, {"role": "user", "content": parts}],
-                   "max_tokens": 8192, "stream": False}
-
-    req = urllib.request.Request(
-        url, data=json.dumps(payload).encode("utf-8"),
-        headers=aisettings._build_headers(api, api_key), method="POST"
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=_AI_TIMEOUT) as resp:
-            data = json.loads(resp.read().decode())
-    except urllib.error.HTTPError as e:
-        try:
-            detail = e.read().decode("utf-8", errors="replace")[:300]
-        except Exception:
-            detail = ""
-        msg = {401: "API Key 无效或未授权", 403: "无权访问该模型，请到 AI 设置更换模型",
-               404: "接口或模型不存在（检查 Base URL / 模型 ID），请到 AI 设置调整",
-               413: "图片总大小超出模型限制，请减少图片数量或压缩后重试"}.get(e.code)
-        if msg:
-            raise _cfg(msg)
-        raise HTTPException(status_code=502, detail=f"AI 提供商返回 HTTP {e.code}: {detail}")
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"连接 AI 提供商失败：{e}")
-
-    if api == "responses":
-        if data.get("output_text"):
-            return data["output_text"]
-        for item in data.get("output") or []:
-            for c in item.get("content") or []:
-                if c.get("type") in ("output_text", "text") and c.get("text"):
-                    return c["text"]
-    elif api == "anthropic":
-        for c in data.get("content") or []:
-            if c.get("type") == "text" and c.get("text"):
-                return c["text"]
-    else:
-        choices = data.get("choices") or []
-        content = (choices[0].get("message") or {}).get("content") if choices else None
-        if isinstance(content, list):   # 部分网关把 content 返回为数组
-            content = "".join(c.get("text") or "" for c in content if isinstance(c, dict))
-        if content:
-            return content
-    raise HTTPException(status_code=502, detail="AI 响应中没有文本输出")
+    """带图对话：images = [(mime, b64)]，user_text 为已组装好的文字/Markdown 说明。委托 deps 通用实现。"""
+    return ai_vision_text(provider_id, api_key, model, base_url, system,
+                          user_text or "请根据输入内容生成 LaTeX 文档。",
+                          images, timeout=_AI_TIMEOUT)
 
 
 @router.post("/api/tools/img2latex/generate", tags=["工具"])
@@ -587,8 +526,10 @@ def _run_xelatex(tmp: str, name: str) -> Optional[str]:
     """编译一遍；成功返回 None，失败返回日志尾部（供诊断/自动修复）"""
     cmd = ["xelatex", "-interaction=nonstopmode", "-halt-on-error", "-no-shell-escape",
            f"-output-directory={tmp}", f"{name}.tex"]
+    # kpathsea 环境变量优先于 texmf.cnf：paranoid 档禁止 \input/\openout 读写绝对路径与上级目录，防沙箱逃逸读文件
+    env = {**os.environ, "openin_any": "p", "openout_any": "p"}
     r = subprocess.run(cmd, cwd=tmp, capture_output=True, timeout=_COMPILE_TIMEOUT,
-                       creationflags=_CREATE_NO_WINDOW)
+                       creationflags=_CREATE_NO_WINDOW, env=env)
     if os.path.exists(os.path.join(tmp, f"{name}.pdf")):
         return None
     log_path = os.path.join(tmp, f"{name}.log")

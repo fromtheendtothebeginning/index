@@ -13,7 +13,7 @@ from typing import Optional
 import aisettings
 from campus.pool import pool_key
 from database import SessionLocal, get_db
-from deps import _log, require_admin
+from deps import _log, _mask_sid, require_admin
 from models import CampusPoolAccount, User
 
 router = APIRouter()
@@ -86,12 +86,6 @@ class PoolAccountUpdate(BaseModel):
     label: Optional[str] = None
     password: Optional[str] = None
     enabled: Optional[bool] = None
-
-
-def _mask_sid(sid: str) -> str:
-    if len(sid) <= 4:
-        return "*" * len(sid)
-    return sid[:2] + "*" * (len(sid) - 4) + sid[-2:]
 
 
 @router.get("/api/campus/pool", tags=["校园服务"])

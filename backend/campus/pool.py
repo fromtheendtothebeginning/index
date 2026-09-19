@@ -220,9 +220,6 @@ class PoolManager:
         """取用时报登录态失效：清就绪位，维护线程会重新登录。"""
         self.ready.pop(key, None)
 
-    def overview(self):
-        return {"yielded": self.yielded, "active_key": self.active_key()}
-
     def status_of(self, account_id):
         """给管理端看的单账号会话状态。"""
         key = pool_key(account_id)

@@ -11,10 +11,9 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 
-from auth import decode_access_token
 from database import get_db
 from constants import LEETCODE_GRAPHQL
-from deps import _log, get_current_user_obj, oauth2_scheme, require_admin
+from deps import _log, get_current_user_obj, require_admin
 from models import LeetcodeBinding, User
 from schemas import (
     LeetcodeBoardResponse, LeetcodeDebugSetRequest, LeetcodeMeResponse,
@@ -196,17 +195,11 @@ def _exit_boost(binding) -> None:
 @router.put("/api/leetcode/me/mode", response_model=LeetcodeMeResponse, tags=["LeetCode"])
 def leetcode_mode(
     req: UpdateLeetcodeModeRequest,
-    token: str = Depends(oauth2_scheme),
+    current_user: User = Depends(get_current_user_obj),
     db: Session = Depends(get_db),
 ):
     """切换模式（激励与困难/严肃互斥；进入激励备份并清零刷题量，退出恢复）"""
-    payload = decode_access_token(token)
-    if payload is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
-    try:
-        user_id = int(payload.get("sub"))
-    except (TypeError, ValueError):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌")
+    user_id = current_user.id
     binding = db.query(LeetcodeBinding).filter(LeetcodeBinding.user_id == user_id).first()
     if not binding:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="尚未绑定 LeetCode 账号")

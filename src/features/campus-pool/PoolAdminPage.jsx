@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
 import Modal from '../../components/Modal'
 import { t } from '../../i18n'
+import { apiFetch } from '../../utils/api'
 import '../../pages/ToolParsePage.css'
 import './PoolAdminPage.css'
 
@@ -43,7 +44,7 @@ export default function PoolAdminPage() {
   const load = useCallback(async () => {
     if (!token) return
     try {
-      const res = await fetch('/api/campus/pool', { headers: { Authorization: `Bearer ${token}` } })
+      const res = await apiFetch('/api/campus/pool')
       const b = await res.json().catch(() => null)
       if (!res.ok) {
         setErrMsg(b && b.detail ? String(b.detail) : t('campusService.error'))
@@ -79,9 +80,9 @@ export default function PoolAdminPage() {
     setBusy(true)
     setFormMsg('')
     try {
-      const res = await fetch('/api/campus/pool', {
+      const res = await apiFetch('/api/campus/pool', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ student_id: sid.trim(), password: pwd, label: label.trim() }),
       })
       const b = await res.json().catch(() => null)
@@ -101,9 +102,9 @@ export default function PoolAdminPage() {
   const handleToggle = async (a) => {
     setToggling(a.id)
     try {
-      await fetch(`/api/campus/pool/${a.id}`, {
+      await apiFetch(`/api/campus/pool/${a.id}`, {
         method: 'PUT',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled: !a.enabled }),
       })
       load()
@@ -116,9 +117,8 @@ export default function PoolAdminPage() {
     if (!delTarget) return
     setBusy(true)
     try {
-      await fetch(`/api/campus/pool/${delTarget.id}`, {
+      await apiFetch(`/api/campus/pool/${delTarget.id}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
       })
       setDelTarget(null)
       load()

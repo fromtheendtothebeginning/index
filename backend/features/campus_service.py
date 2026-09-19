@@ -6,10 +6,8 @@
 # 电费相关（openservice/SM4）本次不移植。
 
 import base64
-import json
 import threading
-import urllib.error
-import urllib.request
+import time
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
@@ -17,7 +15,7 @@ from sqlalchemy.orm import Session as OrmSession
 
 import aisettings
 from database import get_db
-from deps import _log, get_current_user_obj
+from deps import _log, _mask_sid, ai_vision_text, get_current_user_obj
 from models import AiKey, AiSetting, CampusCred, User
 
 router = APIRouter()
@@ -27,12 +25,16 @@ router = APIRouter()
 # ============================================================
 _singletons = None
 _singletons_lock = threading.Lock()
+_init_failed_at = 0.0
+_INIT_RETRY_SECONDS = 60.0
 
 
 def _get_managers():
-    global _singletons
+    global _singletons, _init_failed_at
     with _singletons_lock:
-        if _singletons is None:
+        # 初始化失败缓存 60 秒后允许重试，避免 Docker 瞬断后 503 直到重启进程
+        failed = _singletons is not None and "error" in _singletons
+        if _singletons is None or (failed and time.monotonic() - _init_failed_at >= _INIT_RETRY_SECONDS):
             import copy
 
             from campus.config import Config
@@ -67,6 +69,7 @@ def _get_managers():
                 _singletons = {"cfg": cfg, "docker": docker, "sessions": sessions,
                                "dekt": dekt, "pool": pool}
             except Exception as e:
+                _init_failed_at = time.monotonic()
                 _log(f"campus docker init failed: {str(e)[:200]}")
                 _singletons = {"error": str(e)[:300]}
     return _singletons
@@ -90,12 +93,6 @@ class CredSaveRequest(BaseModel):
     pay_password: str = ""
     auto_captcha: bool = False
     dorm: str = ""
-
-
-def _mask_sid(sid: str) -> str:
-    if len(sid) <= 4:
-        return "*" * len(sid)
-    return sid[:2] + "*" * (len(sid) - 4) + sid[-2:]
 
 
 @router.get("/api/campus/cred", tags=["校园服务"])
@@ -160,7 +157,7 @@ def _decrypt_or_400(blob):
 # VPN 会话
 # ============================================================
 
-def _session_payload(sess, request=None) -> dict:
+def _session_payload(sess) -> dict:
     if sess is None:
         return {"connected": False, "status": "none"}
     return {
@@ -175,7 +172,7 @@ def _session_payload(sess, request=None) -> dict:
 
 
 @router.post("/api/campus/connect", tags=["校园服务"])
-def campus_connect(request: Request, current_user: User = Depends(get_current_user_obj), db: OrmSession = Depends(get_db)):
+def campus_connect(current_user: User = Depends(get_current_user_obj), db: OrmSession = Depends(get_db)):
     m = _mgrs()
     c = _load_cred(current_user, db)
     vpn_pwd = _decrypt_or_400(c.vpn_password_enc)
@@ -183,13 +180,13 @@ def campus_connect(request: Request, current_user: User = Depends(get_current_us
         m["sessions"].create(current_user.id, c.student_id, vpn_pwd)
     except (ValueError, RuntimeError) as e:
         raise HTTPException(status_code=400, detail=str(e))
-    return _session_payload(m["sessions"].get(current_user.id), request)
+    return _session_payload(m["sessions"].get(current_user.id))
 
 
 @router.get("/api/campus/status", tags=["校园服务"])
-def campus_status(request: Request, current_user: User = Depends(get_current_user_obj)):
+def campus_status(current_user: User = Depends(get_current_user_obj)):
     m = _mgrs()
-    return _session_payload(m["sessions"].get(current_user.id), request)
+    return _session_payload(m["sessions"].get(current_user.id))
 
 
 @router.post("/api/campus/disconnect", tags=["校园服务"])
@@ -252,84 +249,23 @@ def _resolve_vision_model(user_id, db):
 
 
 def _ai_solve_captcha(captcha_b64, vision_info, timeout=30):
-    """调用识图模型识别验证码图片，返回文字或 None"""
-    provider = vision_info["provider"]
-    api_key = vision_info["api_key"]
-    model = vision_info["model"]
-    base_url = vision_info["base_url"]
-
-    if not base_url:
-        # 从后端 provider 表取默认 base_url
-        # （此前误引前端的 utils/aiProviders，后端没这个模块 → ModuleNotFoundError → 查询 500）
-        p = aisettings.get_provider(provider)
-        base_url = (p.get("base_url") or "") if p else ""
-    base_url = base_url.rstrip("/")
-    if not base_url:
-        _log(f"campus auto captcha skipped: provider={provider} 无默认 base_url")
-        return None
-
-    # 构造 vision chat 请求（openai 兼容格式）
-    url = f"{base_url}/chat/completions"
-    if provider == "anthropic":
-        # anthropic 格式：messages content 带 image 类型
-        payload = {
-            "model": model,
-            "max_tokens": 512,  # 推理型视觉模型会先花 token 思考，100 会被 reasoning 吃光导致 content 为空
-            "messages": [{
-                "role": "user",
-                "content": [
-                    {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": captcha_b64}},
-                    {"type": "text", "text": "请只输出图片中的验证码字符本身（区分大小写；不要空格、标点、引号，也不要任何解释或说明）。"}
-                ]
-            }]
-        }
-        headers = aisettings._build_headers("anthropic", api_key)
-    else:
-        # openai 兼容格式
-        payload = {
-            "model": model,
-            "max_tokens": 512,  # 推理型视觉模型会先花 token 思考，100 会被 reasoning 吃光导致 content 为空
-            "messages": [{
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": "请只输出图片中的验证码字符本身（区分大小写；不要空格、标点、引号，也不要任何解释或说明）。"},
-                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{captcha_b64}"}}
-                ]
-            }]
-        }
-        headers = aisettings._build_headers("openai", api_key)
-
-    # 思考深度：按 provider 写入思考参数（未配置则不加，跟随模型默认）
-    base_keys = set(payload)
-    payload = aisettings.apply_thinking(payload, provider, vision_info.get("thinking"))
-    thinking_keys = [k for k in payload if k not in base_keys]
-
-    def _post(body):
-        req = urllib.request.Request(
-            url, data=json.dumps(body).encode("utf-8"),
-            headers={**headers, "Content-Type": "application/json"},
-            method="POST",
-        )
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            return json.loads(resp.read().decode())
-
+    """调用识图模型识别验证码图片，返回文字或 None（AI 侧失败一律降级为手动输入）"""
     try:
-        try:
-            data = _post(payload)
-        except urllib.error.HTTPError as e:
-            # 400 且本次确实加了思考参数：去掉该参数重试一次（部分模型/兼容层不认）
-            if e.code != 400 or not thinking_keys:
-                raise
-            _log("campus auto captcha: thinking param rejected, retry without it")
-            data = _post({k: v for k, v in payload.items() if k not in thinking_keys})
-        text = (data.get("choices") or [{}])[0].get("message", {}).get("content", "").strip()
-        # 去掉可能的引号/空格
-        text = text.strip("\"' \n\r\t")
-        _log(f"campus auto captcha recognized: {text!r}")
-        return text if text else None
+        text = ai_vision_text(
+            vision_info["provider"], vision_info["api_key"], vision_info["model"],
+            vision_info["base_url"] or None, None,
+            "请只输出图片中的验证码字符本身（区分大小写；不要空格、标点、引号，也不要任何解释或说明）。",
+            [("image/png", captcha_b64)],
+            timeout=timeout, max_tokens=512,  # 推理型视觉模型会先花 token 思考，太小会被 reasoning 吃光导致 content 为空
+            thinking=vision_info.get("thinking") or None,
+        )
     except Exception as e:
         _log(f"campus auto captcha failed: {str(e)[:150]}")
         return None
+    # 去掉可能的引号/空格
+    text = text.strip("\"' \n\r\t")
+    _log(f"campus auto captcha recognized: {text!r}")
+    return text or None
 
 
 def _try_auto_captcha(client, sess, captcha_b64, kind, user_id, db, **kw):
@@ -341,7 +277,6 @@ def _try_auto_captcha(client, sess, captcha_b64, kind, user_id, db, **kw):
     if not captcha_text:
         return None
     try:
-        from campus.dekt import DektError
         if kind == "grades":
             client.complete_jwxt_login(sess.student_id, captcha_text)
             data = client.fetch_grades(sess.student_id, xnm=kw.get("xnm", ""), xqm=kw.get("xqm", ""))

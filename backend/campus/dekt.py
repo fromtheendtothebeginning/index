@@ -516,16 +516,6 @@ class DektClient:
         gpa = round(total_xfjd / total_xf, 4) if total_xf else 0
         return {"grades": grades, "gpa": gpa, "count": len(grades)}
 
-    def logout(self):
-        self.session = None
-        self.student_id = None
-        self._password = ""
-        self._hdms_cache = {}
-        self.pending = None
-        self.pending_kind = None
-        self.jwxt_session = None
-        self.jwxt_pending = None
-
 
 class DektManager:
     def __init__(self, cfg):

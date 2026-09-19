@@ -1,14 +1,15 @@
 # features/auth_routes.py — 认证（注册/登录）
 
-import secrets
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from auth import create_access_token, hash_password, verify_password
 from database import get_db
-from deps import _client_ip
+from deps import _client_ip, generate_invite_code
 from models import InviteCode, User
 from ratelimit import login_ip, login_user, register_ip
 from schemas import LoginRequest, RegisterRequest, TokenResponse, UserResponse
@@ -60,36 +61,46 @@ def register(req: RegisterRequest, request: Request, db: Session = Depends(get_d
         )
     db.refresh(user)
 
-    # 标记邀请码已使用（可重复使用的邀请码也标记，但不阻止再次使用）
-    from datetime import datetime, timezone
-    invite.is_used = True
-    invite.used_by = user.id
-    invite.used_at = datetime.now(timezone.utc)
-    try:
+    # 原子标记邀请码已使用：并发注册同一单次码时只有一个请求能更新成功（防 TOCTOU）。
+    # 可重复使用的邀请码也标记，但不阻止再次使用。
+    claimed = (
+        db.query(InviteCode)
+        .filter(
+            InviteCode.id == invite.id,
+            or_(InviteCode.is_used.is_(False), InviteCode.is_reusable.is_(True)),
+        )
+        .update(
+            {"is_used": True, "used_by": user.id, "used_at": datetime.now(timezone.utc)},
+            synchronize_session=False,
+        )
+    )
+    db.commit()
+    if claimed == 0:
+        db.delete(user)
         db.commit()
-    except IntegrityError:
-        db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="邀请码无效",
+            detail="邀请码已被使用",
         )
 
-    # 为新用户自动生成专属邀请码（可重复使用）
-    user_code = secrets.token_urlsafe(8).upper().replace("-", "").replace("_", "")[:12]
-    user_invite = InviteCode(
-        code=user_code,
-        created_by=user.id,
-        owner_user_id=user.id,
-        is_reusable=True,
-    )
-    db.add(user_invite)
-    try:
-        db.commit()
-    except IntegrityError:
-        db.rollback()
+    # 为新用户自动生成专属邀请码（可重复使用）；12 位码熵有限，碰撞时换码重试
+    for _ in range(3):
+        user_invite = InviteCode(
+            code=generate_invite_code(),
+            created_by=user.id,
+            owner_user_id=user.id,
+            is_reusable=True,
+        )
+        db.add(user_invite)
+        try:
+            db.commit()
+            break
+        except IntegrityError:
+            db.rollback()
+    else:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="专属邀请码生成失败",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="专属邀请码生成失败，请稍后联系管理员补发",
         )
 
     token = create_access_token({"sub": str(user.id), "username": user.username, "ver": user.token_version})
@@ -114,6 +125,11 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="用户名或密码错误",
+        )
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="账号已被禁用",
         )
 
     token = create_access_token({"sub": str(user.id), "username": user.username, "ver": user.token_version})

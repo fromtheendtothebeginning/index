@@ -187,9 +187,9 @@ export default function CodeEditor({ value, onChange, placeholder, textareaRef }
     }
   }
 
-  // 接受补全
-  const acceptCompletion = useCallback(() => {
-    const cand = completions[menuIndex]
+  // 接受补全（显式传 index：鼠标点击时 menuIndex 尚未更新，依赖闭包会插错项）
+  const acceptCompletion = useCallback((index = menuIndex) => {
+    const cand = completions[index]
     if (!cand) return false
     const ta = taRef.current
     if (!ta) return false
@@ -310,7 +310,7 @@ export default function CodeEditor({ value, onChange, placeholder, textareaRef }
               onMouseDown={(e) => {
                 e.preventDefault()
                 setMenuIndex(i)
-                acceptCompletion()
+                acceptCompletion(i)
               }}
             >
               <span className="code-editor-menu-label">{c.label}</span>

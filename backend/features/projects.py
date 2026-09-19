@@ -3,14 +3,14 @@
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload
 
 from database import get_db
 from constants import ROLE_ADMIN
-from deps import _notify, get_current_user_obj, get_optional_user, oauth2_scheme_optional, require_admin
+from deps import get_current_user_obj, get_optional_user, oauth2_scheme_optional, require_admin
 from features.blogs import _attach_blog_stats
-from models import Blog, Project, ProjectFollow, ProjectLike, User
+from models import Blog, Notification, Project, ProjectFollow, ProjectLike, User
 from schemas import (
     CreateProjectRequest, MessageResponse, ProjectDetailResponse,
     ProjectFollowToggleResponse, ProjectListResponse, ProjectResponse,
@@ -20,12 +20,57 @@ from schemas import (
 router = APIRouter()
 
 
-def _attach_project_stats(project: Project, db: Session, current_user: Optional[User]) -> None:
-    """为项目对象附加点赞数、关注数、当前用户是否点赞/关注"""
-    project.like_count = db.query(ProjectLike).filter(ProjectLike.project_id == project.id).count()
-    project.follow_count = db.query(ProjectFollow).filter(ProjectFollow.project_id == project.id).count()
-    project.liked_by_me = current_user is not None and db.query(ProjectLike).filter(ProjectLike.project_id == project.id, ProjectLike.user_id == current_user.id).first() is not None
-    project.followed_by_me = current_user is not None and db.query(ProjectFollow).filter(ProjectFollow.project_id == project.id, ProjectFollow.user_id == current_user.id).first() is not None
+def _attach_project_stats(projects, db: Session, current_user: Optional[User]) -> None:
+    """为一批项目批量附加点赞数、关注数、当前用户是否点赞/关注（聚合查询，避免逐条 N+1）"""
+    projects = list(projects)
+    if not projects:
+        return
+    ids = [p.id for p in projects]
+    like_counts = dict(
+        db.query(ProjectLike.project_id, func.count(ProjectLike.id))
+        .filter(ProjectLike.project_id.in_(ids))
+        .group_by(ProjectLike.project_id)
+        .all()
+    )
+    follow_counts = dict(
+        db.query(ProjectFollow.project_id, func.count(ProjectFollow.id))
+        .filter(ProjectFollow.project_id.in_(ids))
+        .group_by(ProjectFollow.project_id)
+        .all()
+    )
+    liked_ids = set()
+    followed_ids = set()
+    if current_user:
+        liked_ids = {
+            row[0] for row in db.query(ProjectLike.project_id)
+            .filter(ProjectLike.project_id.in_(ids), ProjectLike.user_id == current_user.id)
+            .all()
+        }
+        followed_ids = {
+            row[0] for row in db.query(ProjectFollow.project_id)
+            .filter(ProjectFollow.project_id.in_(ids), ProjectFollow.user_id == current_user.id)
+            .all()
+        }
+    for p in projects:
+        p.like_count = like_counts.get(p.id, 0)
+        p.follow_count = follow_counts.get(p.id, 0)
+        p.liked_by_me = p.id in liked_ids
+        p.followed_by_me = p.id in followed_ids
+
+
+def _attach_blog_counts(projects, db: Session) -> None:
+    """为一批项目批量附加关联博客数"""
+    projects = list(projects)
+    if not projects:
+        return
+    counts = dict(
+        db.query(Blog.project_id, func.count(Blog.id))
+        .filter(Blog.project_id.in_([p.id for p in projects]))
+        .group_by(Blog.project_id)
+        .all()
+    )
+    for p in projects:
+        p.blog_count = counts.get(p.id, 0)
 
 
 @router.get("/api/projects", response_model=ProjectListResponse, tags=["项目"])
@@ -46,9 +91,8 @@ def list_projects(
         .limit(limit)
         .all()
     )
-    for p in projects:
-        p.blog_count = db.query(Blog).filter(Blog.project_id == p.id).count()
-        _attach_project_stats(p, db, current_user)
+    _attach_blog_counts(projects, db)
+    _attach_project_stats(projects, db, current_user)
     return ProjectListResponse(total=total, projects=projects)
 
 
@@ -76,10 +120,9 @@ def get_project(
         .order_by(Blog.created_at.desc())
         .all()
     )
-    for b in blogs:
-        _attach_blog_stats(b, db, current_user)
+    _attach_blog_stats(blogs, db, current_user)
     project.blogs = blogs
-    _attach_project_stats(project, db, current_user)
+    _attach_project_stats([project], db, current_user)
     return project
 
 
@@ -207,18 +250,43 @@ def update_project_blogs(
         )
     db.commit()
 
-    # 关联了新博客时，通知所有关注者（作者本人除外）
+    # 关联了新博客时，批量通知所有关注者（作者本人除外，同目标未读通知去重）
     if old_blog_ids:
-        followers = db.query(ProjectFollow.user_id).filter(ProjectFollow.project_id == project_id).all()
+        followers = [
+            fid for (fid,) in db.query(ProjectFollow.user_id)
+            .filter(ProjectFollow.project_id == project_id).all()
+            if fid != project.author_id
+        ]
         new_blogs = {b.id: b.title for b in db.query(Blog).filter(Blog.id.in_(old_blog_ids)).all()}
-        for fid, in followers:
-            if fid == project.author_id:
-                continue
-            for bid, btitle in new_blogs.items():
-                _notify(
-                    db, fid, "project_new_blog", project.author_id, bid, None,
-                    f"项目「{project.name}」关联了新博客《{btitle}》",
+        if followers and new_blogs:
+            existing = {
+                (n.user_id, n.blog_id)
+                for n in db.query(Notification)
+                .filter(
+                    Notification.user_id.in_(followers),
+                    Notification.type == "project_new_blog",
+                    Notification.actor_id == project.author_id,
+                    Notification.blog_id.in_(new_blogs),
+                    Notification.is_read.is_(False),
                 )
+                .all()
+            }
+            fresh = [
+                Notification(
+                    user_id=fid,
+                    type="project_new_blog",
+                    actor_id=project.author_id,
+                    blog_id=bid,
+                    comment_id=None,
+                    content=f"项目「{project.name}」关联了新博客《{btitle}》",
+                )
+                for fid in followers
+                for bid, btitle in new_blogs.items()
+                if (fid, bid) not in existing
+            ]
+            if fresh:
+                db.add_all(fresh)
+                db.commit()
 
     project = (
         db.query(Project)
@@ -233,10 +301,9 @@ def update_project_blogs(
         .order_by(Blog.created_at.desc())
         .all()
     )
-    for b in blogs:
-        _attach_blog_stats(b, db, None)
+    _attach_blog_stats(blogs, db, None)
     project.blogs = blogs
-    _attach_project_stats(project, db, None)
+    _attach_project_stats([project], db, None)
     return project
 
 

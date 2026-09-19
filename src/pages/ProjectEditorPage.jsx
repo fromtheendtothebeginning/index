@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar'
 import ProjectCover from '../components/ProjectCover'
 import Reveal from '../components/Reveal'
 import { t } from '../i18n'
+import { apiFetch } from '../utils/api'
 import './Project.css'
 
 function ProjectEditorPage() {
@@ -85,18 +86,16 @@ function ProjectEditorPage() {
 
   const handleSave = async () => {
     if (!name.trim()) { setError(t('projectEditor.enterName')); return }
-    const token = localStorage.getItem('token')
     setSaving(true)
     setError('')
 
     try {
       const url = isEdit ? `/api/projects/${id}` : '/api/projects'
       const method = isEdit ? 'PUT' : 'POST'
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           name: name.trim(),
@@ -113,11 +112,10 @@ function ProjectEditorPage() {
       if (!res.ok) { setError(data.detail || t('projectEditor.saveFailed')); return }
       if (isEdit) {
         try {
-          await fetch(`/api/projects/${id}/blogs`, {
+          await apiFetch(`/api/projects/${id}/blogs`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({ blog_ids: selectedBlogIds }),
           })

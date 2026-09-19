@@ -18,19 +18,35 @@ from schemas import (
 router = APIRouter()
 
 
-def _attach_blog_stats(blog: Blog, db: Session, current_user: Optional[User]) -> None:
-    """为博客对象附加点赞数、评论数、当前用户是否点赞"""
-    blog.like_count = db.query(BlogLike).filter(BlogLike.blog_id == blog.id).count()
-    blog.comment_count = db.query(Comment).filter(Comment.blog_id == blog.id).count()
+def _attach_blog_stats(blogs, db: Session, current_user: Optional[User]) -> None:
+    """为一批博客批量附加点赞数、评论数、当前用户是否点赞（聚合查询，避免逐条 N+1）"""
+    blogs = list(blogs)
+    if not blogs:
+        return
+    ids = [b.id for b in blogs]
+    like_counts = dict(
+        db.query(BlogLike.blog_id, func.count(BlogLike.id))
+        .filter(BlogLike.blog_id.in_(ids))
+        .group_by(BlogLike.blog_id)
+        .all()
+    )
+    comment_counts = dict(
+        db.query(Comment.blog_id, func.count(Comment.id))
+        .filter(Comment.blog_id.in_(ids))
+        .group_by(Comment.blog_id)
+        .all()
+    )
+    liked_ids = set()
     if current_user:
-        blog.liked_by_me = (
-            db.query(BlogLike)
-            .filter(BlogLike.blog_id == blog.id, BlogLike.user_id == current_user.id)
-            .first()
-            is not None
-        )
-    else:
-        blog.liked_by_me = False
+        liked_ids = {
+            row[0] for row in db.query(BlogLike.blog_id)
+            .filter(BlogLike.blog_id.in_(ids), BlogLike.user_id == current_user.id)
+            .all()
+        }
+    for b in blogs:
+        b.like_count = like_counts.get(b.id, 0)
+        b.comment_count = comment_counts.get(b.id, 0)
+        b.liked_by_me = b.id in liked_ids
 
 
 @router.get("/api/blogs", response_model=BlogListResponse, tags=["博客"])
@@ -94,8 +110,7 @@ def list_blogs(
         .limit(limit)
         .all()
     )
-    for b in blogs:
-        _attach_blog_stats(b, db, current_user)
+    _attach_blog_stats(blogs, db, current_user)
     return BlogListResponse(total=total, blogs=blogs)
 
 
@@ -110,7 +125,7 @@ def get_blog(
     if not blog:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="博客不存在")
     current_user = get_optional_user(token, db)
-    _attach_blog_stats(blog, db, current_user)
+    _attach_blog_stats([blog], db, current_user)
     return blog
 
 
@@ -137,7 +152,7 @@ def create_blog(
     db.refresh(blog)
     # 重新查询以加载 author / project 关系
     blog = db.query(Blog).options(joinedload(Blog.author), joinedload(Blog.project)).filter(Blog.id == blog.id).first()
-    _attach_blog_stats(blog, db, current_user)
+    _attach_blog_stats([blog], db, current_user)
     return blog
 
 
@@ -172,7 +187,7 @@ def update_blog(
 
     db.commit()
     db.refresh(blog)
-    _attach_blog_stats(blog, db, current_user)
+    _attach_blog_stats([blog], db, current_user)
     return blog
 
 

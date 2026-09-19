@@ -1,13 +1,12 @@
 # features/admin.py — 管理员（用户/评论/博客/邀请码）
 
-import secrets
-
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from auth import hash_password
 from database import get_db
-from deps import require_admin
+from deps import generate_invite_code, require_admin
 from models import Blog, Comment, InviteCode, Project, User
 from schemas import (
     AdminBlogListItem, AdminBlogListResponse, AdminCommentListResponse,
@@ -19,15 +18,19 @@ from schemas import (
 
 router = APIRouter()
 
+# 管理端全量列表的行数上限（防止数据增长后响应体/内存无限膨胀）
+_LIST_CAP = 500
+
 
 @router.get("/api/admin/users", response_model=AdminUserListResponse, tags=["管理员"])
 def admin_list_users(
     _admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """获取所有用户列表（含角色，仅管理员）"""
-    users = db.query(User).order_by(User.created_at.asc()).all()
-    return AdminUserListResponse(total=len(users), users=users)
+    """获取用户列表（含角色，仅管理员；最多返回 _LIST_CAP 条）"""
+    total = db.query(User).count()
+    users = db.query(User).order_by(User.created_at.asc()).limit(_LIST_CAP).all()
+    return AdminUserListResponse(total=total, users=users)
 
 
 @router.put("/api/admin/users/{user_id}/role", response_model=AdminUserResponse, tags=["管理员"])
@@ -94,11 +97,12 @@ def admin_list_comments(
     _admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """获取所有评论（含博客标题，仅管理员）"""
+    """获取评论列表（含博客标题，仅管理员；最多返回 _LIST_CAP 条）"""
     comments = (
         db.query(Comment)
         .options(joinedload(Comment.user))
         .order_by(Comment.created_at.desc())
+        .limit(_LIST_CAP)
         .all()
     )
     # 批量查询博客标题
@@ -131,7 +135,8 @@ def admin_list_comments(
             pc, pu = parents[c.parent_id]
             c.parent_content = pc.content
             c.parent_username = pu.nickname or pu.username
-    return AdminCommentListResponse(total=len(comments), comments=comments)
+    total = db.query(Comment).count()
+    return AdminCommentListResponse(total=total, comments=comments)
 
 
 @router.delete("/api/admin/comments/{comment_id}", response_model=MessageResponse, tags=["管理员"])
@@ -154,14 +159,16 @@ def admin_list_blogs(
     _admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """获取所有博客（仅管理员）"""
+    """获取博客列表（仅管理员；最多返回 _LIST_CAP 条）"""
+    total = db.query(Blog).count()
     blogs = (
         db.query(Blog)
         .options(joinedload(Blog.author))
         .order_by(Blog.created_at.desc())
+        .limit(_LIST_CAP)
         .all()
     )
-    return AdminBlogListResponse(total=len(blogs), blogs=blogs)
+    return AdminBlogListResponse(total=total, blogs=blogs)
 
 
 @router.delete("/api/admin/blogs/{blog_id}", response_model=MessageResponse, tags=["管理员"])
@@ -220,13 +227,20 @@ def admin_create_invite_code(
     admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """生成邀请码（仅管理员，默认一次性使用）"""
-    code = secrets.token_urlsafe(8).upper().replace("-", "").replace("_", "")[:12]
-    invite = InviteCode(code=code, created_by=admin.id)
-    db.add(invite)
-    db.commit()
-    db.refresh(invite)
-    return CreateInviteCodeResponse(code=invite.code, created_at=invite.created_at)
+    """生成邀请码（仅管理员，默认一次性使用；码碰撞时换码重试）"""
+    for _ in range(3):
+        invite = InviteCode(code=generate_invite_code(), created_by=admin.id)
+        db.add(invite)
+        try:
+            db.commit()
+            db.refresh(invite)
+            return CreateInviteCodeResponse(code=invite.code, created_at=invite.created_at)
+        except IntegrityError:
+            db.rollback()
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="邀请码生成失败，请重试",
+    )
 
 
 @router.get("/api/admin/invite-codes", response_model=InviteCodeListResponse, tags=["管理员"])
@@ -234,17 +248,19 @@ def admin_list_invite_codes(
     _admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """获取所有邀请码（含专属用户信息，仅管理员）"""
+    """获取邀请码列表（含专属用户信息，仅管理员；最多返回 _LIST_CAP 条）"""
+    total = db.query(InviteCode).count()
     codes = (
         db.query(InviteCode)
         .options(joinedload(InviteCode.owner), joinedload(InviteCode.creator))
         .order_by(InviteCode.created_at.desc())
+        .limit(_LIST_CAP)
         .all()
     )
     # 附加 owner_username（不在模型中，动态赋值）
     for c in codes:
         c.owner_username = c.owner.username if c.owner else None
-    return InviteCodeListResponse(total=len(codes), codes=codes)
+    return InviteCodeListResponse(total=total, codes=codes)
 
 
 @router.delete("/api/admin/invite-codes/{code_id}", response_model=MessageResponse, tags=["管理员"])
