@@ -1,6 +1,7 @@
 # features/campus_activities.py — 第二课堂活动查询（学工「活动报名」引导页看板）
 # 适配自 Second_Class_Notification：列表 getHdgcHdList.zf + 详情 details.zf(hdms 活动说明)。
-# 会话选路：自己已连接的会话 → 共享会话池（免配置，只读公开数据）→ 有凭据则自动连自己的。
+# 会话选路：自己已连接的会话 → 共享会话池 → 借道其他成员已登录学工的会话 → 有凭据自动连自己。
+# 活动是公开数据，所有登录成员零凭据可用（等池 / 借道），绝不要求普通成员填校园凭据；
 # 个人数据（分数/成绩/校园卡）永远不走共享池，见 features/campus_pool.py。
 # 路由不用 /api/campus/query/activities：campus_service 的通配路由 POST /api/campus/query/{kind}
 # 按字母序先注册会把它拦走。
@@ -54,19 +55,36 @@ def _query_captcha_flow(m, sess, client, current_user, db):
     return None
 
 
-def _pool_yield_guard(m, current_user, db):
-    """池已让位（有其他用户会话在线）且本用户没有自己的凭据时，给明确提示而非误导性的「未填凭据」。"""
-    import features.campus_service as cs
+def _borrow_client(m):
+    """借一个其他成员已连接且已登录学工的会话客户端查公开数据（活动）。
 
+    池让位/未就绪时，只要现场有任何人连着 VPN 且登录过学工，活动列表就应可查
+    ——活动是公开数据，谁的会话取回来都一样；绝不借用个人会话查个人数据。
+    """
+    from campus.pool import KEY_BASE
+
+    sessions, dekt = m["sessions"], m["dekt"]
+    for uid in list(dekt.clients):
+        if isinstance(uid, int) and uid >= KEY_BASE:
+            continue   # 池账号的客户端在专属 DektManager 里，防御性跳过
+        sess = sessions.get(uid)
+        if sess is None or sess.status != "connected":
+            continue
+        client = dekt.get(uid, sess)   # 端口已变时自动重建（新客户端 session 为 None）
+        if client.session is not None:
+            return client
+    return None
+
+
+def _no_cred_outcome(m):
+    """无凭据成员的兜底：池在养号/让位等待就返回 vpn_connecting 让前端轮询，
+    完全没配置共享账号才提示找管理员（绝不要求普通成员填凭据）。"""
     pool = m.get("pool")
-    if pool is None or not pool.yielded:
-        return
-    try:
-        cs._load_cred(current_user, db)
-    except HTTPException:
-        raise HTTPException(
-            status_code=400,
-            detail="共享会话已暂时让位给其他用户的 VPN 连接，请稍后再试，或在「我的 → 校园服务」填写自己的凭据")
+    if pool and any(a.get("enabled") for a in pool.accounts.values()):
+        return {"vpn_connecting": True}
+    raise HTTPException(
+        status_code=400,
+        detail="共享会话尚未配置：请管理员在「工具 → 校园服务 → 会话池管理」添加共享校园账号")
 
 
 @router.post("/api/campus/activities", tags=["校园服务"])
@@ -98,8 +116,19 @@ def campus_activities(current_user: User = Depends(get_current_user_obj),
         except DektError:
             _pool_stale(m, client)   # 登录态失效 → 维护线程重登，本次落入回退
 
-    # 3) 回退：用已存凭据自动连接自己的会话（无凭据时给明确提示）
-    _pool_yield_guard(m, current_user, db)
+    # 3) 借道其他成员已登录学工的会话（活动是公开数据，谁的会话取回都一样）
+    client = _borrow_client(m)
+    if client is not None:
+        try:
+            return {"ok": True, "data": act.activities_payload(client), "via_pool": True}
+        except DektError:
+            pass   # 该客户端登录态也失效，继续回退
+
+    # 4) 有凭据才自动连接自己的会话；无凭据成员等池或提示配置共享账号
+    try:
+        cs._load_cred(current_user, db)
+    except HTTPException:
+        return _no_cred_outcome(m)
     try:
         sess, client, cred = cs._connected_client(current_user, db)
     except cs._VpnConnecting:
@@ -141,7 +170,17 @@ def campus_activity_detail(aid: str, current_user: User = Depends(get_current_us
         except DektError:
             _pool_stale(m, client)
 
-    _pool_yield_guard(m, current_user, db)
+    client = _borrow_client(m)
+    if client is not None:
+        try:
+            return _detail_payload(aid, client.fetch_activity_detail(aid))
+        except DektError:
+            pass   # 该客户端登录态也失效，继续回退
+
+    try:
+        cs._load_cred(current_user, db)
+    except HTTPException:
+        return _no_cred_outcome(m)
     try:
         sess, client, cred = cs._connected_client(current_user, db)
     except cs._VpnConnecting:

@@ -62,6 +62,15 @@ export default function PoolAdminPage() {
     if (isAdmin) load()
   }, [isAdmin, load])
 
+  // 活跃账号在连接中/登录学工中时每 5s 轮询状态（EasyConnect 建隧道需 1-2 分钟，
+  // 不轮询的话页面会一直停在「连接中」，看起来像卡死）
+  useEffect(() => {
+    if (!isAdmin || !accounts) return
+    if (!accounts.some(a => a.enabled && a.active && !a.cas_ready)) return
+    const t = setInterval(load, 5000)
+    return () => clearInterval(t)
+  }, [isAdmin, accounts, load])
+
   const handleAdd = async () => {
     if (!sid.trim() || !pwd) {
       setFormMsg(t('campusPool.needSidPwd'))
@@ -117,6 +126,11 @@ export default function PoolAdminPage() {
       setBusy(false)
     }
   }
+
+  // 有账号正在建隧道/登录学工（用于显示等待提示）
+  const connecting = (accounts || []).some(a =>
+    a.enabled && a.active && !a.cas_ready &&
+    (a.status === 'connecting' || a.status === 'creating' || a.status === 'connected'))
 
   if (!token || !isAdmin) {
     return (
@@ -188,6 +202,7 @@ export default function PoolAdminPage() {
               })}
             </div>
           )}
+          {connecting && <div className="cp-warn">{t('campusPool.connectingHint')}</div>}
           <p className="cp-hint">{t('campusPool.listHint')}</p>
         </div>
 

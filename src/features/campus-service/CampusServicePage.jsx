@@ -521,7 +521,7 @@ export default function CampusServicePage() {
   const [actFilter, setActFilter] = useState('all') // all | open | soon | closed
   const [actSearch, setActSearch] = useState('')
   const [actDetails, setActDetails] = useState({}) // 活动id -> { loading | data | err }
-  const [vpnConnecting, setVpnConnecting] = useState(false) // 后端自动连接 VPN 进行中
+  const [vpnConnecting, setVpnConnecting] = useState(false) // 后端自动连接 VPN / 等待共享会话（值为触发查询的 kind）
 
   // ── 电费 ──
   const [elecData, setElecData] = useState(null)
@@ -603,6 +603,24 @@ export default function CampusServicePage() {
   useEffect(() => {
     if (connected || (status && status.status === 'failed')) setVpnConnecting(false)
   }, [connected, status])
+
+  // 等共享会话时自己的会话状态不会变化（可能根本没有个人会话），靠定时重试查询：
+  // 池就绪/借道成功后自动出结果；约 2 分钟仍不可用则放弃并提示
+  useEffect(() => {
+    if (!vpnConnecting) return
+    let n = 0
+    const timer = setInterval(() => {
+      n += 1
+      if (n > 20) {
+        setVpnConnecting(false)
+        setErrMsg(t('campusService.sharedSessionUnavailable'))
+        return
+      }
+      doQuery(vpnConnecting)
+    }, 6000)
+    return () => clearInterval(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vpnConnecting])
 
   // ── 电费历史（电费走公网接口，不依赖 VPN 隧道） ──
   const fetchElecHistory = useCallback(async () => {
@@ -767,29 +785,34 @@ export default function CampusServicePage() {
         const b = await res.json().catch(() => null)
         if (ep !== epochRef.current) return
         if (res.status === 503) {
+          setVpnConnecting(false)
           setUnavailable((b && b.detail) ? String(b.detail) : t('campusService.serverUnavailable'))
           return
         }
         if (!res.ok) {
+          setVpnConnecting(false)
           setErrMsg(b && b.detail ? String(b.detail) : t('campusService.error'))
           return
         }
         if (b && b.vpn_connecting) {
-          setVpnConnecting(true)
+          setVpnConnecting('activities')
           fetchStatus()
           return
         }
         if (b && b.auto_captcha_used) {
+          setVpnConnecting(false)
           setActViaPool(false)
           if (b.data) applyResult('activities', b.data, true)
           return
         }
         if (b && b.need_captcha) {
+          setVpnConnecting(false)
           setCaptcha({ kind, xnm: '', xqm: '', image: b.captcha_base64 || '', err: '', submitting: false })
           setCapInput('')
           return
         }
         if (b && b.data) {
+          setVpnConnecting(false)
           setActViaPool(!!b.via_pool)
           applyResult('activities', b.data)
         }
@@ -816,20 +839,23 @@ export default function CampusServicePage() {
       }
       // vpn_connecting：后端正在用已存凭据自动连接 VPN，轮询状态、连上后自动补查
       if (b && b.vpn_connecting) {
-        setVpnConnecting(true)
+        setVpnConnecting(kind)
         fetchStatus()
         return
       }
       if (!res.ok) {
+        setVpnConnecting(false)
         setErrMsg(b && b.detail ? String(b.detail) : t('campusService.error'))
         return
       }
       // auto_captcha_used：AI 自动识别验证码，直接展示结果
       if (b && b.auto_captcha_used) {
+        setVpnConnecting(false)
         if (b.data) applyResult(kind, b.data, true)
         return
       }
       if (b && b.need_captcha) {
+        setVpnConnecting(false)
         setCaptcha({
           kind,
           xnm: params.xnm || '',
@@ -841,7 +867,10 @@ export default function CampusServicePage() {
         setCapInput('')
         return
       }
-      if (b && b.data) applyResult(kind, b.data)
+      if (b && b.data) {
+        setVpnConnecting(false)
+        applyResult(kind, b.data)
+      }
     } catch {
       if (ep === epochRef.current) setErrMsg(t('campusService.error'))
     } finally {
@@ -859,12 +888,13 @@ export default function CampusServicePage() {
       const b = await res.json().catch(() => null)
       if (ep !== epochRef.current) return
       if (b && b.vpn_connecting) {
-        setVpnConnecting(true)
+        setVpnConnecting('activities')
         fetchStatus()
         setActDetails(prev => ({ ...prev, [aid]: { err: t('campusService.vpnAutoConnecting') } }))
         return
       }
       if (res.ok && b && b.data) {
+        setVpnConnecting(false)
         setActDetails(prev => ({ ...prev, [aid]: { data: b.data } }))
       } else {
         const msg = (b && b.detail) ? String(b.detail) : t('campusService.activities.detailFail')
@@ -901,7 +931,7 @@ export default function CampusServicePage() {
       if (b && b.vpn_connecting) {
         setCaptcha(null)
         setCapInput('')
-        setVpnConnecting(true)
+        setVpnConnecting(c.kind)
         fetchStatus()
         return
       }

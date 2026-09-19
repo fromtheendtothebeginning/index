@@ -36,6 +36,8 @@ class PoolManager:
         self.yielded = False     # 有用户自己的会话在线，池已让位（学校限制：单 IP 一条隧道）
         self._clear_checks = 0
         self._rr = 0
+        self._last_st = {}       # key -> 上一轮会话状态（状态迁移打日志用）
+        self._cas_fail = {}      # key -> 连续学工登录失败次数（熔断重建用）
         self._lock = threading.Lock()
         threading.Thread(target=self._loop, daemon=True, name="campus-pool").start()
 
@@ -75,11 +77,13 @@ class PoolManager:
                 self.yielded = False
 
         for key, acc in accounts.items():
-            # 非活跃账号（停用 / 待命）：不留会话
+            # 非活跃账号（停用 / 待命）：不留会话；顺带清节流，停用再启用可立即重试
             if not acc.get("enabled") or key != active:
                 if self.sessions.get(key) is not None:
                     self.sessions.disconnect(key)
                 self.ready.pop(key, None)
+                self._created_at.pop(key, None)
+                self._cas_fail.pop(key, None)
                 continue
             # 让位中：断开自己的会话，等用户侧全部下线
             if self.yielded:
@@ -130,14 +134,34 @@ class PoolManager:
     def maintain(self):
         for key, acc in list(self.accounts.items()):
             if not acc.get("enabled"):
+                self._last_st.pop(key, None)
                 continue
             sess = self.sessions.get(key)
-            if sess is None or sess.status == "failed":
-                # failed 会话由 set_accounts 下一轮按节流重建；这里只清就绪位
-                self.ready.pop(key, None)
+            st = sess.status if sess else "none"
+            if st == "failed" and self._last_st.get(key) != "failed":
+                self._log("campus pool %s 连接失败: %s" % (key, str(sess.error or "未知原因")[:120]))
+            elif st == "connected" and self._last_st.get(key) != "connected":
+                self._log("campus pool %s 隧道已建立，开始学工登录" % key)
+            self._last_st[key] = st
+            if sess is None or st == "failed":
+                self.ready.pop(key, None)   # failed/缺失会话由 set_accounts 按节流重建
                 continue
-            if sess.status == "connected" and not self.ready.get(key):
+            if st == "connected" and not self.ready.get(key):
                 self._cas_login(key, acc)
+                if self.ready.get(key):
+                    self._cas_fail.pop(key, None)
+                elif self._get_vision():
+                    n = self._cas_fail.get(key, 0) + 1
+                    self._cas_fail[key] = n
+                    if n >= 3:
+                        # 隧道被踢（状态仍 connected 但已不通）或凭据失效：重建会话自愈
+                        self._log("campus pool %s 连续 3 次学工登录未成功，重建会话" % key)
+                        self._cas_fail.pop(key, None)
+                        self.ready.pop(key, None)
+                        try:
+                            self.sessions.disconnect(key)
+                        except Exception:
+                            pass
 
     def _cas_login(self, key, acc):
         """会话隧道已通，完成学工 CAS 登录（AI 识码，最多 LOGIN_MAX_TRIES 次）。"""
