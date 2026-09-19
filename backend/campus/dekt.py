@@ -59,6 +59,7 @@ class DektClient:
         self.session = None
         self.student_id = None
         self._password = ""
+        self._hdms_cache = {}   # 活动说明缓存（详情接口写入，列表接口回填）
         self.pending = None
         self.jwxt_session = None
         self.jwxt_pending = None
@@ -263,6 +264,62 @@ class DektClient:
                        for k, v in groups.items()],
         }
 
+    # ==================== 第二课堂活动（学工「活动报名」引导页） ====================
+    # 适配自 Second_Class_Notification/sit_client.py：列表 + 详情(hdms 活动说明)
+
+    def _xg_headers(self):
+        return {
+            "Origin": self.xg_base,
+            "Referer": self.xg_base + "/hdgl/hdydlist",
+            "Accept": "application/json, text/plain, */*",
+            "X-Requested-With": "XMLHttpRequest",
+        }
+
+    def fetch_activities(self):
+        """拉取活动引导页全部活动，按 大类/类别 展开为扁平列表（补充 _dlmc/_lbmc）"""
+        if not self.session:
+            raise DektError("未登录")
+        url = self.xg_api + "/hdgl/getHdgcHdList.zf"
+        try:
+            resp = self.session.post(url, json={}, timeout=30, headers=self._xg_headers())
+        except requests.exceptions.RequestException:
+            raise DektError("学工系统响应超时，请重试")
+        j = self._parse_response(resp)
+        if not isinstance(j, dict) or j.get("code") != 0:
+            self.session = None
+            raise DektError("登录态失效，请重新查询")
+        result = []
+        for group in (j.get("data") or {}).get("resultList") or []:
+            for lb in group.get("lblist") or []:
+                for hd in lb.get("hdlist") or []:
+                    hd = dict(hd)
+                    hd["_dlmc"] = group.get("dlmc")
+                    hd["_lbmc"] = lb.get("lbmc")
+                    cached = self._hdms_cache.get(hd.get("id"))
+                    if cached and not hd.get("hdms"):
+                        hd["hdms"] = cached
+                    result.append(hd)
+        return result
+
+    def fetch_activity_detail(self, hd_id):
+        """获取单个活动详情（含 hdms 活动说明全文），说明写入缓存供列表复用"""
+        if not self.session:
+            raise DektError("未登录")
+        try:
+            resp = self.session.get(self.xg_api + "/hdgl/details.zf", params={"id": hd_id},
+                                    timeout=30, headers=self._xg_headers())
+        except requests.exceptions.RequestException:
+            raise DektError("学工系统响应超时，请重试")
+        j = self._parse_response(resp)
+        if not isinstance(j, dict) or j.get("code") != 0:
+            self.session = None
+            raise DektError("登录态失效，请重新查询")
+        data = j.get("data") or {}
+        hdms = str(data.get("hdms") or "")
+        if hdms:
+            self._hdms_cache[hd_id] = hdms
+        return data
+
     # ==================== 校园卡动态码 ====================
 
     def fetch_ecard_qr(self, codetype="O5"):
@@ -462,6 +519,8 @@ class DektClient:
     def logout(self):
         self.session = None
         self.student_id = None
+        self._password = ""
+        self._hdms_cache = {}
         self.pending = None
         self.pending_kind = None
         self.jwxt_session = None

@@ -16,13 +16,14 @@ const STUDENT_LABELS = [
   ['bjmc', 'campusService.score.student.bjmc'],
 ]
 
-const VALID_FEATURES = ['score', 'grades', 'ecard', 'electricity']
+const VALID_FEATURES = ['score', 'grades', 'ecard', 'electricity', 'activities']
 
 const KIND_LABELS = {
   score: 'campusService.query.score',
   grades: 'campusService.query.grades',
   ecard: 'campusService.query.ecard',
   electricity: 'campusService.electricity.name',
+  activities: 'campusService.query.activities',
 }
 
 // 第二课堂达标分数（2025 级）
@@ -278,6 +279,25 @@ function copyText(text) {
   }
 }
 
+// ── 第二课堂活动：报名状态（学校时间为北京时间，按本机时间比较） ──
+// open=报名中 / soon=即将报名 / closed=报名已结束 / none=无需报名（无报名窗口）
+function bmStateOf(a) {
+  if (!a.bm_start || !a.bm_end) return 'none'
+  const s = new Date(String(a.bm_start).replace(' ', 'T'))
+  const e = new Date(String(a.bm_end).replace(' ', 'T'))
+  if (isNaN(s.getTime()) || isNaN(e.getTime())) return 'none'
+  const now = new Date()
+  if (now < s) return 'soon'
+  if (now <= e) return 'open'
+  return 'closed'
+}
+
+// 学校时间 "2026-09-17 00:00:00" → "09-17 00:00"（年份固定当年，省略）
+function fmtDt(s) {
+  if (!s) return ''
+  return String(s).slice(5, 16)
+}
+
 // ── 上次查询结果缓存（localStorage，按用户隔离） ──
 function currentUserId() {
   try {
@@ -382,6 +402,95 @@ function ScoreGroup({ group, defaultOpen }) {
   )
 }
 
+// ── 第二课堂活动卡片：报名状态标签 + 展开说明/报名方式 ──
+function ActivityCard({ a, detail, onExpand }) {
+  const [open, setOpen] = useState(false)
+  const [copied, setCopied] = useState('')
+  const st = bmStateOf(a)
+  const stMeta = {
+    open: { key: 'campusService.activities.bmOpen', cls: 'cs-badge-ok' },
+    soon: { key: 'campusService.activities.bmSoon', cls: 'cs-badge-busy' },
+    closed: { key: 'campusService.activities.bmClosed', cls: 'cs-badge-muted' },
+    none: { key: 'campusService.activities.bmNone', cls: 'cs-badge-muted' },
+  }[st]
+  const d = detail && detail.data
+  const hdms = (d && d.hdms) || a.hdms || ''
+  const quota = (d && d.quota) || a.quota
+  const signup = (d && d.signup) || a.signup || {}
+  const hasSignup = (signup.qq || []).length > 0 || (signup.phone || []).length > 0
+    || (signup.tips || []).length > 0 || (signup.contact_lines || []).length > 0
+
+  const handleToggle = () => {
+    setOpen(v => !v)
+    // 展开且说明还没拿到（列表接口没带 hdms）→ 拉取详情
+    if (!open && !hdms && !(detail && (detail.loading || detail.data))) onExpand(a.id)
+  }
+
+  const handleCopy = (text) => {
+    copyText(text)
+    setCopied(text)
+    setTimeout(() => setCopied(''), 1500)
+  }
+
+  return (
+    <div className="cs-act-card">
+      <button type="button" className="cs-act-head" aria-expanded={open} onClick={handleToggle}>
+        <span className="cs-act-tags">
+          <span className={`cs-badge ${stMeta.cls}`}>{t(stMeta.key)}</span>
+          {a.dlmc && <span className="cs-badge cs-badge-muted">{a.dlmc}</span>}
+          {a.lbmc && <span className="cs-badge cs-badge-muted">{a.lbmc}</span>}
+          {a.campus && a.campus !== '未标注' && <span className="cs-badge cs-badge-muted">{a.campus}</span>}
+          {a.backfill && <span className="cs-badge cs-act-backfill">{t('campusService.activities.backfill')}</span>}
+        </span>
+        <span className="cs-act-name">{a.name}</span>
+        <span className="cs-act-meta">
+          {a.host && <span>{t('campusService.activities.host')}{a.host}</span>}
+          {quota && <span>{t('campusService.activities.quota')}{quota}</span>}
+        </span>
+        <span className="cs-act-times">
+          {a.start && <span>{t('campusService.activities.time')}{fmtDt(a.start)} ~ {fmtDt(a.end) || '…'}</span>}
+          {(a.bm_start || a.bm_end) && (
+            <span>{t('campusService.activities.bmWindow')}{fmtDt(a.bm_start) || '…'} ~ {fmtDt(a.bm_end) || '…'}</span>
+          )}
+        </span>
+      </button>
+      {open && (
+        <div className="cs-act-body">
+          {hasSignup && (
+            <div className="cs-act-signup">
+              <span className="cs-act-signup-label">{t('campusService.activities.signup')}</span>
+              {(signup.qq || []).map(q => (
+                <span key={q} className="cs-act-signup-row">
+                  QQ{t('campusService.activities.group')}{q}
+                  <button type="button" className="cs-act-copy" onClick={() => handleCopy(q)}>
+                    {copied === q ? t('campusService.proxy.copied') : t('campusService.proxy.copy')}
+                  </button>
+                </span>
+              ))}
+              {(signup.phone || []).length > 0 && (
+                <span className="cs-act-signup-row">{signup.phone.join(' / ')}</span>
+              )}
+              {(signup.contact_lines || []).map(l => (
+                <span key={l} className="cs-act-signup-row">{l}</span>
+              ))}
+              {(signup.tips || []).length > 0 && (
+                <span className="cs-act-signup-row">{signup.tips.join(' · ')}</span>
+              )}
+            </div>
+          )}
+          {detail && detail.loading ? (
+            <p className="cs-empty">{t('campusService.activities.detailLoad')}</p>
+          ) : hdms ? (
+            <p className="cs-act-hdms">{hdms}</p>
+          ) : (
+            <p className="cs-empty">{(detail && detail.err) || t('campusService.activities.hdmsEmpty')}</p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function CampusServicePage() {
   const { feature } = useParams()
   const isSubPage = VALID_FEATURES.includes(feature)
@@ -405,6 +514,13 @@ export default function CampusServicePage() {
   const [qBusy, setQBusy] = useState(null)
   const [errMsg, setErrMsg] = useState('')
   const [cacheFeature, setCacheFeature] = useState('') // 已恢复过缓存的子页面
+
+  // ── 第二课堂活动 ──
+  const [actData, setActData] = useState(null)
+  const [actFilter, setActFilter] = useState('all') // all | open | soon | closed
+  const [actSearch, setActSearch] = useState('')
+  const [actDetails, setActDetails] = useState({}) // 活动id -> { loading | data | err }
+  const [vpnConnecting, setVpnConnecting] = useState(false) // 后端自动连接 VPN 进行中
 
   // ── 电费 ──
   const [elecData, setElecData] = useState(null)
@@ -482,6 +598,11 @@ export default function CampusServicePage() {
     return () => clearInterval(timer)
   }, [token, shouldPoll, unavailable, fetchStatus])
 
+  // VPN 自动连接有了结论（连上 / 失败）后清除「自动连接中」提示，让位给状态卡或错误信息
+  useEffect(() => {
+    if (connected || (status && status.status === 'failed')) setVpnConnecting(false)
+  }, [connected, status])
+
   // ── 电费历史（电费走公网接口，不依赖 VPN 隧道） ──
   const fetchElecHistory = useCallback(async () => {
     if (!token) return
@@ -509,6 +630,9 @@ export default function CampusServicePage() {
         setGradeData(c)
         if (Array.isArray(c.terms) && c.terms.length > 0) setGradeTerms(c.terms)
       }
+    } else if (feature === 'activities') {
+      const c = loadCache('activities', userId)
+      if (c) setActData(c)
     }
     // 校园卡动态码 / 电费不做缓存
     setCacheFeature(feature)
@@ -562,6 +686,9 @@ export default function CampusServicePage() {
     setGradeTerm('')
     setEcardData(null)
     setEcardCount(0)
+    setActData(null)
+    setActDetails({})
+    setVpnConnecting(false)
     setCaptcha(null)
     setCapInput('')
     setErrMsg('')
@@ -588,6 +715,9 @@ export default function CampusServicePage() {
       }
     } else if (kind === 'ecard') {
       setEcardData(data || null)
+    } else if (kind === 'activities') {
+      setActData(data || null)
+      if (data) saveCache('activities', userId, data)
     } else if (kind === 'electricity') {
       setElecData(data || null)
     }
@@ -628,6 +758,44 @@ export default function CampusServicePage() {
       return
     }
 
+    // 第二课堂活动走独立端点（/api/campus/activities，需 VPN 隧道）
+    if (kind === 'activities') {
+      try {
+        const res = await fetch('/api/campus/activities', { method: 'POST', headers: authHeaders() })
+        const b = await res.json().catch(() => null)
+        if (ep !== epochRef.current) return
+        if (res.status === 503) {
+          setUnavailable((b && b.detail) ? String(b.detail) : t('campusService.serverUnavailable'))
+          return
+        }
+        if (!res.ok) {
+          setErrMsg(b && b.detail ? String(b.detail) : t('campusService.error'))
+          return
+        }
+        if (b && b.vpn_connecting) {
+          setVpnConnecting(true)
+          fetchStatus()
+          return
+        }
+        if (b && b.auto_captcha_used) {
+          if (b.data) applyResult('activities', b.data, true)
+          return
+        }
+        if (b && b.need_captcha) {
+          setCaptcha({ kind, xnm: '', xqm: '', image: b.captcha_base64 || '', err: '', submitting: false })
+          setCapInput('')
+          return
+        }
+        if (b && b.data) applyResult('activities', b.data)
+      } catch {
+        if (ep === epochRef.current) setErrMsg(t('campusService.error'))
+      } finally {
+        busyRef.current = false
+        if (ep === epochRef.current) setQBusy(null)
+      }
+      return
+    }
+
     try {
       const res = await fetch(`/api/campus/query/${kind}`, {
         method: 'POST',
@@ -638,6 +806,12 @@ export default function CampusServicePage() {
       if (ep !== epochRef.current) return
       if (res.status === 503) {
         setUnavailable((b && b.detail) ? String(b.detail) : t('campusService.serverUnavailable'))
+        return
+      }
+      // vpn_connecting：后端正在用已存凭据自动连接 VPN，轮询状态、连上后自动补查
+      if (b && b.vpn_connecting) {
+        setVpnConnecting(true)
+        fetchStatus()
         return
       }
       if (!res.ok) {
@@ -670,6 +844,33 @@ export default function CampusServicePage() {
     }
   }
 
+  // ── 第二课堂活动：展开卡片时拉取活动说明详情 ──
+  const fetchActDetail = async (aid) => {
+    const ep = epochRef.current
+    setActDetails(prev => ({ ...prev, [aid]: { loading: true } }))
+    try {
+      const res = await fetch(`/api/campus/activities/${aid}/detail`, { headers: authHeaders() })
+      const b = await res.json().catch(() => null)
+      if (ep !== epochRef.current) return
+      if (b && b.vpn_connecting) {
+        setVpnConnecting(true)
+        fetchStatus()
+        setActDetails(prev => ({ ...prev, [aid]: { err: t('campusService.vpnAutoConnecting') } }))
+        return
+      }
+      if (res.ok && b && b.data) {
+        setActDetails(prev => ({ ...prev, [aid]: { data: b.data } }))
+      } else {
+        const msg = (b && b.detail) ? String(b.detail) : t('campusService.activities.detailFail')
+        setActDetails(prev => ({ ...prev, [aid]: { err: msg } }))
+      }
+    } catch {
+      if (ep === epochRef.current) {
+        setActDetails(prev => ({ ...prev, [aid]: { err: t('campusService.activities.detailFail') } }))
+      }
+    }
+  }
+
   // ── 验证码提交 ──
   const submitCaptcha = async () => {
     const c = captcha
@@ -688,6 +889,14 @@ export default function CampusServicePage() {
         setCaptcha(null)
         setCapInput('')
         setUnavailable((b && b.detail) ? String(b.detail) : t('campusService.serverUnavailable'))
+        return
+      }
+      // 提交时 VPN 恰好断了：关掉弹窗走自动连接，连上后自动补查会重新弹验证码
+      if (b && b.vpn_connecting) {
+        setCaptcha(null)
+        setCapInput('')
+        setVpnConnecting(true)
+        fetchStatus()
         return
       }
       if (!res.ok) {
@@ -724,14 +933,15 @@ export default function CampusServicePage() {
   }, [token, status, ecardData, captcha])
 
   // 子页面进入时自动查询（有缓存则先展示缓存，等用户点「刷新」）
-  // 电费走公网接口不依赖 VPN，其余三项需 VPN 隧道
+  // VPN 未连接时也直接查询：后端会用已存凭据自动连接并返回 vpn_connecting，
+  // 前端轮询状态、连上后 connected 变化重新触发本 effect 补查
   useEffect(() => {
-    const canQuery = feature === 'electricity' || connected
-    if (isSubPage && canQuery && cacheFeature === feature && !qBusy && !captcha) {
+    if (isSubPage && cacheFeature === feature && !qBusy && !captcha) {
       if (feature === 'score' && !scoreData) doQuery('score')
       else if (feature === 'grades' && !gradeData) doQuery('grades')
       else if (feature === 'ecard' && !ecardData) doQuery('ecard')
       else if (feature === 'electricity' && !elecData) doQuery('electricity')
+      else if (feature === 'activities' && !actData) doQuery('activities')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSubPage, feature, connected, cacheFeature])
@@ -1146,6 +1356,71 @@ export default function CampusServicePage() {
     )
   }
 
+  // ── 渲染：第二课堂活动看板 ──
+  const renderActivities = () => {
+    const acts = (actData && actData.activities) || []
+    const kw = actSearch.trim().toLowerCase()
+    // 各报名状态的计数（不受筛选影响，便于判断要不要点）
+    const counts = { open: 0, soon: 0, closed: 0 }
+    for (const a of acts) {
+      const st = bmStateOf(a)
+      if (counts[st] != null) counts[st] += 1
+    }
+    const rank = { open: 0, soon: 1, closed: 2, none: 2 }
+    const filtered = acts
+      .filter(a => {
+        if (actFilter !== 'all' && bmStateOf(a) !== actFilter) return false
+        if (kw) {
+          const blob = [a.name, a.host, a.lbmc, a.dlmc].join(' ').toLowerCase()
+          if (!blob.includes(kw)) return false
+        }
+        return true
+      })
+      .sort((x, y) => {
+        const rx = rank[bmStateOf(x)] - rank[bmStateOf(y)]
+        if (rx !== 0) return rx
+        if (bmStateOf(x) === 'open') return String(x.bm_end || '').localeCompare(String(y.bm_end || ''))
+        return String(y.bm_start || '').localeCompare(String(x.bm_start || ''))
+      })
+
+    return (
+      <div className="cs-panel cs-act-panel">
+        <div className="cs-act-toolbar">
+          <input
+            className="tool-input cs-act-search"
+            placeholder={t('campusService.activities.searchPlaceholder')}
+            value={actSearch}
+            onChange={e => setActSearch(e.target.value)}
+          />
+          <div className="cs-elec-view-btns">
+            {['all', 'open', 'soon', 'closed'].map(v => (
+              <button
+                key={v}
+                className={`cs-elec-view-btn ${actFilter === v ? 'active' : ''}`}
+                onClick={() => setActFilter(v)}
+              >
+                {t(`campusService.activities.filter_${v}`)}
+                {counts[v] != null && v !== 'all' ? ` (${counts[v]})` : ''}
+              </button>
+            ))}
+          </div>
+        </div>
+        {filtered.length === 0 ? (
+          <p className="cs-empty">{t('campusService.activities.empty')}</p>
+        ) : (
+          <>
+            <p className="cs-act-count">{t('campusService.activities.count', { n: filtered.length })}</p>
+            <div className="cs-act-list">
+              {filtered.map(a => (
+                <ActivityCard key={a.id} a={a} detail={actDetails[a.id]} onExpand={fetchActDetail} />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    )
+  }
+
   // ── 渲染：充值弹窗 ──
   const renderRechargeModal = () => {
     if (!rechargeOpen) return null
@@ -1253,6 +1528,11 @@ export default function CampusServicePage() {
                   <span className="cs-qcard-desc">{t('campusService.query.ecardDesc')}</span>
                   <span className="cs-qcard-state">{'›'}</span>
                 </Link>
+                <Link to="/tools/campus-service/activities" className="cs-qcard">
+                  <span className="cs-qcard-name">{t('campusService.query.activities')}</span>
+                  <span className="cs-qcard-desc">{t('campusService.query.activitiesDesc')}</span>
+                  <span className="cs-qcard-state">{'›'}</span>
+                </Link>
               </>
             )}
             <Link to="/tools/campus-service/electricity" className="cs-qcard">
@@ -1273,7 +1553,7 @@ export default function CampusServicePage() {
       <Link to="/tools/campus-service" className="tool-back">{t('campusService.backToCampus')}</Link>
       <div className="cs-sub-header">
         <h2 className="cs-sub-title">{t(KIND_LABELS[feature])}</h2>
-        {(feature === 'score' || feature === 'grades') && (
+        {(feature === 'score' || feature === 'grades' || feature === 'activities') && (
           <button className="btn btn-secondary cs-refresh-btn" onClick={() => doQuery(feature)} disabled={!!qBusy}>
             {qBusy === feature ? t('campusService.refreshing') : t('campusService.refresh')}
           </button>
@@ -1282,8 +1562,13 @@ export default function CampusServicePage() {
 
       {token && needsVpn && !connected && (
         <p className="cs-vpn-hint">
-          {unavailable || t('campusService.vpnHint')}
-          <Link to="/tools/campus-service" className="cs-vpn-hint-link">{t('campusService.goConnect')}</Link>
+          {vpnConnecting && <span className="cs-spinner" />}
+          {unavailable || (vpnConnecting
+            ? t('campusService.vpnAutoConnecting')
+            : (status && status.status === 'failed' && status.error ? status.error : t('campusService.vpnHint')))}
+          {!vpnConnecting && !unavailable && (
+            <Link to="/tools/campus-service" className="cs-vpn-hint-link">{t('campusService.goConnect')}</Link>
+          )}
         </p>
       )}
 
@@ -1294,6 +1579,7 @@ export default function CampusServicePage() {
           {feature === 'grades' && renderGrades()}
           {feature === 'ecard' && renderEcard()}
           {feature === 'electricity' && renderElectricity()}
+          {feature === 'activities' && renderActivities()}
         </>
       )}
     </>

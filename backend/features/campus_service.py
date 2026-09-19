@@ -183,13 +183,28 @@ def campus_disconnect(current_user: User = Depends(get_current_user_obj)):
 # 校园查询（score / grades / ecard）
 # ============================================================
 
+class _VpnConnecting(Exception):
+    """VPN 未连接、已自动触发连接；接口层转成 {"vpn_connecting": True} 让前端轮询后重试"""
+    pass
+
 def _connected_client(current_user, db):
-    """返回 (session, dekt_client)；未连接/凭据缺失时抛 4xx"""
+    """返回 (session, dekt_client, cred)；未连接时用已存凭据自动发起连接。
+
+    VPN 连接需数十秒，无法在本次请求内等完：自动连接已触发（或进行中）时抛
+    _VpnConnecting，由各接口转成 {"vpn_connecting": True} 让前端轮询状态后重试。
+    """
     m = _mgrs()
-    sess = m["sessions"].get(current_user.id)
-    if not sess or sess.status != "connected":
-        raise HTTPException(status_code=400, detail="VPN 未连接，请先连接校园网")
     c = _load_cred(current_user, db)
+    sess = m["sessions"].get(current_user.id)
+    if not sess or sess.status == "failed":
+        vpn_pwd = _decrypt_or_400(c.vpn_password_enc)
+        try:
+            m["sessions"].create(current_user.id, c.student_id, vpn_pwd)
+        except (ValueError, RuntimeError) as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        sess = m["sessions"].get(current_user.id)
+    if not sess or sess.status != "connected":
+        raise _VpnConnecting()
     # 教务/学工登录用会话内密码（连接时已解密持有）
     return sess, m["dekt"].get(current_user.id, sess), c
 
@@ -312,6 +327,10 @@ def _try_auto_captcha(client, sess, captcha_b64, kind, user_id, db, **kw):
         elif kind == "ecard":
             client.complete_login(sess.student_id, captcha_text)
             data = client.fetch_ecard_qr(codetype=kw.get("codetype", "O5"))
+        elif kind == "activities":
+            client.complete_login(sess.student_id, captcha_text)
+            from campus.activities import activities_payload
+            data = activities_payload(client)
         else:
             client.complete_login(sess.student_id, captcha_text)
             data = {"score": client.fetch_score(sess.student_id)}
@@ -351,7 +370,10 @@ def _auto_captcha_flow(client, sess, user_id, db, kind, prepare, req, attempts=2
 def campus_query(kind: str, req: QueryRequest, request: Request,
                  current_user: User = Depends(get_current_user_obj),
                  db: OrmSession = Depends(get_db)):
-    sess, client, cred = _connected_client(current_user, db)
+    try:
+        sess, client, cred = _connected_client(current_user, db)
+    except _VpnConnecting:
+        return {"vpn_connecting": True, "kind": kind}
     password = sess.password
     auto = bool(cred.auto_captcha)
 
@@ -427,7 +449,10 @@ def campus_login(req: LoginRequest, current_user: User = Depends(get_current_use
                  db: OrmSession = Depends(get_db)):
     if not (req.captcha or "").strip():
         raise HTTPException(status_code=400, detail="请填写验证码")
-    sess, client, cred = _connected_client(current_user, db)
+    try:
+        sess, client, cred = _connected_client(current_user, db)
+    except _VpnConnecting:
+        return {"vpn_connecting": True, "kind": req.kind}
     try:
         if req.kind == "grades":
             client.complete_jwxt_login(sess.student_id, req.captcha.strip())
@@ -435,6 +460,10 @@ def campus_login(req: LoginRequest, current_user: User = Depends(get_current_use
         elif req.kind == "ecard":
             client.complete_login(sess.student_id, req.captcha.strip())
             data = client.fetch_ecard_qr(codetype=req.codetype or "O5")
+        elif req.kind == "activities":
+            client.complete_login(sess.student_id, req.captcha.strip())
+            from campus.activities import activities_payload
+            data = activities_payload(client)
         else:
             client.complete_login(sess.student_id, req.captcha.strip())
             data = {"score": client.fetch_score(sess.student_id)}

@@ -845,7 +845,7 @@
   "campusService": {
     "navLabel": "校园服务",
     "title": "校园服务",
-    "subtitle": "连接校园网 VPN，查询第二课堂分 / 成绩 / 电费 / 校园卡动态码（凭据在「我的 → 校园服务」填写）",
+    "subtitle": "连接校园网 VPN，查询第二课堂分 / 活动 / 成绩 / 电费 / 校园卡动态码（凭据在「我的 → 校园服务」填写）",
     "backToTools": "← 返回工具主页",
     "needLogin": "校园服务需要登录后使用",
     "goAuth": "去登录",
@@ -874,6 +874,7 @@
     "refresh": "刷新",
     "refreshing": "查询中…",
     "vpnHint": "该功能需要连接校园网",
+    "vpnAutoConnecting": "VPN 未连接，正在自动连接校园网，请稍候…",
     "goConnect": "返回主页连接",
     "queriesTitle": "选择查询",
     "query": {
@@ -885,7 +886,9 @@
       "gradesLoading": "查询中…",
       "ecard": "校园卡动态码",
       "ecardDesc": "食堂 / 超市付款动态码",
-      "ecardLoading": "获取中…"
+      "ecardLoading": "获取中…",
+      "activities": "第二课堂活动",
+      "activitiesDesc": "活动引导页全部活动、报名窗口与名额"
     },
     "score": {
       "total": "总得分",
@@ -916,6 +919,29 @@
         "year": "学年",
         "term": "学期"
       }
+    },
+    "activities": {
+      "searchPlaceholder": "搜索活动名称 / 主办 / 类别…",
+      "bmOpen": "报名中",
+      "bmSoon": "即将报名",
+      "bmClosed": "报名已结束",
+      "bmNone": "无需报名",
+      "backfill": "事后补录",
+      "quota": "名额：",
+      "host": "主办：",
+      "time": "活动时间：",
+      "bmWindow": "报名窗口：",
+      "signup": "报名方式",
+      "group": "群：",
+      "hdmsEmpty": "暂无活动说明",
+      "detailLoad": "加载活动说明中…",
+      "detailFail": "活动说明加载失败，请重试",
+      "count": "共 {n} 个活动",
+      "empty": "暂无符合条件的活动",
+      "filter_all": "全部",
+      "filter_open": "报名中",
+      "filter_soon": "即将报名",
+      "filter_closed": "已结束"
     },
     "ecard": {
       "tip": "动态码仅供本人付款使用，请勿截图转发",
