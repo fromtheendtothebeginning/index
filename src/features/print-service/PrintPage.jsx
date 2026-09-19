@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
 import Modal from '../../components/Modal'
+import CategoryDropdown from '../../components/CategoryDropdown'
 import { t } from '../../i18n'
 import '../../pages/ToolParsePage.css'
 import './PrintPage.css'
@@ -54,7 +55,8 @@ export default function PrintPage() {
   const [busy, setBusy] = useState(false)
   const [expanded, setExpanded] = useState(null)
   const [withdrawTarget, setWithdrawTarget] = useState(null) // { id, name }
-  const [fileOp, setFileOp] = useState(null) // 正在预览/下载的任务文件 { jobId, fileId, download }
+  const [fileOp, setFileOp] = useState(null) // 正在取回的任务文件 { jobId, fileId, download }
+  const [preview, setPreview] = useState(null) // 页面内嵌预览 { key, url, kind, name }
 
   // 绑定表单（用 anticraft 账号密码换打印令牌，密码不落库）
   const [username, setUsername] = useState(() => {
@@ -253,12 +255,47 @@ export default function PrintPage() {
 
   const canWithdraw = (j) => j.status === '待审核' || j.status === '已通过'
 
-  // 任务文件预览/下载：fetch 带双重鉴权头取回 blob，再交给浏览器（避免令牌出现在 URL 里）
-  const openJobFile = async (job, f, download) => {
-    setFileOp({ jobId: job.id, fileId: f.id, download })
+  // 内嵌预览：fetch 带双重鉴权头取回 blob，直接在任务卡里渲染（PDF iframe / 图片直显）
+  const previewRef = useRef(null)
+  previewRef.current = preview
+  useEffect(() => () => { if (previewRef.current) URL.revokeObjectURL(previewRef.current.url) }, [])
+
+  const closePreview = () => {
+    if (previewRef.current) URL.revokeObjectURL(previewRef.current.url)
+    previewRef.current = null
+    setPreview(null)
+  }
+
+  const togglePreview = async (job, f) => {
+    const key = `${job.id}:${f.id}`
+    if (preview && preview.key === key) { closePreview(); return }
+    setFileOp({ jobId: job.id, fileId: f.id, download: false })
+    closePreview()
     try {
-      const res = await fetch(`/api/print/jobs/${job.id}/files/${f.id}${download ? '?download=1' : ''}`,
-        { headers: printHeaders() })
+      const res = await fetch(`/api/print/jobs/${job.id}/files/${f.id}`, { headers: printHeaders() })
+      if (res.status === 401) { resetBind(t('printService.expired')); return }
+      if (!res.ok) {
+        const b = await res.json().catch(() => null)
+        setErrMsg(detailText(b && b.detail) || t('printService.netError'))
+        return
+      }
+      const blob = await res.blob()
+      const kind = /^image\//.test(blob.type) ? 'image' : 'pdf'
+      const url = URL.createObjectURL(blob)
+      previewRef.current = { key, url }
+      setPreview({ key, url, kind, name: f.filename })
+    } catch {
+      setErrMsg(t('printService.netError'))
+    } finally {
+      setFileOp(null)
+    }
+  }
+
+  // 下载原件：取 blob 后用隐藏 <a> 触发保存
+  const downloadJobFile = async (job, f) => {
+    setFileOp({ jobId: job.id, fileId: f.id, download: true })
+    try {
+      const res = await fetch(`/api/print/jobs/${job.id}/files/${f.id}?download=1`, { headers: printHeaders() })
       if (res.status === 401) { resetBind(t('printService.expired')); return }
       if (!res.ok) {
         const b = await res.json().catch(() => null)
@@ -266,16 +303,12 @@ export default function PrintPage() {
         return
       }
       const url = URL.createObjectURL(await res.blob())
-      if (download) {
-        const a = document.createElement('a')
-        a.href = url
-        a.download = f.filename || 'file'
-        document.body.appendChild(a)
-        a.click()
-        a.remove()
-      } else {
-        window.open(url, '_blank')
-      }
+      const a = document.createElement('a')
+      a.href = url
+      a.download = f.filename || 'file'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
       setTimeout(() => URL.revokeObjectURL(url), 60000)
     } catch {
       setErrMsg(t('printService.netError'))
@@ -389,25 +422,23 @@ export default function PrintPage() {
                 <details className="ps-adv">
                   <summary>{t('printService.advSettings')}</summary>
                   <div className="ps-adv-grid">
-                    <label className="ps-adv-field">
+                    <div className="ps-adv-field">
                       <span>{t('printService.paper')}</span>
-                      <select className="tool-input ps-input" value={paper} onChange={e => setPaper(e.target.value)}>
-                        <option value="">{t('printService.default')}</option>
-                        {PAPERS.map(p => <option key={p} value={p}>{p}</option>)}
-                      </select>
-                    </label>
+                      <CategoryDropdown size="sm" value={paper} onChange={setPaper}
+                                        options={PAPERS.map((p) => ({ value: p, label: p }))}
+                                        placeholder={t('printService.default')} />
+                    </div>
                     <label className="ps-adv-field">
                       <span>{t('printService.pages')}</span>
                       <input className="tool-input ps-input" placeholder={t('printService.pagesPh')}
                              value={pages} onChange={e => setPages(e.target.value)} />
                     </label>
-                    <label className="ps-adv-field">
+                    <div className="ps-adv-field">
                       <span>{t('printService.nup')}</span>
-                      <select className="tool-input ps-input" value={nup} onChange={e => setNup(e.target.value)}>
-                        <option value="">{t('printService.default')}</option>
-                        {NUPS.map(n => <option key={n} value={n}>{n}</option>)}
-                      </select>
-                    </label>
+                      <CategoryDropdown size="sm" value={nup} onChange={setNup}
+                                        options={NUPS.map((n) => ({ value: n, label: n }))}
+                                        placeholder={t('printService.default')} />
+                    </div>
                   </div>
                 </details>
                 <div className="ps-files">
@@ -470,23 +501,40 @@ export default function PrintPage() {
                           {(j.files || []).length > 0 && (
                             <div className="ps-job-files">
                               <span className="ps-job-files-label">{t('printService.filesLabel')}</span>
-                              {(j.files || []).map((f) => (
-                                <div key={f.id} className="ps-job-file">
-                                  <span className="ps-job-file-name">{f.filename}</span>
-                                  <button type="button" className="btn btn-secondary ps-op-btn" disabled={!!fileOp}
-                                          onClick={() => openJobFile(j, f, false)}>
-                                    {fileOp && fileOp.fileId === f.id && !fileOp.download
-                                      ? <span className="ps-spinner" />
-                                      : t('printService.preview')}
-                                  </button>
-                                  <button type="button" className="btn btn-secondary ps-op-btn" disabled={!!fileOp}
-                                          onClick={() => openJobFile(j, f, true)}>
-                                    {fileOp && fileOp.fileId === f.id && fileOp.download
-                                      ? <span className="ps-spinner" />
-                                      : t('printService.download')}
-                                  </button>
-                                </div>
-                              ))}
+                              {(j.files || []).map((f) => {
+                                const key = `${j.id}:${f.id}`
+                                const previewing = preview && preview.key === key
+                                return (
+                                  <div key={f.id} className="ps-file-block">
+                                    <div className="ps-job-file">
+                                      <span className="ps-job-file-name">{f.filename}</span>
+                                      <button type="button" className="btn btn-secondary ps-op-btn" disabled={!!fileOp}
+                                              onClick={() => togglePreview(j, f)}>
+                                        {fileOp && fileOp.fileId === f.id && !fileOp.download
+                                          ? <span className="ps-spinner" />
+                                          : (previewing ? t('printService.hidePreview') : t('printService.preview'))}
+                                      </button>
+                                      <button type="button" className="btn btn-secondary ps-op-btn" disabled={!!fileOp}
+                                              onClick={() => downloadJobFile(j, f)}>
+                                        {fileOp && fileOp.fileId === f.id && fileOp.download
+                                          ? <span className="ps-spinner" />
+                                          : t('printService.download')}
+                                      </button>
+                                    </div>
+                                    {previewing && (
+                                      <div className="ps-viewer">
+                                        <div className="ps-viewer-bar">
+                                          <span className="ps-viewer-name">{preview.name}</span>
+                                          <button type="button" className="ps-file-del" onClick={closePreview}>✕</button>
+                                        </div>
+                                        {preview.kind === 'image'
+                                          ? <img className="ps-viewer-img" src={preview.url} alt={preview.name} />
+                                          : <iframe className="ps-viewer-frame" src={preview.url} title={preview.name} />}
+                                      </div>
+                                    )}
+                                  </div>
+                                )
+                              })}
                             </div>
                           )}
                           {j.address && <p className="ps-job-line"><b>{t('printService.address')}：</b>{j.address}</p>}
