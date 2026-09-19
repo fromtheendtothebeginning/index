@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
 import Modal from '../../components/Modal'
 import CategoryDropdown from '../../components/CategoryDropdown'
+import PdfPreview from '../img2latex/PdfPreview'
 import { t } from '../../i18n'
 import '../../pages/ToolParsePage.css'
 import './PrintPage.css'
@@ -485,7 +486,7 @@ export default function PrintPage() {
                       ) : /^image\//.test(it.file.type) ? (
                         <div className="ps-viewer"><img className="ps-viewer-img" src={it.url} alt={it.file.name} /></div>
                       ) : (
-                        <div className="ps-viewer"><iframe className="ps-viewer-frame" src={it.url} title={it.file.name} /></div>
+                        <div className="ps-viewer"><PdfPreview url={it.url} /></div>
                       )}
                     </div>
                   )
@@ -550,7 +551,7 @@ export default function PrintPage() {
                                         </div>
                                         {preview.kind === 'image'
                                           ? <img className="ps-viewer-img" src={preview.url} alt={preview.name} />
-                                          : <iframe className="ps-viewer-frame" src={preview.url} title={preview.name} />}
+                                          : <PdfPreview url={preview.url} />}
                                       </div>
                                     )}
                                   </div>

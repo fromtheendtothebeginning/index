@@ -486,11 +486,24 @@
 }
 
 .ps-viewer-frame {
-  display: block;
+  display: none;   /* iframe 预览会被浏览器 CSP 拦截（已阻止此内容），PDF 一律用 pdf.js canvas 渲染 */
+}
+
+.ps-viewer .i2l-pdf {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  max-height: 520px;
+  overflow: auto;
+  background: var(--bg-elevated);
+}
+
+.ps-viewer .i2l-pdf-page {
   width: 100%;
-  height: 420px;
-  border: none;
-  background: var(--bg-primary);
+  height: auto;
+  border: 1px solid var(--border-color);
+  background: #fff;
 }
 
 .ps-viewer-img {
