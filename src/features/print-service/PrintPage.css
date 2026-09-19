@@ -1,0 +1,377 @@
+/* 云打印工具页（AntiPrint 代理） */
+.ps-panel {
+  margin-bottom: 20px;
+  padding: 16px 18px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-card);
+}
+
+.ps-panel-title {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ps-bind-desc {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.ps-empty {
+  margin: 4px 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.ps-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ps-input {
+  width: 100%;
+  max-width: 420px;
+}
+
+.ps-input-num {
+  max-width: 100px;
+}
+
+.ps-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ps-row-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.ps-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.ps-form-msg {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--danger);
+}
+
+.ps-ok {
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--success, #2ea043);
+  border-radius: 10px;
+  background: var(--success-soft, rgba(46, 160, 67, 0.12));
+  color: var(--success, #2ea043);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* 账号/余额条 */
+.ps-account {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.ps-account-main {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.ps-account-label {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.ps-account-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ps-account-balance {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.ps-balance-num {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--accent-1);
+}
+
+.ps-balance-unit {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.ps-free {
+  font-size: 12px;
+  color: var(--success, #2ea043);
+}
+
+.ps-price {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.ps-op-btn {
+  padding: 4px 12px;
+  font-size: 12px;
+}
+
+.ps-op-danger {
+  color: var(--danger);
+  border-color: var(--danger-border);
+}
+
+/* 打印设置折叠 */
+.ps-adv {
+  border: 1px dashed var(--border-color);
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+
+.ps-adv summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.ps-adv-grid {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.ps-adv-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.ps-adv-field .ps-input {
+  max-width: 160px;
+}
+
+/* 文件选择 */
+.ps-files {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ps-file-btn {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+.ps-files-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.ps-file-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ps-file-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  font-size: 13px;
+}
+
+.ps-file-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.ps-file-size {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.ps-file-del {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 6px;
+}
+
+.ps-file-del:hover {
+  color: var(--danger);
+}
+
+.ps-submit {
+  align-self: flex-start;
+}
+
+/* 任务列表 */
+.ps-jobs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ps-job {
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  overflow: hidden;
+}
+
+.ps-job-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 13px;
+  position: relative;
+  z-index: 1;
+}
+
+.ps-job-id {
+  font-weight: 700;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.ps-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ps-badge-ok {
+  background: var(--success-soft, rgba(46, 160, 67, 0.12));
+  border: 1px solid var(--success, #2ea043);
+  color: var(--success, #2ea043);
+}
+
+.ps-badge-wait {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+}
+
+.ps-badge-busy {
+  background: var(--accent-1-soft);
+  border: 1px solid var(--accent-1-border);
+  color: var(--accent-1);
+}
+
+.ps-badge-done {
+  background: var(--bg-primary);
+  border: 1px solid var(--success, #2ea043);
+  color: var(--success, #2ea043);
+}
+
+.ps-badge-danger {
+  background: var(--danger-soft-strong);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
+}
+
+.ps-job-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.ps-job-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.ps-job-body {
+  padding: 4px 12px 12px;
+  border-top: 1px dashed var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ps-job-line {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  word-break: break-all;
+}
+
+.ps-job-line b {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.ps-job-warn {
+  color: var(--danger);
+}
+
+.ps-job-body .ps-op-btn {
+  align-self: flex-start;
+}
+
+.ps-del-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-primary);
+}
