@@ -85,7 +85,6 @@ class SessionManager:
             self.docker.create_container(sess)
             sess.status = "connecting"
             deadline = time.time() + self.cfg.connect_timeout
-            fail_count = 0
             while time.time() < deadline:
                 sess = self.get(user_id)
                 if not sess:
@@ -98,21 +97,14 @@ class SessionManager:
                     sess._tun_miss = 0
                     sess._reconnect_count = 0
                     return
-                # 日志中有 "login successfully" 且无 "login failed"（最终成功）
-                if "login successfully" in logs and "login failed" not in logs:
+                # 最终成功 = 最后一次登录事件是成功。日志是累积的，EasyConnect 失败后
+                # 会自动重试（学校侧可能连续拒绝几次才放行），不能要求「没有 login failed」
+                if logs.rfind("login successfully") > logs.rfind("login failed"):
                     sess.status = "connected"
                     sess.error = None
                     sess._tun_miss = 0
                     sess._reconnect_count = 0
                     return
-                # 日志中有 "login failed"——EasyConnect 会自动重试，不要立即标记失败
-                # 连续多次失败才判定（给自动重试留余地）
-                if "login failed" in logs or "密码错误" in logs:
-                    fail_count += 1
-                    if fail_count >= 3:
-                        sess.status = "failed"
-                        sess.error = "登录失败：账号或密码错误"
-                        return
                 state = self.docker.container_state(sess)
                 if state["exited"] and not state["running"]:
                     sess.status = "failed"
@@ -122,7 +114,11 @@ class SessionManager:
             sess = self.get(user_id)
             if sess and sess.status == "connecting":
                 sess.status = "failed"
-                sess.error = "连接超时，请稍后重试"
+                logs = self.docker.get_logs(sess)
+                if logs.rfind("login failed") > logs.rfind("login successfully"):
+                    sess.error = "登录失败：账号或密码错误（若确认无误，可能是学校侧暂时拒绝，请稍后重试）"
+                else:
+                    sess.error = "连接超时，请稍后重试"
         except Exception as e:
             sess = self.get(user_id)
             if sess:

@@ -49,6 +49,8 @@ def _get_managers():
                 # 共享会话池：专属 SessionManager（常驻，不受 12h 寿命上限约束）
                 pool_cfg = copy.copy(cfg)
                 pool_cfg.max_lifetime_hours = float("inf")
+                # 学校侧可能连续拒绝几次登录才放行（实测 6 次失败后成功），监控窗口加长到 5 分钟
+                pool_cfg.connect_timeout = 300
                 pool_sessions = SessionManager(pool_cfg, docker)
                 dekt = DektManager(cfg)
 
