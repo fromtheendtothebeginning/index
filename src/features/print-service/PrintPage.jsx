@@ -24,7 +24,6 @@ const STATUS_CLS = {
   '打印失败': 'ps-badge-danger',
 }
 
-const PAPERS = ['A4', 'A3', 'A5', 'B5', 'Letter', 'Legal']
 const NUPS = ['1,1', '2,1', '1,2', '2,2', '3,3', '4,4']
 const ACCEPT = '.pdf,.png,.jpg,.jpeg,.doc,.docx,.ppt,.pptx'
 
@@ -74,7 +73,6 @@ export default function PrintPage() {
   const [address, setAddress] = useState('')
   const [note, setNote] = useState('')
   const [copies, setCopies] = useState('1')
-  const [paper, setPaper] = useState('')
   const [pages, setPages] = useState('')
   const [nup, setNup] = useState('')
 
@@ -204,13 +202,10 @@ export default function PrintPage() {
       fd.append('copies', String(parseInt(copies, 10) || 1))
       if (deliveryMode === '配送') fd.append('address', address.trim())
       if (note.trim()) fd.append('note', note.trim())
-      const opts = {}
-      if (paper) opts.paper = paper
+      const opts = { paper: 'A4' }   // 打印机只能出 A4，固定带上
       if (pages.trim()) opts.pages = pages.trim()
       if (nup) opts.nup = nup
-      if (Object.keys(opts).length) {
-        fd.append('settings', JSON.stringify(fileList.map(() => ({ ...opts }))))
-      }
+      fd.append('settings', JSON.stringify(fileList.map(() => ({ ...opts }))))
       const res = await fetch('/api/print/jobs', { method: 'POST', headers: printHeaders(), body: fd })
       const b = await res.json().catch(() => null)
       if (res.status === 401) { resetBind(t('printService.expired')); return }
@@ -446,12 +441,6 @@ export default function PrintPage() {
                 <details className="ps-adv">
                   <summary>{t('printService.advSettings')}</summary>
                   <div className="ps-adv-grid">
-                    <div className="ps-adv-field">
-                      <span>{t('printService.paper')}</span>
-                      <CategoryDropdown size="sm" value={paper} onChange={setPaper}
-                                        options={PAPERS.map((p) => ({ value: p, label: p }))}
-                                        placeholder={t('printService.default')} />
-                    </div>
                     <label className="ps-adv-field">
                       <span>{t('printService.pages')}</span>
                       <input className="tool-input ps-input" placeholder={t('printService.pagesPh')}
