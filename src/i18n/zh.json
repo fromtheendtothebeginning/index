@@ -1120,7 +1120,8 @@
     "withdrawText": "确定撤回任务 #{id} 吗？未出纸的部分会自动退费。",
     "withdrawn": "已撤回，退回 {refunded} 元",
     "noPreview": "该文件类型暂不支持在线预览（Word / PPT 提交后由服务端转换为 PDF）",
-    "hidePreview": "收起预览"
+    "hidePreview": "收起预览",
+    "noFile": "请先选择要打印的文件"
   },
   "binding": {
     "consent": {

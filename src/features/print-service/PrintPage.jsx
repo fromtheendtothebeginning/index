@@ -26,7 +26,6 @@ const STATUS_CLS = {
 }
 
 const NUPS = ['1,1', '2,1', '1,2', '2,2', '3,3', '4,4']
-const ACCEPT = '.pdf,.png,.jpg,.jpeg,.doc,.docx,.ppt,.pptx'
 
 function fmtSize(bytes) {
   if (bytes >= 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + 'MB'
@@ -197,7 +196,10 @@ export default function PrintPage() {
   }, [])
 
   const handleSubmit = async () => {
-    if (!fileList.length) return
+    if (!fileList.length) {
+      setErrMsg(t('printService.noFile'))
+      return
+    }
     if (deliveryMode === '配送' && !address.trim()) {
       setErrMsg(t('printService.addressRequired'))
       return
@@ -445,7 +447,7 @@ export default function PrintPage() {
                 <div className="ps-files">
                   <label className="btn btn-secondary ps-file-btn">
                     {t('printService.chooseFiles')}
-                    <input type="file" multiple accept={ACCEPT} hidden onChange={handlePickFiles}
+                    <input type="file" multiple accept="application/pdf,image/png,image/jpeg,.pdf,.png,.jpg,.jpeg,.doc,.docx,.ppt,.pptx" hidden onChange={handlePickFiles}
                            disabled={fileList.length >= 5} />
                   </label>
                   <span className="ps-files-hint">{t('printService.filesHint')}</span>
@@ -491,10 +493,12 @@ export default function PrintPage() {
                     </div>
                   )
                 })()}
-                <button className="btn btn-primary ps-submit" onClick={handleSubmit}
-                        disabled={busy || !fileList.length || (deliveryMode === '配送' && !address.trim())}>
+                <button className="btn btn-primary ps-submit" onClick={handleSubmit} disabled={busy}>
                   {busy ? t('printService.submitting') : t('printService.submit')}
                 </button>
+                {!busy && deliveryMode === '配送' && !address.trim() && (
+                  <p className="ps-empty">{t('printService.addressRequired')}</p>
+                )}
               </div>
             </div>
 
