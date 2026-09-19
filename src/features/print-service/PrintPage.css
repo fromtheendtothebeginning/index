@@ -286,8 +286,35 @@
   max-width: 160px;
 }
 
-.ps-adv-field .category-btn {
-  font-size: 13px;
+/* 下拉选择器对齐 tool-input 的高度与质感（category-btn-sm 特异度更高，需 .category-btn.category-btn-sm 连写压过） */
+.ps-adv-field .category-btn,
+.ps-adv-field .category-btn.category-btn-sm,
+.ps-preview-picker .category-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 38px;
+  padding: 0 14px;
+  font-size: 14px;
+  border-radius: 10px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  min-width: 160px;
+  margin-right: 0;
+}
+
+.ps-preview-picker {
+  margin-bottom: 12px;
+}
+
+.ps-preview-picker .category-btn {
+  min-width: 100%;
+}
+
+.ps-viewer-ops {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* 文件选择 */
