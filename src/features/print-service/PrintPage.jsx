@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import Navbar from '../../components/Navbar'
 import Modal from '../../components/Modal'
@@ -8,6 +8,7 @@ import './PrintPage.css'
 
 const TOKEN_KEY = 'print_token'
 const USER_KEY = 'print_user'
+const ANTIPRINT_URL = 'https://print.anticraft.top'
 
 // AntiPrint 任务状态 → 徽标样式（状态文案本身是打印服务返回的中文，直接展示）
 const STATUS_CLS = {
@@ -53,6 +54,7 @@ export default function PrintPage() {
   const [busy, setBusy] = useState(false)
   const [expanded, setExpanded] = useState(null)
   const [withdrawTarget, setWithdrawTarget] = useState(null) // { id, name }
+  const [fileOp, setFileOp] = useState(null) // 正在预览/下载的任务文件 { jobId, fileId, download }
 
   // 绑定表单（用 anticraft 账号密码换打印令牌，密码不落库）
   const [username, setUsername] = useState(() => {
@@ -158,17 +160,29 @@ export default function PrintPage() {
     }
   }
 
+  const previewable = (file) => /^image\//.test(file.type) || file.type === 'application/pdf'
+
   const handlePickFiles = (e) => {
     const picked = Array.from(e.target.files || [])
     if (!picked.length) return
-    const merged = [...fileList, ...picked].slice(0, 5)
-    setFileList(merged)
+    const added = picked
+      .slice(0, 5 - fileList.length)
+      .map((file) => ({ file, url: previewable(file) ? URL.createObjectURL(file) : null }))
+    setFileList([...fileList, ...added])
     e.target.value = ''
   }
 
   const removeFile = (idx) => {
+    if (fileList[idx].url) URL.revokeObjectURL(fileList[idx].url)
     setFileList(fileList.filter((_, i) => i !== idx))
   }
+
+  // 卸载时回收本地预览用的 object URL
+  const fileListRef = useRef(fileList)
+  fileListRef.current = fileList
+  useEffect(() => () => {
+    fileListRef.current.forEach((it) => { if (it.url) URL.revokeObjectURL(it.url) })
+  }, [])
 
   const handleSubmit = async () => {
     if (!fileList.length) return
@@ -181,7 +195,7 @@ export default function PrintPage() {
     setNotice('')
     try {
       const fd = new FormData()
-      fileList.forEach(f => fd.append('files', f))
+      fileList.forEach((it) => fd.append('files', it.file))
       fd.append('delivery_mode', deliveryMode)
       fd.append('copies', String(parseInt(copies, 10) || 1))
       if (deliveryMode === '配送') fd.append('address', address.trim())
@@ -239,6 +253,37 @@ export default function PrintPage() {
 
   const canWithdraw = (j) => j.status === '待审核' || j.status === '已通过'
 
+  // 任务文件预览/下载：fetch 带双重鉴权头取回 blob，再交给浏览器（避免令牌出现在 URL 里）
+  const openJobFile = async (job, f, download) => {
+    setFileOp({ jobId: job.id, fileId: f.id, download })
+    try {
+      const res = await fetch(`/api/print/jobs/${job.id}/files/${f.id}${download ? '?download=1' : ''}`,
+        { headers: printHeaders() })
+      if (res.status === 401) { resetBind(t('printService.expired')); return }
+      if (!res.ok) {
+        const b = await res.json().catch(() => null)
+        setErrMsg(detailText(b && b.detail) || t('printService.netError'))
+        return
+      }
+      const url = URL.createObjectURL(await res.blob())
+      if (download) {
+        const a = document.createElement('a')
+        a.href = url
+        a.download = f.filename || 'file'
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+      } else {
+        window.open(url, '_blank')
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 60000)
+    } catch {
+      setErrMsg(t('printService.netError'))
+    } finally {
+      setFileOp(null)
+    }
+  }
+
   if (!token) {
     return (
       <div className="tool-page">
@@ -268,6 +313,12 @@ export default function PrintPage() {
           <div className="ps-panel">
             <h2 className="ps-panel-title">{t('printService.bindTitle')}</h2>
             <p className="ps-bind-desc">{t('printService.bindDesc')}</p>
+            <p className="ps-bind-hint">
+              {t('printService.hasAccount')}
+              <a href={ANTIPRINT_URL} target="_blank" rel="noreferrer" className="ps-bind-link">
+                {t('printService.openAntiprint')} <span className="ps-ext">↗</span>
+              </a>
+            </p>
             <div className="ps-form">
               <input className="tool-input ps-input" placeholder={t('printService.username')}
                      value={username} onChange={e => setUsername(e.target.value)} />
@@ -304,6 +355,9 @@ export default function PrintPage() {
               <button type="button" className="btn btn-secondary ps-op-btn" onClick={() => resetBind()}>
                 {t('printService.rebind')}
               </button>
+              <a className="btn btn-secondary ps-op-btn ps-ext-link" href={ANTIPRINT_URL} target="_blank" rel="noreferrer">
+                {t('printService.openAntiprint')} <span className="ps-ext">↗</span>
+              </a>
             </div>
 
             {notice && <div className="ps-ok">{notice}</div>}
@@ -314,16 +368,12 @@ export default function PrintPage() {
               <div className="ps-form">
                 <div className="ps-row">
                   <span className="ps-row-label">{t('printService.deliveryMode')}</span>
-                  <label className="ps-radio">
-                    <input type="radio" name="ps-delivery" checked={deliveryMode === '配送'}
-                           onChange={() => setDeliveryMode('配送')} />
-                    <span>{t('printService.delivery')}</span>
-                  </label>
-                  <label className="ps-radio">
-                    <input type="radio" name="ps-delivery" checked={deliveryMode === '取件'}
-                           onChange={() => setDeliveryMode('取件')} />
-                    <span>{t('printService.pickup')}</span>
-                  </label>
+                  <div className="ps-seg">
+                    <button type="button" className={`ps-seg-item${deliveryMode === '配送' ? ' on' : ''}`}
+                            onClick={() => setDeliveryMode('配送')}>{t('printService.delivery')}</button>
+                    <button type="button" className={`ps-seg-item${deliveryMode === '取件' ? ' on' : ''}`}
+                            onClick={() => setDeliveryMode('取件')}>{t('printService.pickup')}</button>
+                  </div>
                 </div>
                 {deliveryMode === '配送' && (
                   <input className="tool-input ps-input" placeholder={t('printService.address')}
@@ -370,10 +420,19 @@ export default function PrintPage() {
                 </div>
                 {fileList.length > 0 && (
                   <ul className="ps-file-list">
-                    {fileList.map((f, i) => (
+                    {fileList.map((it, i) => (
                       <li key={i} className="ps-file-item">
-                        <span className="ps-file-name">{f.name}</span>
-                        <span className="ps-file-size">{fmtSize(f.size)}</span>
+                        {it.url && /^image\//.test(it.file.type) ? (
+                          <img className="ps-file-thumb" src={it.url} alt="" />
+                        ) : (
+                          <span className="ps-file-thumb ps-file-thumb-blank">{(it.file.name.split('.').pop() || '?').slice(0, 4)}</span>
+                        )}
+                        <span className={`ps-file-name${it.url ? ' clickable' : ''}`}
+                              onClick={() => it.url && window.open(it.url, '_blank')}
+                              title={it.url ? t('printService.preview') : undefined}>
+                          {it.file.name}
+                        </span>
+                        <span className="ps-file-size">{fmtSize(it.file.size)}</span>
                         <button type="button" className="ps-file-del" onClick={() => removeFile(i)}>✕</button>
                       </li>
                     ))}
@@ -408,6 +467,28 @@ export default function PrintPage() {
                       </button>
                       {expanded === j.id && (
                         <div className="ps-job-body">
+                          {(j.files || []).length > 0 && (
+                            <div className="ps-job-files">
+                              <span className="ps-job-files-label">{t('printService.filesLabel')}</span>
+                              {(j.files || []).map((f) => (
+                                <div key={f.id} className="ps-job-file">
+                                  <span className="ps-job-file-name">{f.filename}</span>
+                                  <button type="button" className="btn btn-secondary ps-op-btn" disabled={!!fileOp}
+                                          onClick={() => openJobFile(j, f, false)}>
+                                    {fileOp && fileOp.fileId === f.id && !fileOp.download
+                                      ? <span className="ps-spinner" />
+                                      : t('printService.preview')}
+                                  </button>
+                                  <button type="button" className="btn btn-secondary ps-op-btn" disabled={!!fileOp}
+                                          onClick={() => openJobFile(j, f, true)}>
+                                    {fileOp && fileOp.fileId === f.id && fileOp.download
+                                      ? <span className="ps-spinner" />
+                                      : t('printService.download')}
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                           {j.address && <p className="ps-job-line"><b>{t('printService.address')}：</b>{j.address}</p>}
                           {j.note && <p className="ps-job-line"><b>{t('printService.note')}：</b>{j.note}</p>}
                           {j.charge != null && <p className="ps-job-line"><b>{t('printService.charge')}：</b>{j.charge} {t('printService.yuan')}</p>}

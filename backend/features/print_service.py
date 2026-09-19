@@ -9,6 +9,7 @@ import os
 
 import requests
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from deps import get_current_user_obj
@@ -131,3 +132,24 @@ async def print_submit(request: Request,
 def print_withdraw(job_id: int, request: Request, current_user: User = Depends(get_current_user_obj)):
     """撤回任务（待审核/已通过可撤，AntiPrint 自动退费）。"""
     return _call("POST", "/api/jobs/%d/withdraw" % job_id, _token(request))
+
+
+@router.get("/api/print/jobs/{job_id}/files/{file_id}", tags=["打印服务"])
+def print_job_file(job_id: int, file_id: int, request: Request,
+                   download: int = 0, current_user: User = Depends(get_current_user_obj)):
+    """任务文件透传：预览给转换后的 PDF/图片（浏览器内联打开），download=1 拿原件（附件下载）。"""
+    token = _token(request)
+    try:
+        resp = requests.get(PRINT_BASE + "/api/jobs/%d/files/%d" % (job_id, file_id),
+                            params={"download": download} if download else None,
+                            stream=True, timeout=_TIMEOUT,
+                            headers={"Authorization": "Bearer " + token})
+    except requests.RequestException:
+        raise HTTPException(status_code=502, detail="无法连接打印服务，请稍后重试")
+    if resp.status_code >= 400:
+        _forward(resp)   # JSON 错误透传（会抛 HTTPException）
+    headers = {"Content-Type": resp.headers.get("Content-Type", "application/octet-stream")}
+    if resp.headers.get("Content-Disposition"):
+        headers["Content-Disposition"] = resp.headers["Content-Disposition"]
+    return StreamingResponse(resp.iter_content(chunk_size=65536),
+                             status_code=resp.status_code, headers=headers)
