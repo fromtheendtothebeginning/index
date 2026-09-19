@@ -23,7 +23,8 @@
   border: 1px solid var(--border-color);
   border-radius: 12px;
   background: var(--bg-card);
-  animation: ps-in 0.32s ease-out both;
+  /* 不用 both 填充：动画结束即撤掉 transform，避免持久层叠上下文把下拉菜单压在后面面板之下 */
+  animation: ps-in 0.32s ease-out;
 }
 
 .ps-panel-title {
@@ -195,7 +196,7 @@
   align-items: center;
   gap: 14px;
   flex-wrap: wrap;
-  animation: ps-in 0.32s ease-out both;
+  animation: ps-in 0.32s ease-out;
 }
 
 .ps-account-main {
@@ -259,6 +260,9 @@
   border: 1px dashed var(--border-color);
   border-radius: 10px;
   padding: 8px 12px;
+  /* 下拉菜单要盖住面板内/后面的组件 */
+  position: relative;
+  z-index: 4;
 }
 
 .ps-adv summary {
@@ -364,6 +368,29 @@
   color: var(--danger);
 }
 
+.ps-file-item.on {
+  border-color: var(--accent-1);
+  background: var(--accent-1-soft);
+}
+
+.ps-file-name.on {
+  color: var(--accent-1);
+  font-weight: 700;
+}
+
+/* 本次提交文件的预览块：选择器菜单要盖住下方的查看器（iframe） */
+.ps-preview-block {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ps-preview-picker .category-btn {
+  min-width: 100%;
+}
+
 .ps-submit {
   align-self: flex-start;
 }
@@ -383,7 +410,7 @@
   border-radius: 10px;
   background: var(--bg-elevated);
   overflow: hidden;
-  animation: ps-in 0.3s ease-out both;
+  animation: ps-in 0.3s ease-out;
   transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
 }
 

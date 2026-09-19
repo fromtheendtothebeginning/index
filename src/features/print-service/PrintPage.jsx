@@ -55,9 +55,8 @@ export default function PrintPage() {
   const [expanded, setExpanded] = useState(null)
   const [withdrawTarget, setWithdrawTarget] = useState(null) // { id, name }
   const [fileOp, setFileOp] = useState(null) // 正在取回的任务文件 { jobId, fileId, download }
-  const [previewSel, setPreviewSel] = useState('') // 底部预览面板选中的文件 key "jobId:fileId"
-  const [previewData, setPreviewData] = useState(null) // { key, url, kind, name }
-  const [previewLoading, setPreviewLoading] = useState(false)
+  const [preview, setPreview] = useState(null) // 任务卡内嵌预览 { key, url, kind, name }
+  const [localPreviewKey, setLocalPreviewKey] = useState('') // 本次提交文件里正在预览的那个
 
   // 绑定表单（用 anticraft 账号密码换打印令牌，密码不落库）
   const [username, setUsername] = useState(() => {
@@ -169,14 +168,24 @@ export default function PrintPage() {
     if (!picked.length) return
     const added = picked
       .slice(0, 5 - fileList.length)
-      .map((file) => ({ file, url: previewable(file) ? URL.createObjectURL(file) : null }))
+      .map((file) => ({
+        file,
+        key: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        url: previewable(file) ? URL.createObjectURL(file) : null,
+      }))
     setFileList([...fileList, ...added])
+    if (!localPreviewKey) {
+      const first = added.find((it) => it.url) || added[0]
+      if (first) setLocalPreviewKey(first.key)
+    }
     e.target.value = ''
   }
 
-  const removeFile = (idx) => {
-    if (fileList[idx].url) URL.revokeObjectURL(fileList[idx].url)
-    setFileList(fileList.filter((_, i) => i !== idx))
+  const removeFile = (key) => {
+    const it = fileList.find((x) => x.key === key)
+    if (it && it.url) URL.revokeObjectURL(it.url)
+    if (localPreviewKey === key) setLocalPreviewKey('')
+    setFileList(fileList.filter((x) => x.key !== key))
   }
 
   // 卸载时回收本地预览用的 object URL
@@ -252,38 +261,24 @@ export default function PrintPage() {
 
   const canWithdraw = (j) => j.status === '待审核' || j.status === '已通过'
 
-  // 所有任务的文件（底部预览面板的选择器选项）
-  const fileOptions = (jobs || []).flatMap((j) =>
-    (j.files || []).map((f) => ({ value: `${j.id}:${f.id}`, label: `#${j.id} ${f.filename}` })))
+  // 任务卡内嵌预览：fetch 带双重鉴权头取回 blob，直接在卡里渲染（PDF iframe / 图片直显）
+  const previewRef = useRef(null)
+  previewRef.current = preview
+  useEffect(() => () => { if (previewRef.current) URL.revokeObjectURL(previewRef.current.url) }, [])
 
-  // 底部预览面板：取回 blob 后缓存，切换文件不重复下载；卸载统一回收
-  const urlCacheRef = useRef(new Map())
-  const previewPanelRef = useRef(null)
-  useEffect(() => () => {
-    fileListRef.current.forEach((it) => { if (it.url) URL.revokeObjectURL(it.url) })
-    urlCacheRef.current.forEach((v) => URL.revokeObjectURL(v.url))
-    urlCacheRef.current.clear()
-  }, [])
-
-  const findJobFile = (key) => {
-    const [jobId, fileId] = key.split(':').map(Number)
-    for (const j of jobs || []) {
-      for (const f of j.files || []) {
-        if (j.id === jobId && f.id === fileId) return f
-      }
-    }
-    return null
+  const closePreview = () => {
+    if (previewRef.current) URL.revokeObjectURL(previewRef.current.url)
+    previewRef.current = null
+    setPreview(null)
   }
 
-  const selectPreview = async (key) => {
-    setPreviewSel(key)
-    if (!key) { setPreviewData(null); return }
-    const cached = urlCacheRef.current.get(key)
-    if (cached) { setPreviewData({ key, ...cached }); return }
-    const [jobId, fileId] = key.split(':').map(Number)
-    setPreviewLoading(true)
+  const togglePreview = async (job, f) => {
+    const key = `${job.id}:${f.id}`
+    if (preview && preview.key === key) { closePreview(); return }
+    setFileOp({ jobId: job.id, fileId: f.id, download: false })
+    closePreview()
     try {
-      const res = await fetch(`/api/print/jobs/${jobId}/files/${fileId}`, { headers: printHeaders() })
+      const res = await fetch(`/api/print/jobs/${job.id}/files/${f.id}`, { headers: printHeaders() })
       if (res.status === 401) { resetBind(t('printService.expired')); return }
       if (!res.ok) {
         const b = await res.json().catch(() => null)
@@ -292,22 +287,14 @@ export default function PrintPage() {
       }
       const blob = await res.blob()
       const kind = /^image\//.test(blob.type) ? 'image' : 'pdf'
-      const f = findJobFile(key)
-      const entry = { url: URL.createObjectURL(blob), kind, name: (f && f.filename) || 'file' }
-      urlCacheRef.current.set(key, entry)
-      setPreviewData({ key, ...entry })
+      const url = URL.createObjectURL(blob)
+      previewRef.current = { key, url }
+      setPreview({ key, url, kind, name: f.filename })
     } catch {
       setErrMsg(t('printService.netError'))
     } finally {
-      setPreviewLoading(false)
+      setFileOp(null)
     }
-  }
-
-  const jumpToPreview = (key) => {
-    selectPreview(key)
-    setTimeout(() => {
-      if (previewPanelRef.current) previewPanelRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 60)
   }
 
   // 下载原件：取 blob 后用隐藏 <a> 触发保存
@@ -464,24 +451,45 @@ export default function PrintPage() {
                 </div>
                 {fileList.length > 0 && (
                   <ul className="ps-file-list">
-                    {fileList.map((it, i) => (
-                      <li key={i} className="ps-file-item">
+                    {fileList.map((it) => (
+                      <li key={it.key} className={`ps-file-item${localPreviewKey === it.key ? ' on' : ''}`}>
                         {it.url && /^image\//.test(it.file.type) ? (
                           <img className="ps-file-thumb" src={it.url} alt="" />
                         ) : (
                           <span className="ps-file-thumb ps-file-thumb-blank">{(it.file.name.split('.').pop() || '?').slice(0, 4)}</span>
                         )}
-                        <span className={`ps-file-name${it.url ? ' clickable' : ''}`}
-                              onClick={() => it.url && window.open(it.url, '_blank')}
-                              title={it.url ? t('printService.preview') : undefined}>
+                        <span className={`ps-file-name clickable${localPreviewKey === it.key ? ' on' : ''}`}
+                              onClick={() => setLocalPreviewKey(it.key)}
+                              title={t('printService.preview')}>
                           {it.file.name}
                         </span>
                         <span className="ps-file-size">{fmtSize(it.file.size)}</span>
-                        <button type="button" className="ps-file-del" onClick={() => removeFile(i)}>✕</button>
+                        <button type="button" className="ps-file-del" onClick={() => removeFile(it.key)}>✕</button>
                       </li>
                     ))}
                   </ul>
                 )}
+                {fileList.length > 0 && (() => {
+                  const it = fileList.find((x) => x.key === localPreviewKey)
+                  return (
+                    <div className="ps-preview-block">
+                      <div className="ps-preview-picker">
+                        <CategoryDropdown value={localPreviewKey} onChange={setLocalPreviewKey}
+                                          options={fileList.map((x) => ({ value: x.key, label: x.file.name }))}
+                                          placeholder={t('printService.pickFile')} hideClear />
+                      </div>
+                      {!it ? (
+                        <p className="ps-empty">{t('printService.pickHint')}</p>
+                      ) : !it.url ? (
+                        <p className="ps-empty">{t('printService.noPreview')}</p>
+                      ) : /^image\//.test(it.file.type) ? (
+                        <div className="ps-viewer"><img className="ps-viewer-img" src={it.url} alt={it.file.name} /></div>
+                      ) : (
+                        <div className="ps-viewer"><iframe className="ps-viewer-frame" src={it.url} title={it.file.name} /></div>
+                      )}
+                    </div>
+                  )
+                })()}
                 <button className="btn btn-primary ps-submit" onClick={handleSubmit}
                         disabled={busy || !fileList.length || (deliveryMode === '配送' && !address.trim())}>
                   {busy ? t('printService.submitting') : t('printService.submit')}
@@ -516,21 +524,35 @@ export default function PrintPage() {
                               <span className="ps-job-files-label">{t('printService.filesLabel')}</span>
                               {(j.files || []).map((f) => {
                                 const key = `${j.id}:${f.id}`
+                                const previewing = preview && preview.key === key
                                 return (
-                                  <div key={f.id} className="ps-job-file">
-                                    <span className="ps-job-file-name">{f.filename}</span>
-                                    <button type="button" className="btn btn-secondary ps-op-btn" disabled={!!fileOp}
-                                            onClick={() => jumpToPreview(key)}>
-                                      {fileOp && fileOp.fileId === f.id && !fileOp.download
-                                        ? <span className="ps-spinner" />
-                                        : t('printService.preview')}
-                                    </button>
-                                    <button type="button" className="btn btn-secondary ps-op-btn" disabled={!!fileOp}
-                                            onClick={() => downloadJobFile(j.id, f.id, f.filename)}>
-                                      {fileOp && fileOp.fileId === f.id && fileOp.download
-                                        ? <span className="ps-spinner" />
-                                        : t('printService.download')}
-                                    </button>
+                                  <div key={f.id} className="ps-file-block">
+                                    <div className="ps-job-file">
+                                      <span className="ps-job-file-name">{f.filename}</span>
+                                      <button type="button" className="btn btn-secondary ps-op-btn" disabled={!!fileOp}
+                                              onClick={() => togglePreview(j, f)}>
+                                        {fileOp && fileOp.fileId === f.id && !fileOp.download
+                                          ? <span className="ps-spinner" />
+                                          : (previewing ? t('printService.hidePreview') : t('printService.preview'))}
+                                      </button>
+                                      <button type="button" className="btn btn-secondary ps-op-btn" disabled={!!fileOp}
+                                              onClick={() => downloadJobFile(j.id, f.id, f.filename)}>
+                                        {fileOp && fileOp.fileId === f.id && fileOp.download
+                                          ? <span className="ps-spinner" />
+                                          : t('printService.download')}
+                                      </button>
+                                    </div>
+                                    {previewing && (
+                                      <div className="ps-viewer">
+                                        <div className="ps-viewer-bar">
+                                          <span className="ps-viewer-name">{preview.name}</span>
+                                          <button type="button" className="ps-file-del" onClick={closePreview}>✕</button>
+                                        </div>
+                                        {preview.kind === 'image'
+                                          ? <img className="ps-viewer-img" src={preview.url} alt={preview.name} />
+                                          : <iframe className="ps-viewer-frame" src={preview.url} title={preview.name} />}
+                                      </div>
+                                    )}
                                   </div>
                                 )
                               })}
@@ -552,47 +574,6 @@ export default function PrintPage() {
                     </li>
                   ))}
                 </ul>
-              )}
-            </div>
-
-            <div className="ps-panel" ref={previewPanelRef}>
-              <h2 className="ps-panel-title">{t('printService.previewTitle')}</h2>
-              {jobs === null ? (
-                <p className="ps-empty">{t('printService.loading')}</p>
-              ) : fileOptions.length === 0 ? (
-                <p className="ps-empty">{t('printService.noJobs')}</p>
-              ) : (
-                <>
-                  <div className="ps-preview-picker">
-                    <CategoryDropdown value={previewSel} onChange={selectPreview}
-                                      options={fileOptions} placeholder={t('printService.pickFile')} hideClear />
-                  </div>
-                  {previewLoading ? (
-                    <p className="ps-empty"><span className="ps-spinner" /> {t('printService.loading')}</p>
-                  ) : previewData ? (
-                    <div className="ps-viewer">
-                      <div className="ps-viewer-bar">
-                        <span className="ps-viewer-name">{previewData.name}</span>
-                        <div className="ps-viewer-ops">
-                          <button type="button" className="btn btn-secondary ps-op-btn"
-                                  onClick={() => {
-                                    const [jid, fid] = previewData.key.split(':').map(Number)
-                                    downloadJobFile(jid, fid, previewData.name)
-                                  }}>
-                            {t('printService.download')}
-                          </button>
-                          <button type="button" className="ps-file-del"
-                                  onClick={() => { setPreviewSel(''); setPreviewData(null) }}>✕</button>
-                        </div>
-                      </div>
-                      {previewData.kind === 'image'
-                        ? <img className="ps-viewer-img" src={previewData.url} alt={previewData.name} />
-                        : <iframe className="ps-viewer-frame" src={previewData.url} title={previewData.name} />}
-                    </div>
-                  ) : (
-                    <p className="ps-empty">{t('printService.pickHint')}</p>
-                  )}
-                </>
               )}
             </div>
           </>
