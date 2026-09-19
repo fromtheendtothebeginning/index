@@ -517,6 +517,7 @@ export default function CampusServicePage() {
 
   // ── 第二课堂活动 ──
   const [actData, setActData] = useState(null)
+  const [actViaPool, setActViaPool] = useState(false) // 本次数据来自共享会话池
   const [actFilter, setActFilter] = useState('all') // all | open | soon | closed
   const [actSearch, setActSearch] = useState('')
   const [actDetails, setActDetails] = useState({}) // 活动id -> { loading | data | err }
@@ -688,6 +689,7 @@ export default function CampusServicePage() {
     setEcardCount(0)
     setActData(null)
     setActDetails({})
+    setActViaPool(false)
     setVpnConnecting(false)
     setCaptcha(null)
     setCapInput('')
@@ -778,6 +780,7 @@ export default function CampusServicePage() {
           return
         }
         if (b && b.auto_captcha_used) {
+          setActViaPool(false)
           if (b.data) applyResult('activities', b.data, true)
           return
         }
@@ -786,7 +789,10 @@ export default function CampusServicePage() {
           setCapInput('')
           return
         }
-        if (b && b.data) applyResult('activities', b.data)
+        if (b && b.data) {
+          setActViaPool(!!b.via_pool)
+          applyResult('activities', b.data)
+        }
       } catch {
         if (ep === epochRef.current) setErrMsg(t('campusService.error'))
       } finally {
@@ -1409,7 +1415,10 @@ export default function CampusServicePage() {
           <p className="cs-empty">{t('campusService.activities.empty')}</p>
         ) : (
           <>
-            <p className="cs-act-count">{t('campusService.activities.count', { n: filtered.length })}</p>
+            <p className="cs-act-count">
+              {t('campusService.activities.count', { n: filtered.length })}
+              {actViaPool && <span className="cs-badge cs-badge-muted cs-act-via">{t('campusService.activities.viaPool')}</span>}
+            </p>
             <div className="cs-act-list">
               {filtered.map(a => (
                 <ActivityCard key={a.id} a={a} detail={actDetails[a.id]} onExpand={fetchActDetail} />
@@ -1502,8 +1511,10 @@ export default function CampusServicePage() {
     )
   }
 
-  // ── 主页渲染（电费不依赖 VPN，登录后即可进入） ──
-  const renderMainPage = () => (
+  // ── 渲染：主页（电费走公网、活动可走共享会话池，均不依赖自身 VPN；登录后即可进入） ──
+  const renderMainPage = () => {
+    const user = (() => { try { return JSON.parse(localStorage.getItem('user') || '{}') } catch { return {} } })()
+    return (
     <>
       {token && renderStatusCard()}
 
@@ -1528,26 +1539,32 @@ export default function CampusServicePage() {
                   <span className="cs-qcard-desc">{t('campusService.query.ecardDesc')}</span>
                   <span className="cs-qcard-state">{'›'}</span>
                 </Link>
-                <Link to="/tools/campus-service/activities" className="cs-qcard">
-                  <span className="cs-qcard-name">{t('campusService.query.activities')}</span>
-                  <span className="cs-qcard-desc">{t('campusService.query.activitiesDesc')}</span>
-                  <span className="cs-qcard-state">{'›'}</span>
-                </Link>
               </>
             )}
+            <Link to="/tools/campus-service/activities" className="cs-qcard">
+              <span className="cs-qcard-name">{t('campusService.query.activities')}</span>
+              <span className="cs-qcard-desc">{t('campusService.query.activitiesDesc')}</span>
+              <span className="cs-qcard-state">{'›'}</span>
+            </Link>
             <Link to="/tools/campus-service/electricity" className="cs-qcard">
               <span className="cs-qcard-name">{t('campusService.electricity.name')}</span>
               <span className="cs-qcard-desc">{t('campusService.electricity.desc')}</span>
               <span className="cs-qcard-state">{'›'}</span>
             </Link>
           </div>
+          {user.role === 'admin' && (
+            <Link to="/tools/campus-service/pool" className="cs-pool-link">
+              {t('campusService.pool.link')} <span className="cs-qcard-state">{'›'}</span>
+            </Link>
+          )}
         </>
       )}
     </>
-  )
+    )
+  }
 
-  // ── 子页面渲染（不展示状态卡 / 代理地址，未连接时只给一行提示） ──
-  const needsVpn = feature !== 'electricity'
+  // ── 渲染：子页面（活动可走共享会话池，不算强依赖自身 VPN；未连接时只给一行提示） ──
+  const needsVpn = feature !== 'electricity' && feature !== 'activities'
   const renderSubPage = () => (
     <>
       <Link to="/tools/campus-service" className="tool-back">{t('campusService.backToCampus')}</Link>
@@ -1560,12 +1577,12 @@ export default function CampusServicePage() {
         )}
       </div>
 
-      {token && needsVpn && !connected && (
+      {token && !connected && (needsVpn || vpnConnecting) && (
         <p className="cs-vpn-hint">
           {vpnConnecting && <span className="cs-spinner" />}
-          {unavailable || (vpnConnecting
+          {vpnConnecting
             ? t('campusService.vpnAutoConnecting')
-            : (status && status.status === 'failed' && status.error ? status.error : t('campusService.vpnHint')))}
+            : unavailable || ((status && status.status === 'failed' && status.error) ? status.error : t('campusService.vpnHint'))}
           {!vpnConnecting && !unavailable && (
             <Link to="/tools/campus-service" className="cs-vpn-hint-link">{t('campusService.goConnect')}</Link>
           )}

@@ -33,9 +33,12 @@ def _get_managers():
     global _singletons
     with _singletons_lock:
         if _singletons is None:
+            import copy
+
             from campus.config import Config
             from campus.dekt import DektManager
             from campus.docker_mgr import DockerManager
+            from campus.pool import PoolManager
             from campus.sessions import SessionManager
 
             cfg = Config()
@@ -43,8 +46,24 @@ def _get_managers():
                 docker = DockerManager(cfg)
                 docker.cleanup_orphans()
                 sessions = SessionManager(cfg, docker)
+                # 共享会话池：专属 SessionManager（常驻，不受 12h 寿命上限约束）
+                pool_cfg = copy.copy(cfg)
+                pool_cfg.max_lifetime_hours = float("inf")
+                pool_sessions = SessionManager(pool_cfg, docker)
                 dekt = DektManager(cfg)
-                _singletons = {"cfg": cfg, "docker": docker, "sessions": sessions, "dekt": dekt}
+
+                def _pool_vision():
+                    from features.campus_pool import resolve_pool_vision
+                    return resolve_pool_vision()
+
+                pool = PoolManager(
+                    pool_cfg, docker, pool_sessions, dekt,
+                    get_vision=_pool_vision,
+                    solve_captcha=lambda cap, vision: _ai_solve_captcha(_b64(cap), vision),
+                    log=_log,
+                )
+                _singletons = {"cfg": cfg, "docker": docker, "sessions": sessions,
+                               "dekt": dekt, "pool": pool}
             except Exception as e:
                 _log(f"campus docker init failed: {str(e)[:200]}")
                 _singletons = {"error": str(e)[:300]}

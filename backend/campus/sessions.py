@@ -55,7 +55,7 @@ class SessionManager:
         self._lock = threading.Lock()
         threading.Thread(target=self._watchdog, daemon=True).start()
 
-    def create(self, user_id, student_id, password):
+    def create(self, user_id, student_id, password, ports=None):
         student_id = (student_id or "").strip()
         password = password or ""
         if not student_id or not password:
@@ -64,8 +64,11 @@ class SessionManager:
             old = self.sessions.get(user_id)
             if old:
                 self._drop_locked(user_id)
-            # 每用户固定端口（bridge 模式下 Docker 端口映射到不同外部端口）
-            socks_port, http_port = _deterministic_ports(user_id, self.cfg)
+            # 每用户固定端口（bridge 模式下 Docker 端口映射到不同外部端口）；
+            # 共享会话池等调用方也可显式传入 allocate_ports() 分配的随机空闲端口
+            if ports is None:
+                ports = _deterministic_ports(user_id, self.cfg)
+            socks_port, http_port = ports
             self.sessions[user_id] = Session(user_id, student_id, password, socks_port, http_port, proxy_host=self.cfg.proxy_host)
         threading.Thread(target=self._run, args=(user_id,), daemon=True).start()
         return user_id
