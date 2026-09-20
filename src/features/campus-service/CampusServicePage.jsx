@@ -151,12 +151,13 @@ function buildSeries(records, view) {
   return dailyMinSeries(records, view === 'week' ? 7 : 30)
 }
 
-// ── 周期平均每天耗电（本周 / 本月） ──
-// 周期起点用本地时间：本周 = 本周一 00:00:00；本月 = 本月 1 日 00:00:00
+// ── 周期平均每天耗电（本周 / 本月 / 近 7 天） ──
+// 周期起点用本地时间：本周 = 本周一 00:00:00；本月 = 本月 1 日 00:00:00；近 7 天 = 含今天往前推 6 天 00:00
 function periodStart(view) {
   const d = new Date()
   d.setHours(0, 0, 0, 0)
   if (view === 'week') d.setDate(d.getDate() - ((d.getDay() + 6) % 7)) // 周一为一周起点
+  else if (view === 'last7') d.setDate(d.getDate() - 6)
   else d.setDate(1)
   return d.getTime()
 }
@@ -1302,6 +1303,16 @@ export default function CampusServicePage() {
       ['campusService.electricity.avgWeek', avgDailyUsage(elecHistory, 'week')],
       ['campusService.electricity.avgMonth', avgDailyUsage(elecHistory, 'month')],
     ]
+    // 预计可用天数 = 当前余额 ÷ 最近 7 天日均耗电。用滚动 7 天而非本周/本月：周一、月初刚开头时
+    // 自然周期内记录还不够算日均，而「余额还能撑几天」恰恰是那时候最该看的。
+    const rate7 = avgDailyUsage(elecHistory, 'last7')
+    const lastRecord = [...elecHistory].reverse().find(r => r && r.balance != null)
+    const curBalance = elecData?.balance != null
+      ? Number(elecData.balance)
+      : (lastRecord ? Number(lastRecord.balance) : null)
+    const daysLeft = rate7 > 0 && curBalance != null && Number.isFinite(curBalance)
+      ? curBalance / rate7
+      : null
     // 折线图小字说明：与折线图共用同一套推导（该视图无数据时 note 为空串，小字隐藏）
     const elecNote = buildSeries(elecHistory, elecView).note
     return (
@@ -1344,7 +1355,7 @@ export default function CampusServicePage() {
         </div>
       )}
 
-      {/* 本周 / 本月平均每天耗电：只依赖历史记录（已剔除充值额），与本次查询是否成功无关 */}
+      {/* 本周 / 本月日均耗电 + 预计可用天数：只依赖历史记录（充值额已剔除），与本次查询是否成功无关 */}
       {elecHistory.length > 0 && (
         <div className="cs-elec-avgs">
           {avgs.map(([labelKey, v]) => (
@@ -1353,6 +1364,14 @@ export default function CampusServicePage() {
               <b>{v != null ? `${v.toFixed(2)} ${t('campusService.electricity.avgUnit')}` : '—'}</b>
             </span>
           ))}
+          <span className="cs-elec-avg" title={daysLeft != null
+            ? t('campusService.electricity.daysLeftTip', { rate: rate7.toFixed(2) })
+            : t('campusService.electricity.avgInsufficient')}>
+            <span className="cs-elec-avg-label">{t('campusService.electricity.daysLeft')}</span>
+            <b className={daysLeft != null && daysLeft < 5 ? 'cs-score-warn' : ''}>
+              {daysLeft != null ? `${daysLeft.toFixed(1)} ${t('campusService.electricity.daysLeftUnit')}` : '—'}
+            </b>
+          </span>
         </div>
       )}
 

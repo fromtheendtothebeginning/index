@@ -853,6 +853,9 @@ campusService:
     avgMonth: 本月日均
     avgUnit: 元/天
     avgInsufficient: 数据不足，需至少两天记录
+    daysLeft: 预计可用
+    daysLeftUnit: 天
+    daysLeftTip: '按最近 7 天日均 {rate} 元/天估算'
     hourlyCaption: '{date} 每小时电费余额（元）'
     weekCaption: '最近 7 天 · 每天最低电费余额（元）'
     monthCaption: '最近 30 天 · 每天最低电费余额（元）'
