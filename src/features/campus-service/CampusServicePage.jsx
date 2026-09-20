@@ -162,7 +162,7 @@ function periodStart(view) {
 }
 
 // 耗电 = (首条余额 - 末条余额) + 首条之后所有记录的充值额（充值让余额变大，不算消耗）
-// balance 为空的记录不参与首末条，但其充值额仍计入；周期内有效记录不足 2 条返回 null
+// 不参与首末条的记录（balance 为空 / 充值记录）其充值额仍计入；周期内比较点不足 2 个返回 null
 function avgDailyUsage(records, view) {
   const start = periodStart(view)
   const pts = (records || [])
@@ -175,24 +175,34 @@ function avgDailyUsage(records, view) {
     .filter(p => Number.isFinite(p.ts) && p.ts >= start)
     .sort((a, b) => a.ts - b.ts)
 
-  const valid = pts.filter(p => p.balance != null && Number.isFinite(p.balance))
+  // 比较点：余额有效且本条不是充值记录。充值记录里的余额可能是学校系统还没入账时
+  // 复查到的旧值（实测充值 50 元后复查仍返回充值前余额），拿它当基准会把充值额当成耗电。
+  const isPoint = p => p.balance != null && Number.isFinite(p.balance) && p.recharge <= 0
+  const valid = pts.filter(isPoint)
   if (valid.length < 2) return null
 
   // 耗电按相邻两个「有效余额点」之间的余额变化累计，并把区间内的充值额算进来：
   //   下降段：耗电 = 下降幅度 + 区间充值（充值花掉的也要算）
   //   上升段：耗电 = 充值额 - 上升幅度（被充值掩盖的净耗电）；充值额未知（学校 App 充的）时按 0 计
-  // 这样无论充值有没有被本工具记录到，都不会把充值当成"负耗电"。
+  // 但充值额只有在余额真涨过充值前水平后才计入：没涨说明系统尚未入账，计入会把充值当成耗电。
   let used = 0
   let prev = null
-  let pending = 0 // 上一个有效余额点之后（含本条自己）尚未结算的充值额
+  let pending = 0 // 已记录、但还没在余额里体现出来的充值额
+  let pendingBase = null // 充值前的余额水平，用来判断是否已入账
   for (const p of pts) {
-    pending += p.recharge
-    if (p.balance == null) continue
-    if (prev != null) {
-      const delta = prev.balance - p.balance
-      used += delta > 0 ? delta + pending : Math.max(0, pending + delta)
+    if (p.recharge > 0) {
+      if (prev == null) continue // 前面没有余额基准，这笔充值归属不到任何区间
+      if (pending === 0) pendingBase = prev.balance
+      pending += p.recharge
+      continue
     }
-    pending = 0
+    if (!isPoint(p)) continue
+    if (prev != null) {
+      const credited = pending > 0 && p.balance > pendingBase ? pending : 0
+      const delta = prev.balance - p.balance
+      used += delta > 0 ? delta + credited : Math.max(0, credited + delta)
+      if (credited > 0) { pending = 0; pendingBase = null }
+    }
     prev = p
   }
   const days = Math.max(1, (valid[valid.length - 1].ts - valid[0].ts) / DAY_MS) // 不足一天算 1 天
