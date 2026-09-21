@@ -222,16 +222,21 @@ class DektClient:
         if not self.session:
             raise DektError("未登录")
         body = {"currentPage": "1", "pageSize": "15", "showCount": "10", "xh": student_id}
-        resp = self.session.post(self.score_url, data=body, timeout=30, headers={
+        # 不跟随跳转：会话失效时学工 302 到统一认证登录页，跟下去只会拿到那页 HTML
+        resp = self.session.post(self.score_url, data=body, timeout=30, allow_redirects=False, headers={
             "Content-Type": "application/x-www-form-urlencoded",
             "Referer": self.xg_base + "/dektxf/xfqktj",
         })
-        if resp.status_code == 302:
+        if resp.status_code in (301, 302, 303, 307, 308):
             self.session = None
             raise DektError("登录态失效，请重新查询")
         j = self._parse_response(resp)
-        if not isinstance(j, dict) or j.get("code") != 0:
-            raise DektError((j.get("msg") if isinstance(j, dict) else "") or "查询失败")
+        if not isinstance(j, dict):
+            # 落到登录页等 HTML：会话已失效，清掉让下次查询重新登录，否则一直拿死会话重试
+            self.session = None
+            raise DektError("登录态失效，请重新查询")
+        if j.get("code") != 0:
+            raise DektError(j.get("msg") or "查询失败")
         return self._build_score_view(j)
 
     @staticmethod
@@ -337,6 +342,10 @@ class DektClient:
         ct = r.headers.get("Content-Type", "")
         if "image" in ct:
             return {"image": base64.b64encode(r.content).decode(), "type": ct, "refresh": 55}
+        if r.url.startswith(self.auth_base.rstrip("/")):
+            # SSO 握手停在统一认证登录页 = CAS 会话已失效，清掉让下次查询重新登录
+            self.session = None
+            raise DektError("登录态失效，请重新查询")
         m = re.search(r'id="myText"[^>]*value="([^"]+)"', r.text)
         if not m:
             raise DektError("未解析到动态码(%s %s)" % (r.status_code, ct))
