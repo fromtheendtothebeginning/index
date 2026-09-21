@@ -785,6 +785,30 @@ export default function CampusServicePage() {
       return
     }
 
+    // 校园码走独立端点（校付宝公网接口，不需要 VPN 隧道、不弹验证码）
+    if (kind === 'ecard') {
+      try {
+        const res = await apiFetch('/api/campus/ecard/qrcode', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}',
+        })
+        const b = await res.json().catch(() => null)
+        if (ep !== epochRef.current) return
+        if (!res.ok) {
+          setErrMsg((b && b.detail) ? String(b.detail) : t('campusService.error'))
+          return
+        }
+        if (b && b.data) applyResult('ecard', b.data)
+      } catch {
+        if (ep === epochRef.current) setErrMsg(t('campusService.error'))
+      } finally {
+        busyRef.current = false
+        if (ep === epochRef.current) setQBusy(null)
+      }
+      return
+    }
+
     // 第二课堂活动走独立端点（/api/campus/activities，需 VPN 隧道）
     if (kind === 'activities') {
       try {
@@ -954,9 +978,9 @@ export default function CampusServicePage() {
     }
   }
 
-  // ── 校园卡动态码自动刷新 ──
+  // ── 校园卡动态码自动刷新（走公网接口，不依赖 VPN 连接状态） ──
   useEffect(() => {
-    if (!token || !status || status.status !== 'connected' || !ecardData || !ecardData.refresh) {
+    if (!token || !ecardData || !ecardData.refresh) {
       setEcardCount(0)
       return
     }
@@ -973,7 +997,7 @@ export default function CampusServicePage() {
     }, 1000)
     return () => clearInterval(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, status, ecardData, captcha])
+  }, [token, ecardData, captcha])
 
   // 子页面进入时自动查询（有缓存则先展示缓存，等用户点「刷新」）
   // VPN 未连接时也直接查询：后端会用已存凭据自动连接并返回 vpn_connecting，
@@ -1589,13 +1613,13 @@ export default function CampusServicePage() {
                   <span className="cs-qcard-desc">{t('campusService.query.gradesDesc')}</span>
                   <span className="cs-qcard-state">{'›'}</span>
                 </Link>
-                <Link to="/tools/campus-service/ecard" className="cs-qcard">
-                  <span className="cs-qcard-name">{t('campusService.query.ecard')}</span>
-                  <span className="cs-qcard-desc">{t('campusService.query.ecardDesc')}</span>
-                  <span className="cs-qcard-state">{'›'}</span>
-                </Link>
               </>
             )}
+            <Link to="/tools/campus-service/ecard" className="cs-qcard">
+              <span className="cs-qcard-name">{t('campusService.query.ecard')}</span>
+              <span className="cs-qcard-desc">{t('campusService.query.ecardDesc')}</span>
+              <span className="cs-qcard-state">{'›'}</span>
+            </Link>
             <Link to="/tools/campus-service/activities" className="cs-qcard">
               <span className="cs-qcard-name">{t('campusService.query.activities')}</span>
               <span className="cs-qcard-desc">{t('campusService.query.activitiesDesc')}</span>
@@ -1618,8 +1642,8 @@ export default function CampusServicePage() {
     )
   }
 
-  // ── 渲染：子页面（活动可走共享会话池，不算强依赖自身 VPN；未连接时只给一行提示） ──
-  const needsVpn = feature !== 'electricity' && feature !== 'activities'
+  // ── 渲染：子页面（电费/校园码走公网、活动可走共享会话池，均不依赖自身 VPN；未连接时只给一行提示） ──
+  const needsVpn = feature !== 'electricity' && feature !== 'activities' && feature !== 'ecard'
   const renderSubPage = () => (
     <>
       <Link to="/tools/campus-service" className="tool-back">{t('campusService.backToCampus')}</Link>

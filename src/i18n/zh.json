@@ -849,7 +849,7 @@
   "campusService": {
     "navLabel": "校园服务",
     "title": "校园服务",
-    "subtitle": "连接校园网 VPN，查询第二课堂分 / 活动 / 成绩 / 电费 / 校园卡动态码（凭据在「我的 → 校园服务」填写）",
+    "subtitle": "连接校园网 VPN，查询第二课堂分 / 活动 / 成绩；电费与校园码走公网接口，无需连接校园网（凭据在「我的 → 校园服务」填写）",
     "backToTools": "← 返回工具主页",
     "needLogin": "校园服务需要登录后使用",
     "goAuth": "去登录",
@@ -890,7 +890,7 @@
       "gradesDesc": "各学年学期课程成绩与绩点",
       "gradesLoading": "查询中…",
       "ecard": "校园卡动态码",
-      "ecardDesc": "食堂 / 超市付款动态码",
+      "ecardDesc": "食堂 / 超市付款动态码（无需连接校园网）",
       "ecardLoading": "获取中…",
       "activities": "第二课堂活动",
       "activitiesDesc": "活动引导页全部活动、报名窗口与名额"
