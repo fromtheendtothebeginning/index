@@ -1,6 +1,16 @@
 # 账号绑定开放接口 · 第三方项目接入文档
 
-> 版本：v1（2026-09-14） · 站点：`https://anticraft.top` · 接口实现：`backend/features/account_binding.py`
+> 版本：v2（2026-09-19） · 站点：`https://anticraft.top` · 接口实现：`backend/features/account_binding.py` + `backend/features/open_platform.py`
+
+第三方项目可以用 **anticraft 账号登录 / 绑定**：用户在第三方站点点击「用 anticraft 登录」，
+浏览器跳到 anticraft 的授权确认页，确认后第三方拿到一个一次性授权码，用服务端的密钥换成
+访问令牌，再凭令牌读取该用户的基础资料。协议是 **OAuth 2.0 授权码模式（Authorization Code）** 的精简实现。
+
+**v2 新增（对 v1 客户端完全兼容，不传新参数时行为不变）**：
+
+- **scope 权限范围**：可在 `profile` 之外申请 `blogs:read`（公开博客列表）、`leetcode:read`（LeetCode 数据）两个只读范围，授权页会逐项展示；
+- **refresh_token**：换令牌时随响应下发刷新令牌（90 天、轮换式），到期前可免用户重新授权续期；
+- **数据接口**：`/api/open/blogs`、`/api/open/leetcode`，按 scope 鉴权。
 
 第三方项目可以用 **anticraft 账号登录 / 绑定**：用户在第三方站点点击「用 anticraft 登录」，
 浏览器跳到 anticraft 的授权确认页，确认后第三方拿到一个一次性授权码，用服务端的密钥换成
@@ -58,8 +68,10 @@
 |---|---|---|---|
 | GET | `/bind` | 浏览器 | 授权入口页（把用户送到这里） |
 | GET | `/api/open/apps/{client_id}` | 任一方 | 应用公开信息（展示用，无需鉴权） |
-| POST | `/api/open/token` | 第三方**服务端** | 授权码换访问令牌 |
-| GET | `/api/open/userinfo` | 第三方**服务端** | 读取已绑定用户的基础资料 |
+| POST | `/api/open/token` | 第三方**服务端** | 授权码换访问令牌 / 刷新令牌续期（v2） |
+| GET | `/api/open/userinfo` | 第三方**服务端** | 读取已绑定用户的基础资料（scope: profile） |
+| GET | `/api/open/blogs` | 第三方**服务端** | 读取用户公开博客列表（scope: blogs:read，v2） |
+| GET | `/api/open/leetcode` | 第三方**服务端** | 读取用户 LeetCode 数据（scope: leetcode:read，v2） |
 | POST | `/api/open/revoke` | 第三方**服务端** | 用户在你的站点解绑时，通知 anticraft 撤销令牌（可选） |
 
 用户侧自助入口：**我的 → 账号绑定**（查看已绑项目、随时解绑）。
@@ -71,7 +83,7 @@
 ### 4.1 授权入口（浏览器跳转，不是 XHR）
 
 ```
-GET https://anticraft.top/bind?client_id=<client_id>&redirect_uri=<回调地址>&state=<随机串>
+GET https://anticraft.top/bind?client_id=<client_id>&redirect_uri=<回调地址>&state=<随机串>&scope=<权限范围>
 ```
 
 | 参数 | 必填 | 说明 |
@@ -79,6 +91,17 @@ GET https://anticraft.top/bind?client_id=<client_id>&redirect_uri=<回调地址>
 | `client_id` | 是 | 登记后获得的应用标识，形如 `ac_xxxxxxxxxxxx` |
 | `redirect_uri` | 是 | 必须与登记值**完全一致**（含协议、端口、路径、查询串） |
 | `state` | 建议 | 随机串（建议 ≥16 字符），防 CSRF 用；原样回传，请在回调里比对 |
+| `scope` | 否（v2） | 空格分隔的权限范围，默认 `profile`；可选值见下表，未知范围直接报错 |
+
+**权限范围（scope）**：
+
+| scope | 说明 |
+|---|---|
+| `profile` | 账号基础资料：用户名、昵称、头像、注册时间（**恒包含**，无需显式申请） |
+| `blogs:read` | 读取该用户发布的公开博客列表（标题/分类/时间/点赞评论数，只读） |
+| `leetcode:read` | 读取该用户的 LeetCode 绑定与刷题数据（最近一次站点同步的快照，只读） |
+
+示例：`scope=profile%20blogs:read`（URL 编码后的空格分隔）。授权页会把申请到的每一项范围逐条展示给用户确认。
 
 跳转结果（都以 302 形式回跳到 `redirect_uri`）：
 
@@ -117,7 +140,9 @@ GET /api/open/apps/{client_id}
 
 未登记或已停用返回 `404 {"detail": "应用不存在或已停用（不在白名单内）"}`。
 
-### 4.3 授权码换访问令牌
+### 4.3 换取令牌（授权码模式 / 刷新令牌模式）
+
+**授权码换令牌（v1 兼容，`grant_type` 缺省即此模式）：**
 
 ```
 POST /api/open/token
@@ -131,7 +156,8 @@ Content-Type: application/json
   "access_token": "act_xxxxxxxxxxxxxxxxxxxx",
   "token_type": "Bearer",
   "expires_in": 2592000,
-  "scope": "profile",
+  "scope": "profile blogs:read",
+  "refresh_token": "acr_xxxxxxxxxxxxxxxxxxxx",
   "user": {
     "id": 42,
     "username": "someone",
@@ -145,6 +171,23 @@ Content-Type: application/json
 - `code` **一次性**、**5 分钟**有效；重复使用或过期返回 400。
 - 换令牌时顺带返回用户资料，多数场景无需再调 `userinfo`。
 - `expires_in` 单位秒（30 天）。
+- `scope` 为用户实际授权的范围（`profile` 恒在），空格分隔。
+- `refresh_token` 为 v2 新增字段（90 天、轮换式），旧客户端忽略即可；请与服务端保存的 `access_token` 一起覆盖存储。
+
+**刷新令牌续期（v2，`grant_type=refresh_token`）：**
+
+```
+POST /api/open/token
+Content-Type: application/json
+
+{ "client_id": "ac_xxxxxxxxxxxx", "client_secret": "acs_xxxxxxxxxxxx", "grant_type": "refresh_token", "refresh_token": "acr_xxx" }
+```
+
+响应结构与上表相同（新的 `access_token` + `refresh_token`）。要点：
+
+- **轮换式**：每次调用都签发新令牌对，旧的 access/refresh **立即失效**，请覆盖保存值；
+- scope 沿用用户最近一次授权的范围，不能通过刷新扩大；
+- 用户在站内解绑、应用被停用后，刷新会得到 400，需引导用户重新走授权流程。
 
 ### 4.4 读取用户资料
 
@@ -171,7 +214,61 @@ Authorization: Bearer act_xxxxxxxxxxxxxxxxxxxx
 | `avatar_url` | string \| null | 头像地址，未设置为 null |
 | `created_at` | string | 注册时间（站点本地时间，`YYYY-MM-DDTHH:MM:SS`） |
 
-### 4.5 主动解绑（可选）
+### 4.5 数据接口（v2，按 scope 鉴权）
+
+**读取公开博客列表（scope 须含 `blogs:read`）：**
+
+```
+GET /api/open/blogs?limit=50&offset=0
+Authorization: Bearer act_xxxxxxxxxxxxxxxxxxxx
+```
+
+```json
+{
+  "app": { "client_id": "ac_xxxxxxxxxxxx", "name": "XX 图床" },
+  "scope": "profile blogs:read",
+  "total": 2,
+  "blogs": [
+    {
+      "id": 23, "title": "AntiPrint v1.0.0", "category": "更新日志",
+      "is_featured": false, "like_count": 3, "comment_count": 1,
+      "project_id": 3, "created_at": "2026-09-10T21:30:00", "updated_at": "2026-09-10T21:30:00"
+    }
+  ]
+}
+```
+
+- 只返回**该用户**发布的博客（即本站公开可见的数据），按发布时间倒序；`limit` 1-200（默认 50）、`offset` 分页。
+- 点赞/评论数是全站计数，`is_featured` 为站长精选标记。
+
+**读取 LeetCode 数据（scope 须含 `leetcode:read`）：**
+
+```
+GET /api/open/leetcode
+Authorization: Bearer act_xxxxxxxxxxxxxxxxxxxx
+```
+
+```json
+{
+  "app": { "client_id": "ac_xxxxxxxxxxxx", "name": "XX 图床" },
+  "scope": "profile leetcode:read",
+  "leetcode": {
+    "bound": true,
+    "leetcode_username": "someone",
+    "base": { "easy": 120, "medium": 80, "hard": 20 },
+    "cur":  { "easy": 135, "medium": 92, "hard": 25 },
+    "inc":  { "easy": 15, "medium": 12, "hard": 5 },
+    "total_inc": 32,
+    "difficulty_mode": false, "serious_mode": false, "boost_mode": false,
+    "score": 74, "updated_at": "2026-09-19T12:00:00"
+  }
+}
+```
+
+- 未绑定 LeetCode 时 `bound` 为 `false`。
+- 数据为**最近一次站点心跳同步的快照**（站点侧每 40 秒同步一次），非实时拉取。
+
+### 4.6 主动解绑（可选）
 
 用户在第三方站点断开连接时调用，幂等：
 
@@ -193,8 +290,13 @@ POST /api/open/revoke
 | `client_id` 未登记 / 已停用（授权入口、应用信息） | 404 | 应用不存在或已停用（不在白名单内） |
 | 回调地址与登记值不一致 | 400 | 回调地址与登记值不一致 |
 | `client_id` 或 `client_secret` 错误 | 400 | client_id 或 client_secret 无效 |
+| `grant_type` 不支持 | 400 | 不支持的 grant_type |
+| 刷新令牌无效 / 已过期 / 已轮换 | 400 | 刷新令牌无效或已过期 |
+| 用户已解绑后尝试刷新 | 400 | 绑定关系不存在，需用户重新授权 |
 | 授权码无效 / 已用过 / 已过期 | 400 | 授权码无效或已过期 |
+| `scope` 含未知范围（授权入口） | 400 | scope 无效或不受支持：`<scope>` |
 | 未带令牌或令牌无效 / 已过期 / 用户已解绑 / 应用被停用 | 401 | 访问令牌无效或已过期 |
+| 令牌 scope 不含所调接口需要的范围 | 403 | 令牌未授权此范围（scope 不足），需用户重新授权 |
 | 授权入口未登录 | 401 | Not authenticated |
 | 调用过于频繁（令牌接口同 IP 每分钟 30 次） | 429 | 请求过于频繁，请稍后再试 |
 
@@ -202,9 +304,10 @@ POST /api/open/revoke
 
 ## 6. 安全说明与限制
 
-1. **令牌不是 JWT**：`act_` 开头的不透明随机串，服务端只存 sha256，**只能**用于 `/api/open/userinfo`，不能拿来访问博客、评论等站内接口。
-2. **只读、最小范围**：当前只有 `profile` 一种范围（用户名、昵称、头像、注册时间）。读不到邮箱、密码，也拿不到任何写权限。
-3. **有效期 30 天**：到期需用户重新授权；用户重新授权会**轮换令牌**（旧令牌立即失效，请覆盖本地保存值）。
+1. **令牌不是 JWT**：`act_` 开头的不透明随机串，服务端只存 sha256，**只能**用于 `/api/open/*` 开放接口，不能拿来访问站内登录接口。
+2. **只读、最小范围**：scope 决定能读什么——`profile`（用户名、昵称、头像、注册时间）、`blogs:read`（公开博客列表）、`leetcode:read`（刷题快照）。全部**只读**，没有任何写权限，也读不到邮箱、密码。授权页会把申请的范围逐项展示，用户看得到、可拒绝。
+3. **有效期 30 天 + 刷新令牌 90 天**：访问令牌到期前用 `refresh_token` 续期（轮换式，旧的立即失效）；不实现刷新则到期需用户重新授权。用户重新授权同样会**轮换令牌**。
+4. **scope 不可通过刷新扩大**：刷新沿用既有授权范围；需要更多范围时引导用户重新走授权页（会重新展示新范围并确认）。
 4. **用户随时可解绑**：「我的 → 账号绑定 → 解除绑定」立即撤销令牌；第三方调 `userinfo` 会收到 401，请把它当作「用户已断开」处理。
 5. **密钥只显示一次**：`client_secret` 只在登记/重置时明文出现；请存入服务端环境变量或配置中心，不要进代码仓库、不要下发前端。
 6. **回调地址必须精确匹配**：这是防开放重定向的关键。请不要把用户可控参数拼进 `redirect_uri`。
@@ -338,8 +441,8 @@ A：令牌过期（30 天）、用户已在「我的 → 账号绑定」解绑�
 **Q：同一用户重复授权会怎样？**
 A：每用户每应用只保留一条绑定，重复授权 = **轮换令牌**，旧令牌立即失效（请用新令牌覆盖保存值）。
 
-**Q：能读到邮箱、博客内容吗？**
-A：不能。当前范围只有 `profile`：用户名、昵称、头像、注册时间。后续若增加范围会在此文档更新并需要用户在授权页再次确认。
+**Q：能读到邮箱、博客正文吗？**
+A：不能。`profile` 只有用户名、昵称、头像、注册时间；`blogs:read` 只有公开博客的**列表元数据**（标题/分类/计数，不含正文 Markdown）；`leetcode:read` 只有刷题快照。全部只读，没有邮箱、密码或任何写权限。
 
 **Q：本地开发怎么联调？**
 A：登记时把 `http://localhost:5173/callback` 这类地址加进回调地址列表即可（http 与 localhost 都允许）。

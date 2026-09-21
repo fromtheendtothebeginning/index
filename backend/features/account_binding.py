@@ -32,6 +32,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Session
 
 from database import Base, get_db
+from constants import OPEN_SCOPE_DEFAULT, OPEN_SCOPES
 from deps import _client_ip, get_current_user_obj, require_admin
 from models import User
 from ratelimit import SlidingWindow
@@ -77,6 +78,7 @@ class BindCode(Base):
     app_id = Column(Integer, ForeignKey("bind_apps.id", ondelete="CASCADE"), nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     redirect_uri = Column(String(500), nullable=False, comment="授权时确定的回调地址")
+    scope = Column(String(50), nullable=False, default=OPEN_SCOPE_DEFAULT, server_default=OPEN_SCOPE_DEFAULT, comment="授权范围（空格分隔，profile 恒含）")
     used = Column(Boolean, nullable=False, default=False, comment="是否已换取令牌")
     expires_at = Column(DateTime(timezone=True), nullable=False, comment="过期时间")
     created_at = Column(DateTime(timezone=True), server_default=func.now(), comment="创建时间")
@@ -196,6 +198,28 @@ def _append_query(url: str, params: dict) -> str:
     )
 
 
+def _validate_scope(raw: str) -> str:
+    """校验并规范化 scope 请求串：空格/+ 分隔，未知范围报 400，profile 恒包含；返回空格分隔串"""
+    requested = [s for s in (raw or "").replace("+", " ").split() if s]
+    if len(requested) > len(OPEN_SCOPES):
+        raise HTTPException(status_code=400, detail="scope 数量超过可用范围")
+    for s in requested:
+        if s not in OPEN_SCOPES:
+            raise HTTPException(status_code=400, detail=f"scope 无效或不受支持：{s}")
+    scopes = [OPEN_SCOPE_DEFAULT] + [s for s in requested if s != OPEN_SCOPE_DEFAULT]
+    return " ".join(scopes)
+
+
+def _scope_payload(scope: str) -> list:
+    """授权页展示用：申请到的范围及其中文说明（按 OPEN_SCOPES 固定顺序）"""
+    granted = set((scope or "").split())
+    return [
+        {"key": key, "description": desc}
+        for key, desc in OPEN_SCOPES.items()
+        if key in granted
+    ]
+
+
 def _new_client_id(db: Session) -> str:
     while True:
         candidate = "ac_" + secrets.token_urlsafe(12)
@@ -223,12 +247,14 @@ def open_app_info(client_id: str, db: Session = Depends(get_db)):
 class TokenRequest(BaseModel):
     client_id: str = Field(..., max_length=64, description="应用标识")
     client_secret: str = Field(..., max_length=128, description="应用密钥")
-    code: str = Field(..., max_length=128, description="授权码")
+    code: str = Field("", max_length=128, description="授权码（grant_type=authorization_code 时必填）")
+    grant_type: str = Field("authorization_code", max_length=20, description="authorization_code（默认）或 refresh_token")
+    refresh_token: Optional[str] = Field(None, max_length=128, description="刷新令牌（grant_type=refresh_token 时必填）")
 
 
 @router.post("/api/open/token", tags=["开放接口"])
 def open_token(req: TokenRequest, request: Request, db: Session = Depends(get_db)):
-    """授权码换访问令牌（第三方服务端调用）：code 一次性，5 分钟内有效"""
+    """换访问令牌（第三方服务端调用）：授权码模式（v1 兼容）或 refresh_token 轮换（v2）"""
     if not token_ip.allow(_client_ip(request)):
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="请求过于频繁，请稍后再试"
@@ -241,17 +267,25 @@ def open_token(req: TokenRequest, request: Request, db: Session = Depends(get_db
     if not app or not hmac.compare_digest(_hash(req.client_secret), app.client_secret_hash):
         raise HTTPException(status_code=400, detail="client_id 或 client_secret 无效")
 
+    if req.grant_type == "refresh_token":
+        # v2：刷新令牌轮换（实现在 open_platform，避免循环导入延迟导入）
+        from features.open_platform import refresh_grant
+        return refresh_grant(db, app, req.refresh_token)
+    if req.grant_type != "authorization_code":
+        raise HTTPException(status_code=400, detail="不支持的 grant_type")
+
     row = db.query(BindCode).filter(BindCode.code_hash == _hash(req.code)).first()
     if not row or row.used or row.app_id != app.id or row.expires_at < _now():
         raise HTTPException(status_code=400, detail="授权码无效或已过期")
     user = db.query(User).filter(User.id == row.user_id).first()
     if not user:
         raise HTTPException(status_code=400, detail="授权码无效或已过期")
+    scope = (getattr(row, "scope", None) or OPEN_SCOPE_DEFAULT).strip() or OPEN_SCOPE_DEFAULT
 
     row.used = True
     token = "act_" + secrets.token_urlsafe(32)
     expires = _now() + timedelta(days=TOKEN_TTL_DAYS)
-    # 同一用户对同一应用只保留一条绑定：重新授权 = 轮换令牌（旧令牌立即失效）
+    # 同一用户对同一应用只保留一条绑定：重新授权 = 轮换令牌（旧令牌立即失效），并刷新授权范围
     binding = (
         db.query(BindToken)
         .filter(BindToken.app_id == app.id, BindToken.user_id == user.id)
@@ -259,7 +293,7 @@ def open_token(req: TokenRequest, request: Request, db: Session = Depends(get_db
     )
     if binding:
         binding.token_hash = _hash(token)
-        binding.scope = SCOPE
+        binding.scope = scope
         binding.revoked = False
         binding.expires_at = expires
         binding.created_at = _now()
@@ -269,7 +303,7 @@ def open_token(req: TokenRequest, request: Request, db: Session = Depends(get_db
             app_id=app.id,
             user_id=user.id,
             token_hash=_hash(token),
-            scope=SCOPE,
+            scope=scope,
             expires_at=expires,
         ))
     # 顺手清理该用户在本应用下未使用的过期授权码
@@ -278,13 +312,18 @@ def open_token(req: TokenRequest, request: Request, db: Session = Depends(get_db
         BindCode.used.is_(False),
         BindCode.expires_at < _now(),
     ).delete(synchronize_session=False)
+
+    # v2：同时签发刷新令牌（轮换式，90 天）；旧客户端忽略该新增字段即可
+    from features.open_platform import issue_refresh_token
+    refresh = issue_refresh_token(db, app.id, user.id)
     db.commit()
 
     return {
         "access_token": token,
         "token_type": "Bearer",
         "expires_in": TOKEN_TTL_DAYS * 86400,
-        "scope": SCOPE,
+        "scope": scope,
+        "refresh_token": refresh,
         "user": _user_payload(user),
     }
 
@@ -302,6 +341,8 @@ def open_userinfo(request: Request, db: Session = Depends(get_db)):
     )
     if not binding or binding.expires_at < _now():
         raise HTTPException(status_code=401, detail="访问令牌无效或已过期")
+    if "profile" not in (binding.scope or SCOPE).split():
+        raise HTTPException(status_code=403, detail="令牌未授权此范围（scope 不足），需用户重新授权")
     app = db.query(BindApp).filter(BindApp.id == binding.app_id).first()
     user = db.query(User).filter(User.id == binding.user_id).first()
     if not app or not app.is_active or not user:
@@ -353,18 +394,21 @@ def bind_authorize_info(
     client_id: str,
     redirect_uri: str,
     state: str = "",
+    scope: str = "",
     user: User = Depends(get_current_user_obj),
     db: Session = Depends(get_db),
 ):
-    """授权确认页数据：校验白名单与回调地址，回显应用信息与当前用户"""
+    """授权确认页数据：校验白名单与回调地址，回显应用信息、当前用户与申请的权限范围"""
     if len(state) > 200:
         raise HTTPException(status_code=400, detail="state 参数过长")
     app = _get_active_app(db, client_id)
     _check_redirect(app, redirect_uri)
+    granted = _validate_scope(scope)
     return {
         "app": {"name": app.name, "description": app.description, "homepage": app.homepage},
         "user": _user_payload(user),
-        "scope": SCOPE,
+        "scope": granted,
+        "scopes": _scope_payload(granted),
         "state": state,
     }
 
@@ -373,6 +417,7 @@ class AuthorizeDecision(BaseModel):
     client_id: str = Field(..., max_length=64)
     redirect_uri: str = Field(..., max_length=500)
     state: str = Field("", max_length=200)
+    scope: str = Field("", max_length=100, description="申请的权限范围（与授权入口一致）")
     approve: bool = True
 
 
@@ -390,6 +435,7 @@ def bind_authorize(
             req.redirect_uri, {"error": "access_denied", "state": req.state}
         )}
 
+    granted = _validate_scope(req.scope)
     # 同一用户在同一应用下只保留一个待用授权码，避免积压
     db.query(BindCode).filter(
         BindCode.app_id == app.id, BindCode.user_id == user.id, BindCode.used.is_(False)
@@ -400,6 +446,7 @@ def bind_authorize(
         app_id=app.id,
         user_id=user.id,
         redirect_uri=req.redirect_uri,
+        scope=granted,
         expires_at=_now() + timedelta(minutes=CODE_TTL_MINUTES),
     ))
     db.commit()

@@ -20,11 +20,14 @@ export default function BindConsentPage() {
   const clientId = params.get('client_id') || ''
   const redirectUri = params.get('redirect_uri') || ''
   const state = params.get('state') || ''
+  const scopeParam = params.get('scope') || ''
 
   // loading 校验中 / need-login 待登录 / ready 待确认 / redirecting 跳转中 / error 出错
   const [phase, setPhase] = useState('loading')
   const [app, setApp] = useState(null)
   const [user, setUser] = useState(null)
+  const [scopes, setScopes] = useState([])   // 本次申请的权限范围（后端校验后回传）
+  const [scope, setScope] = useState('profile')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [token, setToken] = useState(() => localStorage.getItem('token') || '')
@@ -69,6 +72,7 @@ export default function BindConsentPage() {
       try {
         const query = new URLSearchParams({ client_id: clientId, redirect_uri: redirectUri })
         if (state) query.set('state', state)
+        if (scopeParam) query.set('scope', scopeParam)
         const res = await fetch(`/api/bind/authorize?${query.toString()}`, {
           headers: { Authorization: `Bearer ${token}` },
         })
@@ -87,6 +91,8 @@ export default function BindConsentPage() {
           return
         }
         setUser(body.user)
+        setScopes(Array.isArray(body.scopes) ? body.scopes : [])
+        setScope(body.scope || 'profile')
         setPhase('ready')
       } catch {
         if (!cancelled) { setPhase('error'); setError(t('binding.consent.networkError')) }
@@ -95,7 +101,7 @@ export default function BindConsentPage() {
 
     run()
     return () => { cancelled = true }
-  }, [clientId, redirectUri, state, token])
+  }, [clientId, redirectUri, state, scopeParam, token])
 
   const decide = async (approve) => {
     setBusy(true)
@@ -104,7 +110,7 @@ export default function BindConsentPage() {
       const res = await fetch('/api/bind/authorize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ client_id: clientId, redirect_uri: redirectUri, state, approve }),
+        body: JSON.stringify({ client_id: clientId, redirect_uri: redirectUri, state, scope, approve }),
       })
       const body = await res.json().catch(() => null)
       if (res.status === 401) {
@@ -191,13 +197,15 @@ export default function BindConsentPage() {
             <div className="ab-block">
               <span className="ab-label">{t('binding.consent.scopeTitle')}</span>
               <ul className="ab-scope">
-                <li>
-                  <UiIcon name="check" size={13} />
-                  <span>
-                    <strong>{t('binding.consent.scopeProfile')}</strong>
-                    <em>{t('binding.consent.scopeProfileDetail')}</em>
-                  </span>
-                </li>
+                {scopes.map(s => (
+                  <li key={s.key}>
+                    <UiIcon name="check" size={13} />
+                    <span>
+                      <strong>{s.key}</strong>
+                      {s.description && <em>{s.description}</em>}
+                    </span>
+                  </li>
+                ))}
               </ul>
             </div>
 

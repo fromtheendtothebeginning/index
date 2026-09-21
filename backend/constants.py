@@ -10,6 +10,16 @@ ROLE_ADMIN = "admin"
 # 初始化管理员用户名（数据库迁移时提升为管理员的目标账号，见 run_migrations）
 BOOTSTRAP_ADMIN_USERNAME = "end"
 
+# 开放平台（账号绑定）权限范围：key → 授权页展示的中文说明。
+# 新增范围 = 这里加一项 + features/open_platform.py 加对应数据接口 + docs/account-binding-api.md 更新。
+# 存储格式：BindToken.scope / BindCode.scope 为空格分隔的 key 串，profile 恒包含（向后兼容旧令牌）。
+OPEN_SCOPES = {
+    "profile": "账号基础资料（用户名、昵称、头像、注册时间）",
+    "blogs:read": "读取你发布的公开博客列表（只读）",
+    "leetcode:read": "读取你的 LeetCode 绑定与刷题数据（只读）",
+}
+OPEN_SCOPE_DEFAULT = "profile"
+
 # LeetCode
 LEETCODE_GRAPHQL = "https://leetcode.cn/graphql"
 

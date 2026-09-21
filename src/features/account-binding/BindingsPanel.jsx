@@ -90,7 +90,7 @@ export default function BindingsPanel() {
                 <dl className="abp-meta">
                   <div>
                     <dt>{t('binding.mine.scope')}</dt>
-                    <dd>{t('binding.mine.scopeProfile')}</dd>
+                    <dd>{b.scope || 'profile'}</dd>
                   </div>
                   <div>
                     <dt>{t('binding.mine.boundAt')}</dt>

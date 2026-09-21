@@ -369,6 +369,16 @@ def run_migrations():
             conn.execute(text("ALTER TABLE electricity_records ADD COLUMN recharge_amount FLOAT NULL"))
             conn.commit()
 
+        # bind_codes 表新增 scope 列（开放平台 v2：多权限范围，空格分隔串，profile 恒含）
+        # 表本体由 features/account_binding.py 注册进 Base.metadata 随 init_db 建出
+        if insp.has_table("bind_codes"):
+            bc_cols = {c["name"] for c in insp.get_columns("bind_codes")}
+            if "scope" not in bc_cols:
+                conn.execute(text(
+                    "ALTER TABLE bind_codes ADD COLUMN scope VARCHAR(50) NOT NULL DEFAULT 'profile'"
+                ))
+                conn.commit()
+
     # 为所有没有专属邀请码的已存在用户分配一个邀请码
     from sqlalchemy.orm import Session
     from models import User, InviteCode
