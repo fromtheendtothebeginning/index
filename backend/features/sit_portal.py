@@ -179,7 +179,9 @@ def _rewrite_location(value: str, origin: str) -> str:
     （实测报「传递的 redirect_uri 跟注册的回调地址不匹配」），改写就会被拒；
     登录后浏览器会被送到真实的 portal.sit.edu.cn，由 App 在导航层映射回代理。"""
     if "authserver.sit.edu.cn" in value:
-        return value
+        # 学校 CAS 的 login;jsessionid=xxx!route 形式在浏览器里会 500（curl 同一地址却是 200），
+        # 去掉 jsessionid 路径参数让 CAS 自己重新分配会话
+        return re.sub(r";jsessionid=[^?&]*", "", value)
     return _rewrite_scripts(_map_ref(value, UPSTREAM + "/", origin), origin)
 
 
@@ -282,13 +284,29 @@ async def sit_portal(path: str, request: Request, db: OrmSession = Depends(get_d
     body = await request.body() if request.method not in ("GET", "HEAD") else None
 
     sess = _upstream_session(user.id, endpoint[0], endpoint[1])
+
+    def fetch():
+        return sess.request(request.method, upstream_url, headers=headers, data=body,
+                            allow_redirects=False, stream=True, timeout=TIMEOUT)
+
     try:
-        up = sess.request(request.method, upstream_url, headers=headers, data=body,
-                          allow_redirects=False, stream=True, timeout=TIMEOUT)
+        up = fetch()
     except requests.exceptions.RequestException as e:
         return _page("门户连接失败",
                      f"<p>经校园网访问信息门户失败：{type(e).__name__}。请确认校园网连接正常后重试。</p>",
                      origin)
+
+    # 门户没登录/掉线时上游会跳统一认证 → 服务端自己登录一次再重试（浏览器完全不碰 CAS）
+    if _is_cas_redirect(up) or (path in ("", "/") and not _logged_flag(user.id)):
+        up.close()
+        ok, why = portal_login(user, db, sess)
+        if not ok:
+            return _login_page(origin, why)
+        _logged_flag(user.id, True)
+        try:
+            up = fetch()
+        except requests.exceptions.RequestException as e:
+            return _page("门户连接失败", f"<p>重试访问门户失败：{type(e).__name__}</p>", origin)
 
     # 4) 响应头
     out_headers = {k: v for k, v in up.headers.items() if k.lower() not in _DROP_RESP_HEADERS}
@@ -328,4 +346,186 @@ async def sit_portal(path: str, request: Request, db: OrmSession = Depends(get_d
 
     for c in cookies:                       # 多个 Set-Cookie 要逐个写回（不能合并）
         resp.raw_headers.append((b"set-cookie", _rewrite_cookie(c).encode("latin-1")))
+    if "html" in content_type:
+        # 门户引导页会读 document.cookie 判断登录态；把服务端会话里的 Cookie 回灌，
+        # 它就不会再自己跳一次 CAS（那边会落到坏 worker 报 500）
+        _replay_cookies(sess, resp, origin)
     return resp
+
+# ============================================================
+# 服务端登录：绕开学校 CAS（它的 OAuth authorize 会落到坏 worker，浏览器里 500）
+# 思路：后端用该用户的统一认证会话把门户 OAuth 流程跑完，登录态留在服务端会话里，
+#      并把 Cookie 回灌给浏览器，使门户引导页的客户端 SSO 检查直接通过。
+# ============================================================
+
+def _cas_session(user, db, http) -> tuple:
+    """把 CAS(authserver) 登录态装进上游会话：
+    - 校园服务里已有 CAS 会话 → 直接拷 Cookie（零验证码，最省事）
+    - 没有 → 返回 (False, "NEED_LOGIN")，让调用方走现场登录（验证码走 AI 识图/手填）
+    """
+    from features.campus_service import _get_managers
+    try:
+        m = _get_managers()
+        if "error" in m:
+            return False, "校园服务未就绪"
+        campus = m["sessions"].get(user.id)
+        if not campus or campus.status != "connected":
+            return False, "校园网未连接"
+        dekt = m["dekt"].get(user.id, campus)
+    except Exception as e:
+        return False, f"校园服务不可用：{e}"
+    if dekt.session is None:
+        return False, "NEED_LOGIN"
+    return _copy_cas_cookies(dekt, http)
+
+
+def _copy_cas_cookies(dekt, http) -> tuple:
+    if dekt.session is None:
+        return False, "统一认证会话建立失败"
+    for c in dekt.session.cookies:
+        if c.domain and c.domain.endswith("authserver.sit.edu.cn"):
+            http.cookies.set(c.name, c.value, domain=c.domain, path=c.path)
+    return True, ""
+
+
+def _fresh_cas_login(user, db, captcha_text: str = "") -> tuple:
+    """现场做一次统一认证登录：captcha_text 为空时先取验证码（有 AI 识图就自动解）。
+    返回 (True, "") / (False, "NEED_CAPTCHA") / (False, 原因)"""
+    from features.campus_service import _ai_solve_captcha, _b64, _get_managers, _resolve_vision_model
+    try:
+        m = _get_managers()
+        campus = m["sessions"].get(user.id)
+        if not campus or campus.status != "connected":
+            return False, "校园网未连接"
+        dekt = m["dekt"].get(user.id, campus)
+        pending = dekt.prepare_login(campus.student_id, campus.password)
+    except Exception as e:
+        return False, f"统一认证登录失败：{e}"
+    if pending is None:
+        return True, ""
+    text = (captcha_text or "").strip()
+    if not text:
+        vision = None
+        try:
+            vision = _resolve_vision_model(user.id, db)
+        except Exception:
+            vision = None
+        text = _ai_solve_captcha(_b64(pending.captcha), vision) if vision else None
+        if not text:
+            return False, "NEED_CAPTCHA"
+    try:
+        dekt.complete_login(campus.student_id, text)
+    except Exception as e:
+        return False, f"统一认证登录失败：{e}"
+    return True, ""
+
+
+def _portal_oauth(http) -> tuple:
+    """带着 CAS 会话把门户 OAuth 跑完（服务端跟随跳转），成功即门户会话落在 http 的 Cookie 罐里"""
+    try:
+        r = http.post(UPSTREAM + "/r/jd?cmd=com.awspaas.user.apps.onlineoffice_getDefSSO",
+                      data={"yu": UPSTREAM}, timeout=TIMEOUT,
+                      headers={"Content-Type": "application/x-www-form-urlencoded"})
+        m = ((r.json() or {}).get("data") or {}).get("data") or {}
+        entry = m.get("LOGIN_GO2") or m.get("LOGIN_GO") or ""
+    except Exception as e:
+        return False, f"门户接口异常：{e}"
+    if not entry:
+        return False, "门户未返回登录入口（统一认证会话可能已失效）"
+    try:
+        http.get(UPSTREAM + "/r/or?" + entry + "&oauthName=ssologins&f=0",
+                 timeout=TIMEOUT, allow_redirects=True)
+    except Exception as e:
+        return False, f"门户登录失败：{e}"
+    return True, ""
+
+
+def portal_login(user, db, http, captcha_text: str = "") -> tuple:
+    """服务端完成门户登录；返回 (True, "") 或 (False, 原因)，需要人工验证码时返回 NEED_CAPTCHA"""
+    ok, why = _cas_session(user, db, http)
+    if not ok and why == "NEED_LOGIN":
+        ok, why = _fresh_cas_login(user, db, captcha_text)
+    if not ok:
+        return False, why
+    return _portal_oauth(http)
+
+
+def _logged_flag(user_id: int, value=None):
+    """该用户的门户是否已登录（内存标记，会话失效时会由 CAS 跳转检测触发重登）"""
+    with _lock:
+        c = _clients.get(user_id)
+        if c is None:
+            return False
+        if value is None:
+            return bool(c.get("logged_in"))
+        c["logged_in"] = bool(value)
+        return bool(value)
+
+
+def _login_page(origin: str, reason: str) -> HTMLResponse:
+    """服务端自动登录失败时的提示页（需要人工验证码时给出手输入口）"""
+    need = reason == "NEED_CAPTCHA"
+    body = "<p>服务端未能自动登录信息门户（" + html_mod.escape(reason) + "）。</p>"
+    if need:
+        body = ("<p>统一认证需要验证码，自动识别没成功。点下面按钮手输一次即可（只影响这一次登录）。</p>"
+                '<p><a href="' + origin + PREFIX + '/manual">去输入验证码</a></p>')
+    return _page("信息门户登录失败", body + "<p>若反复失败，可先回校园服务重新连接校园网。</p>", origin)
+
+
+def _is_cas_redirect(up) -> bool:
+    """上游跳向统一认证 = 门户会话没了（需要服务端重登）"""
+    loc = up.headers.get("Location") or ""
+    return up.status_code in (301, 302, 303, 307, 308) and "authserver.sit.edu.cn" in loc
+
+
+def _replay_cookies(http, resp, origin: str):
+    """把服务端会话里的门户/CAS Cookie 回灌给浏览器：门户引导页会读 document.cookie 判断登录态，
+    不灌的话它自己又要跳一次 CAS（那边 500）。"""
+    for c in list(http.cookies):
+        if not c.domain or not c.domain.endswith("sit.edu.cn"):
+            continue
+        path = c.path or "/"
+        if not path.startswith(PREFIX):
+            path = PREFIX + (path if path.startswith("/") else "/" + path)
+        if not c.domain.startswith("authserver.") and not path.startswith(PREFIX):
+            continue
+        safe = (c.value or "").replace('"', "")
+        cookie = f"{c.name}={safe}; Path={path}; HttpOnly; SameSite=Lax"
+        resp.raw_headers.append((b"set-cookie", cookie.encode("latin-1", "ignore")))
+
+@router.get("/api/sit/manual", tags=["校园服务"])
+def sit_manual_login(request: Request, captcha: str = "", db: OrmSession = Depends(get_db)):
+    """人工验证码入口：服务端自动登录需要人眼识别时用（只影响这一次登录）"""
+    origin = f"{request.url.scheme}://{request.headers.get('host', 'anticraft.top')}"
+    token = request.cookies.get(COOKIE_NAME)
+    user = get_optional_user(token, db) if token else None
+    if user is None:
+        return _page("需要先登录 anticraft", "<p>请从 anticraft App 内打开信息门户。</p>", origin, 401)
+    endpoint = _socks_endpoint(user.id)
+    if endpoint is None:
+        return _page("校园网未连接", "<p>请先回到校园服务连接校园网，再试一次。</p>", origin)
+    http = _upstream_session(user.id, endpoint[0], endpoint[1])
+    if captcha.strip():
+        ok, why = portal_login(user, db, http, captcha.strip())
+        if ok:
+            _logged_flag(user.id, True)
+            return RedirectResponse(PREFIX + "/", status_code=302)
+        return _login_page(origin, why)
+    from features.campus_service import _b64, _get_managers
+    try:
+        m = _get_managers()
+        campus = m["sessions"].get(user.id)
+        dekt = m["dekt"].get(user.id, campus)
+        pending = dekt.prepare_login(campus.student_id, campus.password)
+    except Exception as e:
+        return _login_page(origin, f"取验证码失败：{e}")
+    if pending is None or not pending.captcha:
+        return RedirectResponse(PREFIX + "/", status_code=302)
+    body = ('<p>输入图中验证码即可完成登录（只这一次需要手输）：</p>'
+            f'<p><img src="data:image/png;base64,{_b64(pending.captcha)}" alt="captcha" '
+            'style="border:1px solid #ddd;background:#fff"/></p>'
+            f'<form method="get" action="{PREFIX}/manual">'
+            '<input name="captcha" autocomplete="off" autocapitalize="off" '
+            'style="font-size:18px;padding:6px 10px;width:140px" /> '
+            '<button type="submit" style="padding:6px 14px;cursor:pointer">登录</button></form>')
+    return _page("统一认证验证码", body, origin)
