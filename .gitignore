@@ -86,3 +86,22 @@ opencode.json
 # 图文转 LaTeX 会话文件（用户上传的临时文件，运行时生成）
 backend/img2latex_files/
 
+
+# Android 壳工程（android/）：只提交源码与 Gradle wrapper，构建产物/机器相关文件不入库
+android/.gradle/
+android/build/
+android/app/build/
+android/.kotlin/
+android/captures/
+android/.idea/
+android/*.iml
+android/local.properties
+*.apk
+*.aab
+*.jks
+*.keystore
+
+# 本地/机器相关文件
+backend/.venv-wsl/
+deploy.bat.bak-*
+setup-wsl-portforward.ps1
