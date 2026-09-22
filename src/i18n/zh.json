@@ -954,6 +954,7 @@
     },
     "ecard": {
       "tip": "动态码仅供本人付款使用，请勿截图转发",
+      "balance": "卡余额",
       "refresh": "立即刷新",
       "refreshing": "刷新中…",
       "countdown": "{n} 秒后自动刷新"

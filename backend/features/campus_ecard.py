@@ -45,20 +45,22 @@ def _qr_png_base64(text):
 @router.post("/api/campus/ecard/qrcode", tags=["校园服务"])
 def ecard_qrcode(current_user: User = Depends(get_current_user_obj),
                  db: OrmSession = Depends(get_db)):
-    """获取校园码（付款码）：直连校付宝公网接口，不依赖 VPN"""
+    """获取校园码（付款码）+ 校园卡余额：直连校付宝公网接口，不依赖 VPN"""
     from campus.ecard import EcardClient
 
     student_id, real_name, pay_pwd = _secrets(current_user, db)
     try:
-        code = EcardClient().qrcode(student_id, real_name, pay_pwd)["code"]
+        result = EcardClient().qrcode_and_balance(student_id, real_name, pay_pwd)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"校园码获取失败：{e}")
+    code = result["code"]
     return {
         "ok": True,
         "data": {
             "image": _qr_png_base64(code),
             "type": "image/png",
             "code": code,
+            "card_balance": result.get("balance"),
             "refresh": REFRESH_SECONDS,
         },
     }

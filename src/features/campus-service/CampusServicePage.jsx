@@ -1259,6 +1259,10 @@ export default function CampusServicePage() {
         <div className="cs-ecard-head">
           <div className="cs-ecard-title">
             <span className="cs-badge cs-badge-ok">{t('campusService.query.ecard')}</span>
+            <span className="cs-ecard-balance">
+              {t('campusService.ecard.balance')}
+              <b>{ecardData.card_balance != null ? `¥${Number(ecardData.card_balance).toFixed(2)}` : '—'}</b>
+            </span>
             {ecardData.refresh > 0 && (
               <span className="cs-ecard-countdown">{t('campusService.ecard.countdown', { n: ecardCount })}</span>
             )}

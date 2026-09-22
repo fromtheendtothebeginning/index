@@ -21,3 +21,15 @@ class EcardClient(ElectricityClient):
         if not code:
             raise ElectricityError("校付宝未返回校园码")
         return {"code": str(code)}
+
+    def qrcode_and_balance(self, student_id, real_name, pay_password):
+        """取码 + 校园卡（一卡通钱包）余额，共用同一次登录令牌。
+
+        余额取不到不影响取码：码是主数据，余额失败返回 None。
+        """
+        code = self.qrcode(student_id, real_name, pay_password)["code"]
+        try:
+            balance = self._card_balance(student_id, real_name, pay_password)
+        except Exception:
+            balance = None
+        return {"code": code, "balance": balance}

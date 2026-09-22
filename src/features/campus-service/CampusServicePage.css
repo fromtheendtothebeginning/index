@@ -486,6 +486,18 @@
   font-variant-numeric: tabular-nums;
 }
 
+.cs-ecard-balance {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.cs-ecard-balance b {
+  margin-left: 5px;
+  font-size: 14px;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
 .cs-ecard-img {
   width: 220px;
   height: 220px;
