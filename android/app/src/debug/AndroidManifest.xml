@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 仅 debug 包：允许明文 HTTP，便于模拟器（10.0.2.2）/真机联调本机开发服务器。
+     正式包不带这个文件，仍然只允许 HTTPS。 -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application android:usesCleartextTraffic="true" />
+</manifest>

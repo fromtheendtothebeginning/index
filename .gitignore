@@ -105,3 +105,7 @@ android/local.properties
 backend/.venv-wsl/
 deploy.bat.bak-*
 setup-wsl-portforward.ps1
+
+# 正式签名（keystore 与口令，绝不入库）
+android/keystore.properties
+android/keystore/
