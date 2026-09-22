@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">逆匠校园</string>
+    <string name="app_name">anticraft</string>
     <string name="load_failed_title">页面加载失败</string>
     <string name="load_failed_hint">请检查网络连接后重试</string>
     <string name="reload">重新加载</string>
