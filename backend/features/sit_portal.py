@@ -232,14 +232,16 @@ def _rewrite_referer(value: str, origin: str) -> str:
 # 提示页
 # ============================================================
 
-def _page(title: str, body: str, origin: str, status_code: int = 200) -> HTMLResponse:
+def _page(title: str, body: str, origin: str, status_code: int = 200, refresh: int = 0) -> HTMLResponse:
     title = html_mod.escape(title)
     safe_origin = html_mod.escape(origin)
     html = f"""<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>{title}</title>
-<style>body{{margin:0;padding:32px 20px;font:16px/1.7 system-ui,-apple-system,"PingFang SC",sans-serif;
-background:#f8f9fa;color:#222}}h1{{font-size:18px;margin:0 0 12px}}p{{margin:0 0 10px;color:#555}}
-a{{color:#6c5ce7}}</style></head><body><h1>{title}</h1>{body}
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>{title}</title>{f'<meta http-equiv="refresh" content="{refresh}">' if refresh else ''}
+<style>body{{margin:0;padding:48px 24px;font:17px/1.8 system-ui,-apple-system,"PingFang SC",sans-serif;
+background:#f8f9fa;color:#222;text-align:center}}h1{{font-size:22px;margin:0 0 16px}}
+p{{margin:0 0 12px;color:#555}}a.btn{{display:inline-block;margin-top:8px;padding:12px 26px;border-radius:24px;
+background:#6c5ce7;color:#fff;text-decoration:none;font-weight:600}}a{{color:#6c5ce7}}</style></head>
+<body><h1>{title}</h1>{body}
 <p><a href="{safe_origin}/tools/campus-service">← 返回校园服务</a></p></body></html>"""
     return HTMLResponse(html, status_code=status_code)
 
@@ -276,7 +278,8 @@ async def sit_portal(path: str, request: Request, db: OrmSession = Depends(get_d
     endpoint = _socks_endpoint(user.id)
     if endpoint is None:
         return _page("校园网未连接",
-                     "<p>信息门户只在校园网内可达。请先回到校园服务连接校园网，再点「信息门户」。</p>",
+                     "<p>信息门户只在校园网内可达。</p>"
+                     f'<p><a class="btn" href="{origin}{PREFIX}/connect">连接校园网并继续</a></p>',
                      origin)
 
     # 3) 转发（不跟随跳转，自己改写 Location）
@@ -553,3 +556,28 @@ def sit_manual_login(request: Request, captcha: str = "", db: OrmSession = Depen
             'style="font-size:18px;padding:6px 10px;width:140px" /> '
             '<button type="submit" style="padding:6px 14px;cursor:pointer">登录</button></form>')
     return _page("统一认证验证码", body, origin)
+
+@router.get("/api/sit/connect", tags=["校园服务"])
+def sit_connect(request: Request, db: OrmSession = Depends(get_db)):
+    """门户侧一键连接校园网：触发后端既有连接流程，连上后自动跳回门户"""
+    origin = f"{request.url.scheme}://{request.headers.get('host', 'anticraft.top')}"
+    token = request.cookies.get(COOKIE_NAME)
+    user = get_optional_user(token, db) if token else None
+    if user is None:
+        return _page("需要先登录 anticraft", "<p>请从 anticraft App 内打开信息门户。</p>", origin, 401)
+    try:
+        from features.campus_service import _decrypt_or_400, _get_managers, _load_cred
+        m = _get_managers()
+        sess = m["sessions"].get(user.id)
+        if sess is None or sess.status == "failed":
+            cred = _load_cred(user, db)
+            m["sessions"].create(user.id, cred.student_id, _decrypt_or_400(cred.vpn_password_enc))
+            sess = m["sessions"].get(user.id)
+    except Exception as e:
+        return _page("连接失败", f"<p>{html_mod.escape(str(e))}</p>", origin)
+    status = sess.status if sess else "creating"
+    if status == "connected":
+        return RedirectResponse(PREFIX + "/", status_code=302)
+    return _page("正在连接校园网",
+                 f"<p>学校侧建立隧道通常要 40~90 秒，本页会自动刷新。</p><p>当前状态：{status}</p>",
+                 origin, refresh=8)
