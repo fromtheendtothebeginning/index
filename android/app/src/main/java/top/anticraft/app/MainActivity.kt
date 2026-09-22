@@ -227,6 +227,23 @@ class MainActivity : Activity() {
         return debuggable && (host == "10.0.2.2" || host == "localhost" || host == "127.0.0.1")
     }
 
+    /**
+     * 校园内网门户（portal/my.sit.edu.cn）在手机上进不去，交给服务器反代。
+     * CAS 登录后会把浏览器送回**真实**门户地址（它的 OAuth 回调有白名单校验，不能改写），
+     * 所以在这里把这类导航映射到代理路径上。
+     */
+    private fun portalProxyFor(url: android.net.Uri): String? {
+        val host = url.host ?: return null
+        if (host != "portal.sit.edu.cn" && host != "my.sit.edu.cn") return null
+        val origin = webView?.url
+            ?.let { runCatching { android.net.Uri.parse(it) }.getOrNull() }
+            ?.let { "${it.scheme}://${it.authority}" }
+            ?: ("https://" + SITE_HOST)
+        val path = url.encodedPath ?: "/"
+        val query = url.encodedQuery?.let { "?$it" } ?: ""
+        return origin + PORTAL_PATH + path + query
+    }
+
     /** 默认进校园服务；带本站网址启动时用该网址（便于调试/直达某个页面） */
     private fun startUrl(): String {
         val uri = intent?.data ?: return START_URL
@@ -255,6 +272,12 @@ class MainActivity : Activity() {
                 // 站内链接留在 WebView（前端路由），站外链接交给系统浏览器
                 override fun shouldOverrideUrlLoading(v: WebView, request: WebResourceRequest): Boolean {
                     if (isSiteHost(request.url.host)) return false
+                    // 登录后被 CAS 送回真实门户地址 → 映射到服务器反代
+                    portalProxyFor(request.url)?.let { proxied ->
+                        Log.i(TAG, "portal host mapped: ${request.url.host} -> proxy")
+                        v.loadUrl(proxied)
+                        return true
+                    }
                     runCatching { startActivity(Intent(Intent.ACTION_VIEW, request.url)) }
                     return true
                 }

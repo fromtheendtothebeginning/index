@@ -111,6 +111,8 @@ _ATTR_RE = re.compile(
 _CSS_URL_RE = re.compile(r"""url\(\s*(['"]?)([^'")]+)\1\s*\)""", re.I)
 _HOST_VAR_RE = re.compile(
     r"""window\.location\.protocol\s*\+\s*["']//["']\s*\+\s*window\.location\.host""")
+# 由 host 拼出的站内跳转（host+"/r/login.html" 等）必须走代理，否则会跳到校园内网真站
+_HOST_NAV_RE = re.compile(r"""host\s*\+\s*(["'])/r/""")
 _SKIP_SCHEMES = ("data:", "javascript:", "mailto:", "tel:", "blob:", "about:", "#")
 
 
@@ -155,17 +157,30 @@ def _rewrite_css(text: str, base_url: str, origin: str) -> str:
 
 def _rewrite_scripts(text: str, origin: str) -> str:
     """脚本/JSON 里的站点地址：改成我们域的绝对地址（new URL() 之类也能用）"""
+    # JS 里 "../commons/..." 这类相对引用（门户 public.js 用 document.write 写 <script>）
+    # 在真站解析到「站点根/commons」，在路径前缀下会多退一级变成 /api/commons → 直接改成前缀绝对地址
+    text = re.sub(r"""(["'(])\.\./+commons/""",
+                  lambda m: m.group(1) + origin + PREFIX + "/commons/", text)
+    bare = origin.split("//", 1)[-1]
     for host in UPSTREAM_HOSTS:
         text = text.replace("https://" + host, origin + PREFIX)
         text = text.replace("http://" + host, origin + PREFIX)
         text = text.replace("//" + host, origin + PREFIX)
-    # 门户引导页用 window.location.host 拼绝对地址（host+"/r/loginPC.html"、yu=host 等），
-    # 在路径前缀下会跑到站点根路径上去，改写成"我们的域+前缀"
-    return _HOST_VAR_RE.sub('"' + origin + PREFIX + '"', text)
+        # 兜底：门户的跳转里 redirect_uri/service 常是百分号编码的，host 部分是明文
+        text = text.replace(host, bare + PREFIX)
+    # 引导页的 host 变量：既要给门户当 yu 返回值参数（门户会校验，必须是它认识的地址），
+    # 又要拼站内跳转 → 前者保持门户真实源，后者单独改写成"我们的域+前缀"。
+    text = _HOST_VAR_RE.sub('"' + UPSTREAM + '"', text)
+    return _HOST_NAV_RE.sub('"' + origin + PREFIX + '/r/', text)
 
 
 def _rewrite_location(value: str, origin: str) -> str:
-    return _map_ref(value, UPSTREAM + "/", origin)
+    """Location 改写；但指向 CAS 的一律原样透传 —— 学校 CAS 对 OAuth 回调地址做白名单校验
+    （实测报「传递的 redirect_uri 跟注册的回调地址不匹配」），改写就会被拒；
+    登录后浏览器会被送到真实的 portal.sit.edu.cn，由 App 在导航层映射回代理。"""
+    if "authserver.sit.edu.cn" in value:
+        return value
+    return _rewrite_scripts(_map_ref(value, UPSTREAM + "/", origin), origin)
 
 
 def _rewrite_cookie(value: str) -> str:
@@ -181,6 +196,19 @@ def _rewrite_cookie(value: str) -> str:
             p = "Path=" + (PREFIX + path if path.startswith("/") else PREFIX + "/")
         out.append(p)
     return "; ".join(out)
+
+
+def _decode_body(raw: bytes, declared: str) -> str:
+    """门户实测不声明 charset（真身是带 BOM 的 UTF-8），不能盲信声明值，也不能用 requests 的默认拉丁解码。
+    顺序：BOM/UTF-8（严格）→ 声明值 → GBK（中文站遗留编码）→ 最终容错。"""
+    for enc in ("utf-8-sig", declared, "gbk"):
+        if not enc:
+            continue
+        try:
+            return raw.decode(enc)
+        except (UnicodeDecodeError, LookupError):
+            continue
+    return raw.decode("utf-8", errors="replace")
 
 
 def _rewrite_referer(value: str, origin: str) -> str:
@@ -276,13 +304,22 @@ async def sit_portal(path: str, request: Request, db: OrmSession = Depends(get_d
         up.close()
         if len(raw) > MAX_BYTES:
             return _page("响应过大", "<p>该请求的响应体超过 30MB，已停止转发。</p>", origin, 502)
-        text = raw.decode(up.encoding or "utf-8", errors="replace")
+        declared = (re.search(r"charset=([\w\-]+)", content_type, re.I) or [None, ""])[1]
+        text = _decode_body(raw, declared)
         if "html" in content_type:
             text = _rewrite_html(text, upstream_url, origin)
+            media = "text/html"
         elif "css" in content_type:
             text = _rewrite_css(text, upstream_url, origin)
+            media = "text/css"
+        elif "json" in content_type:
+            text = _rewrite_scripts(text, origin)
+            media = "application/json"
         else:
             text = _rewrite_scripts(text, origin)
+            media = "text/javascript"
+        # 必须显式声明 utf-8：上游多半不写 charset，浏览器会猜错导致中文乱码
+        out_headers["Content-Type"] = media + "; charset=utf-8"
         resp = Response(content=text.encode("utf-8"),
                         status_code=up.status_code, headers=out_headers, media_type=None)
     else:
