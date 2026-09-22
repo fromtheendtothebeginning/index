@@ -19,7 +19,10 @@ def pool_key(account_id):
 class PoolManager:
     REFRESH_SECONDS = 60      # 账号同步 / CAS 登录维护周期
     RECREATE_FAILED_AFTER = 600   # failed 会话隔多久重建一次（密码错误时避免疯狂重试）
-    YIELD_CLEAR_CHECKS = 2        # 用户会话全部下线后，再连续观察几轮才恢复池会话
+    # 用户会话全部下线后，再连续观察几轮才恢复池会话（单位：同步周期=60s）。
+    # 用户侧重建容器/后端重启期间 ec-c* 会短暂消失，太早恢复会让共享隧道回来抢会话
+    # （同账号互踢 → 用户容器被反复重建），所以退让得久一点。
+    YIELD_CLEAR_CHECKS = 5
 
     def __init__(self, cfg, docker, sessions, dekt, get_vision, solve_captcha, log):
         self.cfg = cfg

@@ -97,14 +97,24 @@ class DockerManager:
         except NotFound:
             return ""
 
-    def has_tun(self, sess):
-        """容器内 VPN 隧道(tun0)是否存在"""
+    def tun_routes(self, sess):
+        """容器内 tun0 的路由条数：>0 = 隧道真正可用；0 = 无隧道/未就绪；-1 = 探测失败
+
+        只看 tun0 这个 link 在不在不够：被同账号的另一条会话踢掉后 tun0 常常还在，
+        但路由被清零，此时所有校园内网请求都会卡到 30s 超时。
+        """
         try:
             c = self.client.containers.get(sess.container_name)
-            r = c.exec_run("sh -c 'ip link show tun0'")
-            return r.exit_code == 0
+            r = c.exec_run("sh -c 'ip route 2>/dev/null | grep -c tun0'")
         except Exception:
-            return False
+            return -1
+        out = (r.output or b"").decode("utf-8", "replace")
+        nums = [ln.strip() for ln in out.splitlines() if ln.strip().isdigit()]
+        return int(nums[-1]) if nums else -1
+
+    def has_tun(self, sess):
+        """容器内 VPN 隧道(tun0)是否真正可用（tun0 存在且有路由才算）"""
+        return self.tun_routes(sess) > 0
 
     def cleanup_orphans(self):
         for c in self.client.containers.list(all=True, filters={"name": "ec-"}):

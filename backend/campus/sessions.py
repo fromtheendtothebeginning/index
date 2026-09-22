@@ -31,6 +31,7 @@ class Session:
         self.created_at = time.time()
         self._tun_miss = 0
         self._reconnect_count = 0
+        self._reconnect_ts = []
         self._last_reconnect = 0.0
 
     @property
@@ -44,9 +45,10 @@ class Session:
 class SessionManager:
     """按 user_id 维护会话：每用户同时最多一个 VPN 会话，固定端口，断连自动重连。"""
 
-    MAX_RECONNECTS = 5          # 10 分钟内最多重连次数
-    RECONNECT_WINDOW = 600      # 重连计数窗口（秒）
+    MAX_RECONNECTS = 5          # RECONNECT_WINDOW 窗口内最多重连次数
+    RECONNECT_WINDOW = 600      # 重连计数窗口（秒，真滑窗）
     RECONNECT_COOLDOWN = 60     # 两次重连最小间隔（秒）
+    RECONNECT_MAX_BACKOFF = 600 # 连续重连的退避上限（秒）
 
     def __init__(self, cfg, docker):
         self.cfg = cfg
@@ -89,21 +91,16 @@ class SessionManager:
                 sess = self.get(user_id)
                 if not sess:
                     return
-                logs = self.docker.get_logs(sess)
-                # 优先生效：检查 tun0（VPN 隧道真正建立）
-                if self.docker.has_tun(sess):
+                # 唯一成功判定：tun0 真正可用（存在且有路由）。EasyConnect 打印
+                # "login successfully" 只代表登录被受理，隧道可能还要几十秒才建好，
+                # 也可能随即被同账号的另一条会话踢掉（tun0 在、路由 0 条）；这两种
+                # 情况都对外报 connected 的话，用户界面显示已连接但每个请求都卡死。
+                if self.docker.tun_routes(sess) > 0:
                     sess.status = "connected"
                     sess.error = None
                     sess._tun_miss = 0
                     sess._reconnect_count = 0
-                    return
-                # 最终成功 = 最后一次登录事件是成功。日志是累积的，EasyConnect 失败后
-                # 会自动重试（学校侧可能连续拒绝几次才放行），不能要求「没有 login failed」
-                if logs.rfind("login successfully") > logs.rfind("login failed"):
-                    sess.status = "connected"
-                    sess.error = None
-                    sess._tun_miss = 0
-                    sess._reconnect_count = 0
+                    sess._reconnect_ts = []
                     return
                 state = self.docker.container_state(sess)
                 if state["exited"] and not state["running"]:
@@ -118,7 +115,7 @@ class SessionManager:
                 if logs.rfind("login failed") > logs.rfind("login successfully"):
                     sess.error = "登录失败：账号或密码错误（若确认无误，可能是学校侧暂时拒绝，请稍后重试）"
                 else:
-                    sess.error = "连接超时，请稍后重试"
+                    sess.error = "连接超时：隧道未就绪（同账号可能已在别处登录），请稍后重试"
         except Exception as e:
             sess = self.get(user_id)
             if sess:
@@ -164,17 +161,23 @@ class SessionManager:
                 self.disconnect(uid)
 
     def _try_reconnect(self, sess, uid, now, reason):
-        """断连自动重连：有重连窗口限制和冷却间隔"""
-        # 重连冷却：距上次重连不足 RECONNECT_COOLDOWN 秒则跳过
-        if now - sess._last_reconnect < self.RECONNECT_COOLDOWN:
+        """断连自动重连：真滑窗限次 + 指数退避，避免容器被反复重建"""
+        # 冷却：基础 RECONNECT_COOLDOWN 秒，连续重连按次数退避（60/120/240/480/600…）
+        # 计数只在隧道重新可用后清零（见 _run），所以「一直连不上」时重建间隔会越拉越长
+        backoff = min(self.RECONNECT_COOLDOWN * (2 ** max(0, sess._reconnect_count - 1)),
+                      self.RECONNECT_MAX_BACKOFF)
+        if now - sess._last_reconnect < backoff:
             return
-        # 重连次数限制：窗口期内不超过 MAX_RECONNECTS
-        if now - sess.created_at > self.RECONNECT_WINDOW:
-            sess._reconnect_count = 0  # 窗口过了重置
-        if sess._reconnect_count >= self.MAX_RECONNECTS:
+        # 窗口只看最近 RECONNECT_WINDOW 秒内的重连次数。旧写法用 created_at 判窗口，
+        # 会话一旦超过 10 分钟计数就被永久清零 → 重建次数无上限（重建风暴）。
+        recent = [t for t in sess._reconnect_ts if now - t < self.RECONNECT_WINDOW]
+        sess._reconnect_ts = recent
+        if len(recent) >= self.MAX_RECONNECTS:
             sess.status = "failed"
-            sess.error = reason + "（已超过最大重连次数）"
+            sess.error = reason + "（%d 分钟内已重连 %d 次，暂停自动重连）" % (
+                self.RECONNECT_WINDOW // 60, len(recent))
             return
+        sess._reconnect_ts.append(now)
         sess._reconnect_count += 1
         sess._last_reconnect = now
         sess.status = "connecting"

@@ -157,12 +157,18 @@ def _decrypt_or_400(blob):
 # VPN 会话
 # ============================================================
 
-def _session_payload(sess) -> dict:
+def _session_payload(sess, docker=None) -> dict:
     if sess is None:
         return {"connected": False, "status": "none"}
+    status = sess.status
+    # 「已连接」必须隧道真的可用：被同账号的另一条会话踢掉后容器和 tun0 都还在，
+    # 但路由被清零（tun_routes == 0），此时报 connected 会让前端显示已连接、
+    # 实际每个请求都卡到超时。探测失败（-1，Docker 抖动）不改状态，避免误报。
+    if status == "connected" and docker is not None and docker.tun_routes(sess) == 0:
+        status = "connecting"
     return {
-        "connected": sess.status == "connected",
-        "status": sess.status,
+        "connected": status == "connected",
+        "status": status,
         "error": sess.error,
         "student_id_masked": sess.student_id_masked,
         "socks_port": sess.socks_port,
@@ -180,13 +186,13 @@ def campus_connect(current_user: User = Depends(get_current_user_obj), db: OrmSe
         m["sessions"].create(current_user.id, c.student_id, vpn_pwd)
     except (ValueError, RuntimeError) as e:
         raise HTTPException(status_code=400, detail=str(e))
-    return _session_payload(m["sessions"].get(current_user.id))
+    return _session_payload(m["sessions"].get(current_user.id), m["docker"])
 
 
 @router.get("/api/campus/status", tags=["校园服务"])
 def campus_status(current_user: User = Depends(get_current_user_obj)):
     m = _mgrs()
-    return _session_payload(m["sessions"].get(current_user.id))
+    return _session_payload(m["sessions"].get(current_user.id), m["docker"])
 
 
 @router.post("/api/campus/disconnect", tags=["校园服务"])

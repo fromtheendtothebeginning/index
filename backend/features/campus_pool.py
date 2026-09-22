@@ -14,11 +14,13 @@ import aisettings
 from campus.pool import pool_key
 from database import SessionLocal, get_db
 from deps import _log, _mask_sid, require_admin
-from models import CampusPoolAccount, User
+from models import CampusCred, CampusPoolAccount, User
 
 router = APIRouter()
 
 SYNC_SECONDS = 60
+
+_dup_warned = set()   # 已提示过「与用户个人账号同学号」的池账号（避免每分钟刷日志）
 
 
 def resolve_pool_vision():
@@ -46,12 +48,21 @@ def _sync_once():
     db = SessionLocal()
     try:
         rows = db.query(CampusPoolAccount).all()
+        personal = {sid for (sid,) in db.query(CampusCred.student_id).all() if sid}
     finally:
         db.close()
     accounts = {}
     for r in rows:
         key = pool_key(r.id)
-        if r.enabled:
+        # 与某个用户自己的校园凭据同学号的账号不能进池：学校侧同一账号只允许一条
+        # VPN 隧道，池容器会和该用户自己的容器互踢（tun0 路由清零、容器退出→重建），
+        # 表现为用户容器被反复重建、查询卡死。池内直接跳过（账号仍留在待命集合里）。
+        if r.enabled and r.student_id in personal:
+            if key not in _dup_warned:
+                _dup_warned.add(key)
+                _log("campus pool %s 与用户个人账号同学号，池内跳过（避免同账号互踢）" % key)
+            accounts[key] = {"id": r.id, "enabled": False}
+        elif r.enabled:
             accounts[key] = {"id": r.id, "student_id": r.student_id, "label": r.label,
                              "password": aisettings.decrypt_secret(r.password_enc) or "",
                              "enabled": True}

@@ -243,7 +243,8 @@ p{{margin:0 0 12px;color:#555}}a.btn{{display:inline-block;margin-top:8px;paddin
 background:#6c5ce7;color:#fff;text-decoration:none;font-weight:600}}a{{color:#6c5ce7}}</style></head>
 <body><h1>{title}</h1>{body}
 <p><a href="{safe_origin}/tools/campus-service">← 返回校园服务</a></p></body></html>"""
-    return HTMLResponse(html, status_code=status_code)
+    return HTMLResponse(html, status_code=status_code,
+                        headers={"Cache-Control": "no-store, max-age=0"})
 
 
 # ============================================================
