@@ -38,6 +38,7 @@ UPSTREAM_HOSTS = ("portal.sit.edu.cn", "my.sit.edu.cn")   # my.sit.edu.cn 会 30
 COOKIE_NAME = "sit_sess"                            # 代理自身的鉴权 Cookie
 SESSION_TTL = 8 * 3600                              # 上游会话（含门户登录态）最长保留
 TIMEOUT = 60
+PROBE_TIMEOUT = 8          # 隧道探活用的短超时（避免隧道没起来时干等）
 MAX_BYTES = 30 * 1024 * 1024                        # 单个响应体上限
 UA = ("Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/120.0 Mobile Safari/537.36")
@@ -113,6 +114,10 @@ _HOST_VAR_RE = re.compile(
     r"""window\.location\.protocol\s*\+\s*["']//["']\s*\+\s*window\.location\.host""")
 # 由 host 拼出的站内跳转（host+"/r/login.html" 等）必须走代理，否则会跳到校园内网真站
 _HOST_NAV_RE = re.compile(r"""host\s*\+\s*(["'])/r/""")
+# 引导页的三元判断：ck_ ? 已登录入口 : OAuth(会跳 CAS)。服务端已登录，强制走已登录分支
+_SSO_BRANCH_RE = re.compile(
+    r"""u\s*=\s*ck_\s*\?\s*['"]\./r/w\?['"]\s*\+\s*u\s*:\s*['"]\./r/or\?['"]\s*\+\s*u\s*"""
+    r"""\+\s*['"]&oauthName=ssologins&f=['"]\s*\+\s*m\.OAUTH_DEF\s*;""")
 _SKIP_SCHEMES = ("data:", "javascript:", "mailto:", "tel:", "blob:", "about:", "#")
 
 
@@ -171,7 +176,10 @@ def _rewrite_scripts(text: str, origin: str) -> str:
     # 引导页的 host 变量：既要给门户当 yu 返回值参数（门户会校验，必须是它认识的地址），
     # 又要拼站内跳转 → 前者保持门户真实源，后者单独改写成"我们的域+前缀"。
     text = _HOST_VAR_RE.sub('"' + UPSTREAM + '"', text)
-    return _HOST_NAV_RE.sub('"' + origin + PREFIX + '/r/', text)
+    text = _HOST_NAV_RE.sub('"' + origin + PREFIX + '/r/', text)
+    # 服务端已经登录了：把「没 ck_ 就跳 OAuth/CAS」的分支改成直接走已登录入口，
+    # 否则引导页会自己跳一次 CAS（那边会落到坏 worker 报 500）
+    return _SSO_BRANCH_RE.sub("u = './r/w?'+u;", text)
 
 
 def _rewrite_location(value: str, origin: str) -> str:
@@ -298,6 +306,12 @@ async def sit_portal(path: str, request: Request, db: OrmSession = Depends(get_d
 
     # 门户没登录/掉线时上游会跳统一认证 → 服务端自己登录一次再重试（浏览器完全不碰 CAS）
     if _is_cas_redirect(up) or (path in ("", "/") and not _logged_flag(user.id)):
+        if not _tunnel_alive(sess):
+            up.close()
+            return _page("校园网隧道还没就绪",
+                         "<p>校园服务显示已连接，但隧道尚未真正建立（学校侧建立隧道通常要 40~90 秒，"
+                         "刚连上马上点就会这样）。</p><p>请等约 30 秒再点一次「信息门户」；"
+                         "若一直如此，回校园服务断开后重连一次。</p>", origin)
         up.close()
         ok, why = portal_login(user, db, sess)
         if not ok:
@@ -470,6 +484,16 @@ def _login_page(origin: str, reason: str) -> HTMLResponse:
         body = ("<p>统一认证需要验证码，自动识别没成功。点下面按钮手输一次即可（只影响这一次登录）。</p>"
                 '<p><a href="' + origin + PREFIX + '/manual">去输入验证码</a></p>')
     return _page("信息门户登录失败", body + "<p>若反复失败，可先回校园服务重新连接校园网。</p>", origin)
+
+
+def _tunnel_alive(http) -> bool:
+    """隧道是否真的通：容器刚重建、tun0 还没起来时，状态可能已显示 connected，
+    这时所有请求都会干等超时，所以先做一次短超时探活，快速给出提示而不是让用户白等。"""
+    try:
+        http.get(UPSTREAM + "/", timeout=PROBE_TIMEOUT, allow_redirects=False)
+        return True
+    except requests.exceptions.RequestException:
+        return False
 
 
 def _is_cas_redirect(up) -> bool:
