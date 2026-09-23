@@ -351,6 +351,8 @@ async def sit_portal(path: str, request: Request, db: OrmSession = Depends(get_d
         ok, why = portal_login(user, db, sess)
         if not ok:
             _mark_login_failed(user.id, why)
+            if why == "NEED_CAPTCHA":       # 直接送到手输页：账号密码已填好，只填验证码
+                return RedirectResponse(PREFIX + "/manual", status_code=302)
             return _login_page(origin, why)
 
     # 4) 响应头
@@ -443,7 +445,15 @@ def _fresh_cas_login(user, db, http, captcha_text: str = "", force: bool = False
         dekt = m["dekt"].get(user.id, campus)
         if force:
             dekt.session = None
-        pending = dekt.prepare_login(campus.student_id, campus.password)
+        # 用户是看着页面上那张验证码输入的 → 必须沿用同一个待完成会话：
+        # 再调一次 prepare_login 会重新取图，用户手里那张当场作废（旧的手输页就栽在这里，
+        # 表现成「输了验证码也没反应」）。
+        if captcha_text:
+            if dekt.pending is None:
+                return False, "验证码已失效，请重新输入"
+            pending = dekt.pending
+        else:
+            pending = dekt.prepare_login(campus.student_id, campus.password)
     except Exception as e:
         return False, f"统一认证登录失败：{e}"
     if pending is None:                     # 已有 CAS 会话（校园服务里刚登过）
@@ -535,13 +545,92 @@ def _mark_login_failed(user_id: int, why: str):
 
 
 def _login_page(origin: str, reason: str) -> HTMLResponse:
-    """服务端自动登录失败时的提示页（需要人工验证码时给出手输入口）"""
+    """服务端自动登录失败时的提示页；无论哪种失败都给到手输入口（失败页是死胡同最难用）"""
     need = reason == "NEED_CAPTCHA"
     body = "<p>服务端未能自动登录信息门户（" + html_mod.escape(reason) + "）。</p>"
     if need:
-        body = ("<p>统一认证需要验证码，自动识别没成功。点下面按钮手输一次即可（只影响这一次登录）。</p>"
-                '<p><a href="' + origin + PREFIX + '/manual">去输入验证码</a></p>')
-    return _page("信息门户登录失败", body + "<p>若反复失败，可先回校园服务重新连接校园网。</p>", origin)
+        body = "<p>统一认证需要验证码，自动识别没成功。手输一次即可（只影响这一次登录）。</p>"
+    body += ('<p><a class="btn" href="' + origin + PREFIX + '/manual">'
+             '去手动登录（账号密码已填好）</a></p>'
+             "<p>若反复失败，可先回校园服务重新连接校园网。</p>")
+    return _page("信息门户登录失败", body, origin)
+
+
+def _login_form(origin: str, username: str, password: str, captcha_b64: str,
+                error: str = "") -> HTMLResponse:
+    """手输登录页：账号密码预填好，只让用户填验证码（改过账号密码也能直接改，会按新的重建会话）"""
+    esc = lambda v: html_mod.escape(str(v or ""), quote=True)   # noqa: E731
+    body = ""
+    if error:
+        body += f'<p style="color:#c0392b">{esc(error)}</p>'
+    body += "<p>账号密码已填好，输入图中验证码即可（只影响这一次登录）。</p>"
+    if captcha_b64:
+        body += (f'<p><img src="data:image/png;base64,{captcha_b64}" alt="captcha" '
+                 'style="border:1px solid #ddd;background:#fff"/></p>')
+    else:
+        body += "<p>（这次没能取到验证码图片，可点「换一张」重试）</p>"
+    body += (
+        f'<form method="post" action="{PREFIX}/manual" '
+        'style="max-width:320px;margin:0 auto;text-align:left">'
+        '<label style="display:block;margin:8px 0 2px">账号</label>'
+        f'<input name="username" value="{esc(username)}" autocomplete="off" autocapitalize="off" '
+        'style="width:100%;font-size:16px;padding:6px 10px">'
+        '<label style="display:block;margin:8px 0 2px">密码</label>'
+        f'<input name="password" type="password" value="{esc(password)}" autocomplete="off" '
+        'style="width:100%;font-size:16px;padding:6px 10px">'
+        '<label style="display:block;margin:8px 0 2px">验证码</label>'
+        '<input name="captcha" autocomplete="off" autocapitalize="off" '
+        'style="width:150px;font-size:18px;padding:6px 10px">'
+        '<p style="margin-top:16px"><button type="submit" '
+        'style="padding:9px 24px;font-size:16px;cursor:pointer">登录</button>'
+        f'<a href="{PREFIX}/manual" style="margin-left:14px">换一张验证码</a></p></form>')
+    return _page("统一认证登录", body, origin)
+
+
+@router.api_route("/api/sit/manual", methods=["GET", "POST"], tags=["校园服务"])
+async def sit_manual_login(request: Request, db: OrmSession = Depends(get_db)):
+    """手输登录入口：账号密码预填，只填验证码（AI 识图失败时的兜底）"""
+    origin = f"{request.url.scheme}://{request.headers.get('host', 'anticraft.top')}"
+    token = request.cookies.get(COOKIE_NAME)
+    user = get_optional_user(token, db) if token else None
+    if user is None:
+        return _page("需要先登录 anticraft", "<p>请从 anticraft App 内打开信息门户。</p>", origin, 401)
+    endpoint = _socks_endpoint(user.id)
+    if endpoint is None:
+        return _page("校园网未连接", "<p>请先回到校园服务连接校园网，再试一次。</p>", origin)
+    http = _upstream_session(user.id, endpoint[0], endpoint[1])
+
+    form = await request.form() if request.method == "POST" else {}
+    captcha = (form.get("captcha") or "").strip()
+    from features.campus_service import _b64, _get_managers
+    try:
+        m = _get_managers()
+        campus = m["sessions"].get(user.id)
+        dekt = m["dekt"].get(user.id, campus)
+    except Exception as e:
+        return _login_page(origin, f"校园服务不可用：{e}")
+    username = (form.get("username") or "").strip() or campus.student_id
+    password = form.get("password") or campus.password
+
+    error = ""
+    if captcha:                             # 用户填了验证码：直接用页面那张来完成登录
+        ok, why = portal_login(user, db, http, captcha)
+        if ok:
+            return RedirectResponse(PREFIX + "/", status_code=302)
+        error = why
+
+    # 取（新）验证码渲染登录页：失败后重取一张，用户不用退回门户再点一次
+    try:
+        pending = dekt.prepare_login(username, password)
+    except Exception as e:
+        return _login_page(origin, f"取验证码失败：{e}")
+    if pending is None:                     # 统一认证会话其实还有效，这次不需要验证码
+        ok, why = portal_login(user, db, http)
+        if ok:
+            return RedirectResponse(PREFIX + "/", status_code=302)
+        return _login_page(origin, why)
+    return _login_form(origin, username, password,
+                       _b64(pending.captcha) if pending.captcha else "", error=error)
 
 
 def _tunnel_alive(http) -> bool:
@@ -623,42 +712,6 @@ def _replay_cookies(http, resp, origin: str):
         cookie = f"{c.name}={safe}; Path={path}; HttpOnly; SameSite=Lax"
         resp.raw_headers.append((b"set-cookie", cookie.encode("latin-1", "ignore")))
 
-@router.get("/api/sit/manual", tags=["校园服务"])
-def sit_manual_login(request: Request, captcha: str = "", db: OrmSession = Depends(get_db)):
-    """人工验证码入口：服务端自动登录需要人眼识别时用（只影响这一次登录）"""
-    origin = f"{request.url.scheme}://{request.headers.get('host', 'anticraft.top')}"
-    token = request.cookies.get(COOKIE_NAME)
-    user = get_optional_user(token, db) if token else None
-    if user is None:
-        return _page("需要先登录 anticraft", "<p>请从 anticraft App 内打开信息门户。</p>", origin, 401)
-    endpoint = _socks_endpoint(user.id)
-    if endpoint is None:
-        return _page("校园网未连接", "<p>请先回到校园服务连接校园网，再试一次。</p>", origin)
-    http = _upstream_session(user.id, endpoint[0], endpoint[1])
-    if captcha.strip():
-        ok, why = portal_login(user, db, http, captcha.strip())
-        if ok:
-            return RedirectResponse(PREFIX + "/", status_code=302)
-        return _login_page(origin, why)
-    from features.campus_service import _b64, _get_managers
-    try:
-        m = _get_managers()
-        campus = m["sessions"].get(user.id)
-        dekt = m["dekt"].get(user.id, campus)
-        pending = dekt.prepare_login(campus.student_id, campus.password)
-    except Exception as e:
-        return _login_page(origin, f"取验证码失败：{e}")
-    if pending is None or not pending.captcha:
-        return RedirectResponse(PREFIX + "/", status_code=302)
-    body = ('<p>输入图中验证码即可完成登录（只这一次需要手输）：</p>'
-            f'<p><img src="data:image/png;base64,{_b64(pending.captcha)}" alt="captcha" '
-            'style="border:1px solid #ddd;background:#fff"/></p>'
-            f'<form method="get" action="{PREFIX}/manual">'
-            '<input name="captcha" autocomplete="off" autocapitalize="off" '
-            'style="font-size:18px;padding:6px 10px;width:140px" /> '
-            '<button type="submit" style="padding:6px 14px;cursor:pointer">登录</button></form>')
-    return _page("统一认证验证码", body, origin)
-
 @router.get("/api/sit/connect", tags=["校园服务"])
 def sit_connect(request: Request, db: OrmSession = Depends(get_db)):
     """门户侧一键连接校园网：触发后端既有连接流程，连上后自动跳回门户"""
@@ -683,3 +736,14 @@ def sit_connect(request: Request, db: OrmSession = Depends(get_db)):
     return _page("正在连接校园网",
                  f"<p>学校侧建立隧道通常要 40~90 秒，本页会自动刷新。</p><p>当前状态：{status}</p>",
                  origin, refresh=8)
+
+
+# ============================================================
+# 路由顺序：Starlette 按注册顺序匹配，先注册的通配路由会吃掉后注册的具体路由。
+# /api/sit/manual、/api/sit/connect 就曾因此完全失效（请求被当门户路径代理到
+# portal.sit.edu.cn/manual，页面 200 但不干活）。这里把通配路由固定排到最后，
+# 以后新增具体路由不必再关心定义位置。
+# ============================================================
+
+_PROXY_ROUTE = "/api/sit/{path:path}"
+router.routes.sort(key=lambda r: getattr(r, "path", "") == _PROXY_ROUTE)
