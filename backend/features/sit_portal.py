@@ -4,9 +4,8 @@
 # 这里把门户反代到 /api/sit/ 下（nginx 已把 /api/ 转给后端，不用改 nginx），
 # 上游请求走【该用户自己的】VPN 会话 SOCKS —— 门户是个人数据，按项目约定不走共享池。
 #
-# 登录：CAS 认证服务器 authserver.sit.edu.cn 是公网可达的，所以不代理它——
-# 把门户给出的 service 参数改写成我们的代理地址，用户在真实 CAS 页面登录（验证码也在那边），
-# 登录后带 ticket 跳回 /api/sit/...，由我们转发给门户完成 SSO（Cookie 存服务端会话）。
+# 登录：由服务端代登录 —— 后端用该用户的统一认证(CAS)会话把门户 OAuth 跑完（见文件末尾
+# 「服务端登录」一节），门户登录态存在服务端会话的 Cookie 罐里，浏览器完全不碰 CAS。
 #
 # 鉴权：WebView 的整页导航带不了 Authorization 头，所以首访用 ?t=<JWT> 换一个
 # HttpOnly Cookie（Path=/api/sit）作为后续导航凭据。
@@ -40,6 +39,7 @@ SESSION_TTL = 8 * 3600                              # 上游会话（含门户�
 TIMEOUT = 60
 PROBE_TIMEOUT = 8          # 隧道探活用的短超时（避免隧道没起来时干等）
 MAX_BYTES = 30 * 1024 * 1024                        # 单个响应体上限
+LOGIN_RETRY_COOLDOWN = 60                           # 登录失败后的静默期（秒），见 _login_cooldown_reason
 UA = ("Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/120.0 Mobile Safari/537.36")
 
@@ -283,7 +283,8 @@ async def sit_portal(path: str, request: Request, db: OrmSession = Depends(get_d
                      f'<p><a class="btn" href="{origin}{PREFIX}/connect">连接校园网并继续</a></p>',
                      origin)
 
-    # 3) 转发（不跟随跳转，自己改写 Location）
+    # 3) 转发（不跟随跳转，自己改写 Location；最多两跳：第一跳判定要不要服务端登录，
+    #    登录成功后再取一次）
     upstream_url = UPSTREAM + "/" + path
     if query:
         upstream_url += "?" + urlencode(query)
@@ -301,45 +302,45 @@ async def sit_portal(path: str, request: Request, db: OrmSession = Depends(get_d
         return sess.request(request.method, upstream_url, headers=headers, data=body,
                             allow_redirects=False, stream=True, timeout=TIMEOUT)
 
-    try:
-        up = fetch()
-    except requests.exceptions.RequestException as e:
-        return _page("门户连接失败",
-                     f"<p>经校园网访问信息门户失败：{type(e).__name__}。请确认校园网连接正常后重试。</p>",
-                     origin)
-
-    # 门户没登录/掉线时上游会跳统一认证 → 服务端自己登录一次再重试（浏览器完全不碰 CAS）
-    if _is_cas_redirect(up) or (path in ("", "/") and not _logged_flag(user.id)):
-        if not _tunnel_alive(sess):
+    # 3) 取上游响应：第一跳判定要不要服务端登录，登录成功后再取一次
+    for attempt in range(2):
+        try:
+            up = fetch()
+        except requests.exceptions.RequestException as e:
+            why = "重试访问门户失败" if attempt else "经校园网访问信息门户失败"
+            return _page("门户连接失败",
+                         f"<p>{why}：{type(e).__name__}。请确认校园网连接正常后重试。</p>", origin)
+        content_type = up.headers.get("Content-Type", "")
+        raw = None
+        if up.status_code != 304 and _is_text(content_type):
+            raw = up.raw.read(MAX_BYTES + 1, decode_content=True)   # 登录判定要看正文
             up.close()
+        if len(raw or b"") > MAX_BYTES:
+            return _page("响应过大", "<p>该请求的响应体超过 30MB，已停止转发。</p>", origin, 502)
+        if attempt or not _need_login(up, sess, content_type, raw):
+            break
+        up.close()
+        cooling = _login_cooldown_reason(user.id)
+        if cooling:
+            return _login_page(origin, cooling)
+        if not _tunnel_alive(sess):
             return _page("校园网隧道还没就绪",
                          "<p>校园服务显示已连接，但隧道尚未真正建立（学校侧建立隧道通常要 40~90 秒，"
                          "刚连上马上点就会这样）。</p><p>请等约 30 秒再点一次「信息门户」；"
                          "若一直如此，回校园服务断开后重连一次。</p>", origin)
-        up.close()
         ok, why = portal_login(user, db, sess)
         if not ok:
+            _mark_login_failed(user.id, why)
             return _login_page(origin, why)
-        _logged_flag(user.id, True)
-        try:
-            up = fetch()
-        except requests.exceptions.RequestException as e:
-            return _page("门户连接失败", f"<p>重试访问门户失败：{type(e).__name__}</p>", origin)
 
     # 4) 响应头
     out_headers = {k: v for k, v in up.headers.items() if k.lower() not in _DROP_RESP_HEADERS}
     if "Location" in up.headers:
         out_headers["Location"] = _rewrite_location(up.headers["Location"], origin)
     cookies = up.raw.headers.getlist("set-cookie") if hasattr(up.raw.headers, "getlist") else []
-    content_type = up.headers.get("Content-Type", "")
 
     # 5) 文本体改写（HTML/CSS/JS/JSON），其余原样透传
-    is_text = any(t in content_type for t in ("text", "json", "javascript"))
-    if up.status_code != 304 and is_text:
-        raw = up.raw.read(MAX_BYTES + 1, decode_content=True)
-        up.close()
-        if len(raw) > MAX_BYTES:
-            return _page("响应过大", "<p>该请求的响应体超过 30MB，已停止转发。</p>", origin, 502)
+    if raw is not None:
         declared = (re.search(r"charset=([\w\-]+)", content_type, re.I) or [None, ""])[1]
         text = _decode_body(raw, declared)
         if "html" in content_type:
@@ -406,8 +407,9 @@ def _copy_cas_cookies(dekt, http) -> tuple:
     return True, ""
 
 
-def _fresh_cas_login(user, db, captcha_text: str = "") -> tuple:
+def _fresh_cas_login(user, db, http, captcha_text: str = "", force: bool = False) -> tuple:
     """现场做一次统一认证登录：captcha_text 为空时先取验证码（有 AI 识图就自动解）。
+    force=True 表示复用路径刚失败，内存里的 CAS 会话已失效，必须清掉重新登。
     返回 (True, "") / (False, "NEED_CAPTCHA") / (False, 原因)"""
     from features.campus_service import _ai_solve_captcha, _b64, _get_managers, _resolve_vision_model
     try:
@@ -416,13 +418,16 @@ def _fresh_cas_login(user, db, captcha_text: str = "") -> tuple:
         if not campus or campus.status != "connected":
             return False, "校园网未连接"
         dekt = m["dekt"].get(user.id, campus)
+        if force:
+            dekt.session = None
         pending = dekt.prepare_login(campus.student_id, campus.password)
     except Exception as e:
         return False, f"统一认证登录失败：{e}"
-    if pending is None:
-        return True, ""
+    if pending is None:                     # 已有 CAS 会话（校园服务里刚登过）
+        return _copy_cas_cookies(dekt, http)
     text = (captcha_text or "").strip()
-    if not text:
+    auto = not text                         # AI 识别的验证码可能是错的，失败要给手输入口
+    if auto:
         vision = None
         try:
             vision = _resolve_vision_model(user.id, db)
@@ -434,50 +439,76 @@ def _fresh_cas_login(user, db, captcha_text: str = "") -> tuple:
     try:
         dekt.complete_login(campus.student_id, text)
     except Exception as e:
-        return False, f"统一认证登录失败：{e}"
-    return True, ""
+        return False, "NEED_CAPTCHA" if auto else f"统一认证登录失败：{e}"
+    # 关键：刚拿到的 CAS Cookie 必须装进上游会话，否则门户 OAuth 会悄悄退回统一认证登录页
+    return _copy_cas_cookies(dekt, http)
 
 
 def _portal_oauth(http) -> tuple:
-    """带着 CAS 会话把门户 OAuth 跑完（服务端跟随跳转），成功即门户会话落在 http 的 Cookie 罐里"""
+    """带着 CAS 会话把门户 OAuth 跑完（服务端跟随跳转），成功即门户会话落在 http 的 Cookie 罐里。
+    最后必须拿已登录入口验一次：CAS 会话失效时门户会悄悄退回统一认证登录页（HTTP 200），
+    只看「有没有抛异常」会把这种失败当成功，然后界面就一直卡在门户的 401 错误页上。"""
+    hdr = {"Referer": UPSTREAM + "/", "Origin": UPSTREAM}
     try:
+        # 必须先取一次门户首页：门户自己的初始 cookie（CSRF-TOKEN 等）不拿到，
+        # 后面 OAuth 走完也不会建立门户会话（/r/w 会返回「未授权被拒绝(401)」）
+        http.get(UPSTREAM + "/", timeout=TIMEOUT, headers=hdr)
         r = http.post(UPSTREAM + "/r/jd?cmd=com.awspaas.user.apps.onlineoffice_getDefSSO",
                       data={"yu": UPSTREAM}, timeout=TIMEOUT,
-                      headers={"Content-Type": "application/x-www-form-urlencoded"})
+                      headers={"Content-Type": "application/x-www-form-urlencoded", **hdr})
         m = ((r.json() or {}).get("data") or {}).get("data") or {}
         entry = m.get("LOGIN_GO2") or m.get("LOGIN_GO") or ""
     except Exception as e:
         return False, f"门户接口异常：{e}"
     if not entry:
         return False, "门户未返回登录入口（统一认证会话可能已失效）"
+    _drop_portal_cookies(http)              # 清掉上一次的（多半已失效的）门户会话 Cookie
     try:
         http.get(UPSTREAM + "/r/or?" + entry + "&oauthName=ssologins&f=0",
-                 timeout=TIMEOUT, allow_redirects=True)
+                 timeout=TIMEOUT, allow_redirects=True, headers=hdr)
+        probe = http.get(UPSTREAM + "/r/w?" + entry, timeout=TIMEOUT, allow_redirects=False)
     except Exception as e:
         return False, f"门户登录失败：{e}"
+    if _looks_logged_out(probe.content):
+        return False, "门户未建立登录态（统一认证会话可能已失效）"
     return True, ""
 
 
 def portal_login(user, db, http, captcha_text: str = "") -> tuple:
     """服务端完成门户登录；返回 (True, "") 或 (False, 原因)，需要人工验证码时返回 NEED_CAPTCHA"""
     ok, why = _cas_session(user, db, http)
+    fresh = ok                               # 现场新登的就不用再登一次
     if not ok and why == "NEED_LOGIN":
-        ok, why = _fresh_cas_login(user, db, captcha_text)
+        ok, why = _fresh_cas_login(user, db, http, captcha_text)
+        fresh = ok
     if not ok:
         return False, why
-    return _portal_oauth(http)
+    ok, why = _portal_oauth(http)
+    if not ok and not fresh:
+        # 复用的校园网 CAS 会话可能已经失效（内存里的会话没有过期感知）→ 清掉现场重登一次
+        ok, why = _fresh_cas_login(user, db, http, captcha_text, force=True)
+        if not ok:
+            return False, why
+        ok, why = _portal_oauth(http)
+    return ok, why
 
 
-def _logged_flag(user_id: int, value=None):
-    """该用户的门户是否已登录（内存标记，会话失效时会由 CAS 跳转检测触发重登）"""
+def _login_cooldown_reason(user_id: int):
+    """登录失败后的静默期内返回上次的失败原因（否则 None）：
+    门户页面会并发拉几十个资源，不拦一下会把一次登录失败放大成几十次登录（每次都烧一次 AI 识别）。"""
     with _lock:
         c = _clients.get(user_id)
-        if c is None:
-            return False
-        if value is None:
-            return bool(c.get("logged_in"))
-        c["logged_in"] = bool(value)
-        return bool(value)
+        failed = (c or {}).get("login_failed")
+    if failed and time.time() - failed[0] < LOGIN_RETRY_COOLDOWN:
+        return failed[1]
+    return None
+
+
+def _mark_login_failed(user_id: int, why: str):
+    with _lock:
+        c = _clients.get(user_id)
+        if c is not None:
+            c["login_failed"] = (time.time(), why)
 
 
 def _login_page(origin: str, reason: str) -> HTMLResponse:
@@ -504,6 +535,54 @@ def _is_cas_redirect(up) -> bool:
     """上游跳向统一认证 = 门户会话没了（需要服务端重登）"""
     loc = up.headers.get("Location") or ""
     return up.status_code in (301, 302, 303, 307, 308) and "authserver.sit.edu.cn" in loc
+
+
+def _is_text(content_type: str) -> bool:
+    return any(t in (content_type or "") for t in ("text", "json", "javascript"))
+
+
+def _is_doc(content_type: str) -> bool:
+    """文档类响应（门户页面、awspaas 的纯文本错误页）；静态资源与接口请求不算"""
+    return any(t in (content_type or "") for t in ("text/html", "text/plain"))
+
+
+def _looks_logged_out(raw) -> bool:
+    """认识 awspaas 会话失效页：HTTP 200 + 「未授权被拒绝(401)/用户会话不存在或已超时无效」。
+    正常门户页面里没有这两句话（只有 JS 变量「用户会话已超时」，故不能只匹配「用户会话」）。"""
+    if not raw:
+        return False
+    text = _decode_body(raw, "")
+    return "未授权被拒绝" in text or "用户会话不存在" in text
+
+
+def _portal_authed(http) -> bool:
+    """服务端会话里是否已有门户登录态：awspaas 登录成功会下发 ck_<hash>_ck / AWSSESSIONID"""
+    return any(c.name.startswith("ck_") or c.name == "AWSSESSIONID" for c in http.cookies)
+
+
+def _drop_portal_cookies(http):
+    """清掉门户侧上一次的登录态 Cookie；重登前不清，门户可能续用那个已经失效的会话"""
+    for c in list(http.cookies):
+        if (c.domain or "").endswith("portal.sit.edu.cn") and (
+                c.name.startswith("ck_") or c.name in ("AWSSESSIONID", "AWS-DAJKPOID")):
+            try:
+                http.cookies.clear(c.domain, c.path, c.name)
+            except KeyError:
+                pass
+
+
+def _need_login(up, sess, content_type: str, raw) -> bool:
+    """要不要服务端（重新）登录门户 —— 三个信号：
+    1. 上游 302 到统一认证 = 门户会话没了；
+    2. 服务端会话里没有门户登录态 Cookie（这次进程里还没登录过）；
+    3. 正文就是 awspaas 的「未授权被拒绝(401)」错误页（HTTP 200，上面两条都抓不到）。
+    2/3 只在文档类响应上判定：静态资源与接口请求不触发，
+    否则一次登录失败会被页面并发的几十个资源请求放大成几十次登录。"""
+    if _is_cas_redirect(up):
+        return True
+    if not _is_doc(content_type):
+        return False
+    return _looks_logged_out(raw) or not _portal_authed(sess)
 
 
 def _replay_cookies(http, resp, origin: str):
@@ -536,7 +615,6 @@ def sit_manual_login(request: Request, captcha: str = "", db: OrmSession = Depen
     if captcha.strip():
         ok, why = portal_login(user, db, http, captcha.strip())
         if ok:
-            _logged_flag(user.id, True)
             return RedirectResponse(PREFIX + "/", status_code=302)
         return _login_page(origin, why)
     from features.campus_service import _b64, _get_managers
