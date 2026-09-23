@@ -361,6 +361,13 @@ async def sit_portal(path: str, request: Request, db: OrmSession = Depends(get_d
                 out = out.replace(b"//" + hb, (origin + PREFIX).encode())
                 out = out.replace(hb, bare + PREFIX.encode())
             out = out.replace(b"../commons/", (origin + PREFIX + "/commons/").encode())
+            # 门户这些文件是 GBK 但 Content-Type 不带 charset，浏览器会按文档的 UTF-8 解析 → 语法错误。
+            # 按内容判断：不是合法 UTF-8 就显式声明 GBK（Chromium 认识 GBK）。
+            if "charset=" not in content_type.lower():
+                try:
+                    out.decode("utf-8")
+                except UnicodeDecodeError:
+                    out_headers["Content-Type"] = content_type + "; charset=GBK"
             resp = Response(content=out, status_code=up.status_code,
                             headers=out_headers, media_type=None)
     else:
