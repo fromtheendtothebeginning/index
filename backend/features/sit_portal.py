@@ -109,7 +109,10 @@ def _upstream_session(user_id: int, host: str, port: int) -> requests.Session:
 _ATTR_RE = re.compile(
     r"""(\b(?:src|href|action|poster|data-src|data-url|data-href|formaction)\s*=\s*)"""
     r"""(["'])(.*?)\2""", re.I | re.S)
-_CSS_URL_RE = re.compile(r"""url\(\s*(['"]?)([^'")]+)\1\s*\)""", re.I)
+# url(...) 前面不能是标识符字符：JS 里的 delayURL(...)、getURL(...) 尾巴会被误当成 CSS url()
+# （门户框架页的 delayURL(delay) 就这样被改成 delayurl(/api/sit/r/delay)，整段内联脚本语法错误）
+_CSS_URL_RE = re.compile(r"""(?<![A-Za-z0-9_])url\(\s*(['"]?)([^'")]+)\1\s*\)""", re.I)
+_SCRIPT_BLOCK_RE = re.compile(r"(<script\b[^>]*>.*?</script>)", re.I | re.S)
 _HOST_VAR_RE = re.compile(
     r"""window\.location\.protocol\s*\+\s*["']//["']\s*\+\s*window\.location\.host""")
 # 由 host 拼出的站内跳转（host+"/r/login.html" 等）必须走代理，否则会跳到校园内网真站
@@ -146,13 +149,22 @@ def _map_ref(ref: str, base_url: str, origin: str) -> str:
     return _map_abs(urljoin(base_url, r), origin)   # 相对 → 按原始 URL 解析后映射
 
 
+def _rewrite_css_urls(text: str, base_url: str, origin: str) -> str:
+    """改写 CSS 的 url(...)，但**跳过 <script> 块**：那里的 url(/URL( 是 JS（new URL(...)、
+    delayURL(...) 之类），按 CSS 处理会把函数调用改坏（框架页 delayURL 就是这么被改坏的）。"""
+    def one(chunk):
+        return _CSS_URL_RE.sub(
+            lambda m: "url(" + m.group(1) + _map_ref(m.group(2), base_url, origin) + m.group(1) + ")",
+            chunk)
+    return "".join(one(p) if i % 2 == 0 else p
+                   for i, p in enumerate(_SCRIPT_BLOCK_RE.split(text)))
+
+
 def _rewrite_html(text: str, base_url: str, origin: str) -> str:
     def attr(m):
         return m.group(1) + m.group(2) + _map_ref(m.group(3), base_url, origin) + m.group(2)
     text = _ATTR_RE.sub(attr, text)
-    text = _CSS_URL_RE.sub(
-        lambda m: "url(" + m.group(1) + _map_ref(m.group(2), base_url, origin) + m.group(1) + ")",
-        text)
+    text = _rewrite_css_urls(text, base_url, origin)
     return _rewrite_scripts(text, origin)
 
 
