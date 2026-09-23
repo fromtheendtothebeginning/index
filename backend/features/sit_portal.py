@@ -126,7 +126,9 @@ def _map_abs(abs_url: str, origin: str) -> str:
     for host in UPSTREAM_HOSTS:
         for scheme in ("https://", "http://"):
             if abs_url.lower().startswith(scheme + host):
-                return origin + PREFIX + abs_url[len(scheme) + len(host):]
+                # 根相对：门户框架会从 <script src> 反推「启动路径」再拼接资源，
+                # 若这里给绝对地址，它会拼成 /api/sit/apps/https://... 而 403
+                return PREFIX + abs_url[len(scheme) + len(host):]
     return abs_url
 
 
@@ -140,7 +142,7 @@ def _map_ref(ref: str, base_url: str, origin: str) -> str:
     if r.startswith(("http://", "https://")):
         return _map_abs(r, origin)
     if r.startswith("/"):                       # 站内根相对
-        return origin + PREFIX + r
+        return PREFIX + r
     return _map_abs(urljoin(base_url, r), origin)   # 相对 → 按原始 URL 解析后映射
 
 
@@ -176,7 +178,7 @@ def _rewrite_scripts(text: str, origin: str) -> str:
     # 引导页的 host 变量：既要给门户当 yu 返回值参数（门户会校验，必须是它认识的地址），
     # 又要拼站内跳转 → 前者保持门户真实源，后者单独改写成"我们的域+前缀"。
     text = _HOST_VAR_RE.sub('"' + UPSTREAM + '"', text)
-    text = _HOST_NAV_RE.sub('"' + origin + PREFIX + '/r/', text)
+    text = _HOST_NAV_RE.sub('"' + PREFIX + '/r/', text)
     # 服务端已经登录了：把「没 ck_ 就跳 OAuth/CAS」的分支改成直接走已登录入口，
     # 否则引导页会自己跳一次 CAS（那边会落到坏 worker 报 500）
     return _SSO_BRANCH_RE.sub("u = './r/w?'+u;", text)
@@ -356,10 +358,10 @@ async def sit_portal(path: str, request: Request, db: OrmSession = Depends(get_d
             bare = origin.split("//", 1)[-1].encode()
             for h in UPSTREAM_HOSTS:
                 hb = h.encode()
-                out = out.replace(b"https://" + hb, (origin + PREFIX).encode())
-                out = out.replace(b"http://" + hb, (origin + PREFIX).encode())
-                out = out.replace(b"//" + hb, (origin + PREFIX).encode())
-                out = out.replace(hb, bare + PREFIX.encode())
+                out = out.replace(b"https://" + hb, PREFIX.encode())
+                out = out.replace(b"http://" + hb, PREFIX.encode())
+                out = out.replace(b"//" + hb, PREFIX.encode())
+                out = out.replace(hb, PREFIX.lstrip("/").encode())
             out = out.replace(b"../commons/", (origin + PREFIX + "/commons/").encode())
             # 门户这些文件是 GBK 但 Content-Type 不带 charset，浏览器会按文档的 UTF-8 解析 → 语法错误。
             # 按内容判断：不是合法 UTF-8 就显式声明 GBK（Chromium 认识 GBK）。
