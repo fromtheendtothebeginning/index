@@ -164,10 +164,13 @@ def _rewrite_css(text: str, base_url: str, origin: str) -> str:
 
 def _rewrite_scripts(text: str, origin: str) -> str:
     """脚本/JSON 里的站点地址：改成我们域的绝对地址（new URL() 之类也能用）"""
-    # JS 里 "../commons/..." 这类相对引用（门户 public.js 用 document.write 写 <script>）
-    # 在真站解析到「站点根/commons」，在路径前缀下会多退一级变成 /api/commons → 直接改成前缀绝对地址
-    text = re.sub(r"""(["'(])\.\./+commons/""",
-                  lambda m: m.group(1) + origin + PREFIX + "/commons/", text)
+    # 一层 "../commons/…"（public.js 用 document.write 写 <script src>、url()、img src）
+    # 在真站靠浏览器在站点根钳位解析，加前缀后会掉到 /api/commons → 改写成前缀绝对地址。
+    # 两层以上（app 目录 awsui.js 里的 "../../../commons/…"）是门户 loader 的模块路径，
+    # 会与 bootPATH 做字符串拼接（loadjs: bootPATH + b），必须保持相对：前缀恰好两段，
+    # 归一化后正好落在 /api/sit/commons/…；改成绝对地址会被拼成 /api/sit/apps/https://… 而 403。
+    text = re.sub(r"""(["'(])\.\./(?!\.\./)commons/""",
+                  lambda m: m.group(1) + PREFIX + "/commons/", text)
     bare = origin.split("//", 1)[-1]
     for host in UPSTREAM_HOSTS:
         text = text.replace("https://" + host, origin + PREFIX)
@@ -182,6 +185,21 @@ def _rewrite_scripts(text: str, origin: str) -> str:
     # 服务端已经登录了：把「没 ck_ 就跳 OAuth/CAS」的分支改成直接走已登录入口，
     # 否则引导页会自己跳一次 CAS（那边会落到坏 worker 报 500）
     return _SSO_BRANCH_RE.sub("u = './r/w?'+u;", text)
+
+
+def _rewrite_asset_bytes(raw: bytes) -> bytes:
+    """JS/CSS/JSON 体：只做字节级 URL 前缀化（调用处说明为什么绝不转码）"""
+    out = raw
+    for h in UPSTREAM_HOSTS:
+        hb = h.encode()
+        out = out.replace(b"https://" + hb, PREFIX.encode())
+        out = out.replace(b"http://" + hb, PREFIX.encode())
+        out = out.replace(b"//" + hb, PREFIX.encode())
+        out = out.replace(hb, PREFIX.lstrip("/").encode())
+    # 一层 "../commons/…" 是文档相对引用（document.write 的 <script src>、url()、img src），
+    # 真站靠浏览器在站点根钳位；两层以上（app 目录 awsui.js 的 "../../../commons/…"）是 loader 的
+    # 模块路径，会与 bootPATH 做字符串拼接，必须保持相对才能归一化到 /api/sit/commons/…
+    return re.sub(rb"(?<!\.\./)\.\./commons/", (PREFIX + "/commons/").encode(), out)
 
 
 def _rewrite_location(value: str, origin: str) -> str:
@@ -354,15 +372,7 @@ async def sit_portal(path: str, request: Request, db: OrmSession = Depends(get_d
             # JS/CSS/JSON：门户这些文件是 **GBK** 且 Content-Type 不写 charset，
             # 一旦按 utf-8/gbk 解码再转码，二进制字节（GBK 的 0x5C 陷阱）会破坏脚本语法
             # → awsui/public.js 整块不执行、引导页空白。所以只做**字节级**替换，绝不转码。
-            out = raw
-            bare = origin.split("//", 1)[-1].encode()
-            for h in UPSTREAM_HOSTS:
-                hb = h.encode()
-                out = out.replace(b"https://" + hb, PREFIX.encode())
-                out = out.replace(b"http://" + hb, PREFIX.encode())
-                out = out.replace(b"//" + hb, PREFIX.encode())
-                out = out.replace(hb, PREFIX.lstrip("/").encode())
-            out = out.replace(b"../commons/", (origin + PREFIX + "/commons/").encode())
+            out = _rewrite_asset_bytes(raw)
             # 门户这些文件是 GBK 但 Content-Type 不带 charset，浏览器会按文档的 UTF-8 解析 → 语法错误。
             # 按内容判断：不是合法 UTF-8 就显式声明 GBK（Chromium 认识 GBK）。
             if "charset=" not in content_type.lower():
