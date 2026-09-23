@@ -341,24 +341,28 @@ async def sit_portal(path: str, request: Request, db: OrmSession = Depends(get_d
 
     # 5) 文本体改写（HTML/CSS/JS/JSON），其余原样透传
     if raw is not None:
-        declared = (re.search(r"charset=([\w\-]+)", content_type, re.I) or [None, ""])[1]
-        text = _decode_body(raw, declared)
         if "html" in content_type:
-            text = _rewrite_html(text, upstream_url, origin)
-            media = "text/html"
-        elif "css" in content_type:
-            text = _rewrite_css(text, upstream_url, origin)
-            media = "text/css"
-        elif "json" in content_type:
-            text = _rewrite_scripts(text, origin)
-            media = "application/json"
+            # HTML：门户的页面是带 BOM 的 UTF-8，解码改写后统一按 utf-8 输出
+            declared = (re.search(r"charset=([\w\-]+)", content_type, re.I) or [None, ""])[1]
+            text = _rewrite_html(_decode_body(raw, declared), upstream_url, origin)
+            out_headers["Content-Type"] = "text/html; charset=utf-8"
+            resp = Response(content=text.encode("utf-8"),
+                            status_code=up.status_code, headers=out_headers, media_type=None)
         else:
-            text = _rewrite_scripts(text, origin)
-            media = "text/javascript"
-        # 必须显式声明 utf-8：上游多半不写 charset，浏览器会猜错导致中文乱码
-        out_headers["Content-Type"] = media + "; charset=utf-8"
-        resp = Response(content=text.encode("utf-8"),
-                        status_code=up.status_code, headers=out_headers, media_type=None)
+            # JS/CSS/JSON：门户这些文件是 **GBK** 且 Content-Type 不写 charset，
+            # 一旦按 utf-8/gbk 解码再转码，二进制字节（GBK 的 0x5C 陷阱）会破坏脚本语法
+            # → awsui/public.js 整块不执行、引导页空白。所以只做**字节级**替换，绝不转码。
+            out = raw
+            bare = origin.split("//", 1)[-1].encode()
+            for h in UPSTREAM_HOSTS:
+                hb = h.encode()
+                out = out.replace(b"https://" + hb, (origin + PREFIX).encode())
+                out = out.replace(b"http://" + hb, (origin + PREFIX).encode())
+                out = out.replace(b"//" + hb, (origin + PREFIX).encode())
+                out = out.replace(hb, bare + PREFIX.encode())
+            out = out.replace(b"../commons/", (origin + PREFIX + "/commons/").encode())
+            resp = Response(content=out, status_code=up.status_code,
+                            headers=out_headers, media_type=None)
     else:
         resp = Response(content=up.raw.read(MAX_BYTES, decode_content=True),
                         status_code=up.status_code, headers=out_headers, media_type=None)
