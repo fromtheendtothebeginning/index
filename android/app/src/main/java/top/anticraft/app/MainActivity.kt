@@ -15,6 +15,7 @@ import android.view.ViewGroup
 import android.view.WindowInsets
 import android.view.WindowInsetsController
 import android.webkit.ConsoleMessage
+import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
@@ -28,6 +29,8 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import org.json.JSONObject
+import org.json.JSONTokener
 
 /** 站点入口：直接落在校园服务（nginx 对深链返回 index.html，由前端路由接管） */
 private const val START_URL = "https://anticraft.top/tools/campus-service"
@@ -193,16 +196,27 @@ class MainActivity : Activity() {
         // 整页导航带不了 Authorization 头，所以把 JWT 交给后端换成 Cookie；
         // 用当前页面的 origin（不写死生产域名），本地联调同一套代码也能用
         webView.evaluateJavascript(
-            "[location.origin, localStorage.getItem('token')||''].join('\\n')"
+            "JSON.stringify({o:location.origin,t:localStorage.getItem('token')||''})"
         ) { res ->
-            val parts = (res ?: "").trim('"').split("\\n")
-            val origin = parts.getOrNull(0)?.trim() ?: ""
-            val token = parts.getOrNull(1)?.trim() ?: ""
+            // evaluateJavascript 回传的是「JSON 字符串字面量」，要再解一层
+            val payload = try {
+                JSONObject(JSONTokener(res ?: "").nextValue() as String)
+            } catch (e: Exception) {
+                JSONObject()
+            }
+            val origin = payload.optString("o")
+            val token = payload.optString("t")
             if (origin.isEmpty() || token.isEmpty()) {
                 Toast.makeText(this, getString(R.string.need_login), Toast.LENGTH_SHORT).show()
-            } else {
-                webView.loadUrl("$origin$PORTAL_PATH/?t=$token")
+                return@evaluateJavascript
             }
+            // 门户的 JS 会被 WebView 长期缓存（含 V8 代码缓存），旧副本里是坏掉的资源地址，
+            // 不清就会一直按旧地址请求（403 → 页面自己退出），所以进门户前整份清掉。
+            // 站点登录态在 localStorage 而门户不用 localStorage（已核实），故只清缓存与 Cookie。
+            webView.clearCache(true)
+            CookieManager.getInstance().removeAllCookies(null)
+            CookieManager.getInstance().flush()
+            webView.loadUrl("$origin$PORTAL_PATH/?t=$token")
         }
     }
 
